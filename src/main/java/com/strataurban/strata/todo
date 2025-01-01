@@ -1,0 +1,4 @@
+1. Handle Exceptions and 403s
+2. JWT timing
+3. Token expiration
+4. Sign Up Request DTO
