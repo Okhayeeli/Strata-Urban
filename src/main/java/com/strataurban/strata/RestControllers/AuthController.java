@@ -1,10 +1,13 @@
 package com.strataurban.strata.RestControllers;
 
+import com.strataurban.strata.Entities.Providers.Supplier;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.DTOs.*;
+import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Security.jwtConfigs.JwtService;
 import com.strataurban.strata.Services.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +29,9 @@ public class AuthController {
     private final UserService userService;
     private final JwtService jwtService;
 
+    @Autowired
+    private SupplierService supplierService;
+
     public AuthController(AuthenticationManager authenticationManager,
                           UserService userService,
                           JwtService jwtService) {
@@ -34,11 +40,20 @@ public class AuthController {
         this.jwtService = jwtService;
     }
 
-        @PostMapping("/signup")
+    @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         User registeredUser = userService.registerUser(user);
         return ResponseEntity.ok(registeredUser);
     }
+
+//
+//    @PostMapping("/register")
+//    public ResponseEntity<?> registerSupplier(@RequestBody User supplier){
+//        supplier.setRoles(EnumRoles.SUPPLIER);
+//        User registeredUser = userService.registerUser(supplier);
+//
+//        return ResponseEntity.ok(registeredUser);
+//    }
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {

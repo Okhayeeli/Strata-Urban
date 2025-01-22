@@ -107,6 +107,7 @@ public class SecurityConfig {
                 .addFilterBefore(new RateLimitingFilter(authRateLimiter), JwtAuthFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/supplier/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()

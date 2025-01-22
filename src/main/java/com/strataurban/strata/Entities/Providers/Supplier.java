@@ -1,16 +1,14 @@
 package com.strataurban.strata.Entities.Providers;
 
+import com.strataurban.strata.Entities.User;
 import jakarta.persistence.*;
 import lombok.Data;
 
 @Data
-@Table
+@Table(name = "suppliers")
 @Entity
-public class Supplier {
+public class Supplier extends User {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
     @Column
     private String supplierCode;
     @Column

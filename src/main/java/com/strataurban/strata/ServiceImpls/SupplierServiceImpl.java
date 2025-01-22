@@ -5,22 +5,28 @@ import com.strataurban.strata.DTOs.SupplierIDDTO;
 import com.strataurban.strata.Entities.Passengers.Booking;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.Providers.Supplier;
+import com.strataurban.strata.Entities.User;
+import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Repositories.BookingRepository;
 import com.strataurban.strata.Repositories.OfferRepository;
 import com.strataurban.strata.Repositories.SupplierRepository;
 import com.strataurban.strata.Repositories.UserRepository;
 import com.strataurban.strata.Services.SupplierService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.strataurban.strata.Enums.Provider.LOCAL;
 import static com.strataurban.strata.Enums.Status.ACCEPTED;
 import static com.strataurban.strata.Enums.Status.PENDING;
 
 @Service
+@RequiredArgsConstructor
 public class SupplierServiceImpl implements SupplierService {
 
     @Autowired
@@ -36,9 +42,36 @@ public class SupplierServiceImpl implements SupplierService {
     OfferRepository offerRepository;
 
 
+    private final PasswordEncoder passwordEncoder;
+
+
     @Override
-    public Supplier registerSupplier(Supplier supplier) {
-        return supplierRepository.save(supplier);
+    public Supplier registerSupplier(Supplier user) {
+
+            if (userRepository.existsByUsername(user.getUsername())) {
+                throw new RuntimeException("Username already exists");
+            }
+            if (userRepository.existsByEmail(user.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
+
+            // Set default values for UserDetails implementation
+            user.setEnabled(true);
+            user.setAccountNonExpired(true);
+            user.setAccountNonLocked(true);
+            user.setCredentialsNonExpired(true);
+
+            // Set default role
+            user.setRoles(EnumRoles.SUPPLIER);
+
+            // Set default provider if not specified
+            if (user.getProvider() == null) {
+                user.setProvider(LOCAL);
+            }
+
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            return supplierRepository.save(user);
+
     }
 
     @Override

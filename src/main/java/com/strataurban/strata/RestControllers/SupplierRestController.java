@@ -7,6 +7,7 @@ import com.strataurban.strata.DTOs.SupplierIDDTO;
 import com.strataurban.strata.Entities.Passengers.Booking;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.Providers.Supplier;
+import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Services.SupplierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
