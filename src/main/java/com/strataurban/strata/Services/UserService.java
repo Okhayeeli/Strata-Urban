@@ -101,7 +101,6 @@ public class UserService implements UserDetailsService {
         supplier.setRoles(source.getRoles());
         supplier.setProvider(source.getProvider());
         supplier.setPreferredLanguage(source.getPreferredLanguage());
-
         // Supplier-specific fields from input
         supplier.setSupplierCode(generateSupplierCode());
         supplier.setFirstName(source.getFirstName()); // Assuming these fields are part of User
