@@ -177,6 +177,7 @@ public class ServiceAreaServiceImpl implements ServiceAreaService {
         return providers.stream()
                 .map(user -> (Provider) user)
                 .collect(Collectors.toList());
+
     }
 
     @Override
