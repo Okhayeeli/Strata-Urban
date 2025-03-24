@@ -14,4 +14,8 @@ public interface RouteService {
     public List<Routes> createMultipleRoutes(List<Routes> routes);
     public String deleteRoutes(List<Long> routeIds);
     public String deleteRoute(Long routeId);
+    public List<Routes> getRoutesByProvider(String providerId);
+    public List<Routes> getRoutesByLocations(String start, String end);
+
+
 }

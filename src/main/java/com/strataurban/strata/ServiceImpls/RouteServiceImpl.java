@@ -1,9 +1,8 @@
 package com.strataurban.strata.ServiceImpls;
 
-import com.querydsl.core.BooleanBuilder;
 import com.strataurban.strata.DTOs.RoutesRequestDTO;
 import com.strataurban.strata.Entities.Providers.Routes;
-import com.strataurban.strata.Repositories.RouteRepository;
+import com.strataurban.strata.Repositories.v2.RouteRepository;
 import com.strataurban.strata.Repositories.SupplierRepository;
 import com.strataurban.strata.Services.RouteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +27,7 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public Routes getRoute(Long routeId) {
-        return routeRepository.findById(routeId)
-                .orElseThrow(()-> new RuntimeException("Route not found"));
+        return routeRepository.findById(routeId).orElseThrow(() -> new RuntimeException("Route not found"));
     }
 
     @Override
@@ -45,15 +43,15 @@ public class RouteServiceImpl implements RouteService {
         String state = routesRequestDTO.getState();
         String city = routesRequestDTO.getCity();
 
-        if(country.isEmpty() || country.isBlank()){
+        if (country.isEmpty() || country.isBlank()) {
             return routeRepository.findAll();
         }
 
-        if (state.isEmpty() || state.isBlank()){
+        if (state.isEmpty() || state.isBlank()) {
             return routeRepository.findAllByCountry(country);
         }
 
-        if (city.isEmpty() || city.isBlank()){
+        if (city.isEmpty() || city.isBlank()) {
             return routeRepository.findAllByCountryAndState(country, state);
         }
 
@@ -62,8 +60,7 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public Routes updateRoute(RoutesRequestDTO routesRequestDTO) {
-        Routes existingRoute = routeRepository.findById(routesRequestDTO.getId())
-                .orElseThrow(()-> new RuntimeException("Route not found"));
+        Routes existingRoute = routeRepository.findById(routesRequestDTO.getId()).orElseThrow(() -> new RuntimeException("Route not found"));
 
         existingRoute.setStart(routesRequestDTO.getStart());
         existingRoute.setEnd(routesRequestDTO.getEnd());
@@ -92,4 +89,19 @@ public class RouteServiceImpl implements RouteService {
         routeRepository.deleteById(routeId);
         return "Successfully deleted";
     }
+
+    @Override
+    public List<Routes> getRoutesByProvider(String providerId) {
+        return routeRepository.findAllByProviderId(providerId);
+    }
+
+
+    public List<Routes> getRoutesByLocations(String start, String end) {
+        return routeRepository.findByStartContainingAndEndContaining(start, end);
+    }
+
+    public Routes addRoute(Routes route) {
+        return routeRepository.save(route);
+    }
+
 }

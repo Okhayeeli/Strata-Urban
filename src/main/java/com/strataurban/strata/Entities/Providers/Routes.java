@@ -20,12 +20,11 @@ public class Routes {
     @Column
     private BigDecimal price;
     @Column
-    private String supplierId;
+    private String providerId;
     @Column
     private String state;
     @Column
     private String country;
     @Column
     private String city;
-
 }

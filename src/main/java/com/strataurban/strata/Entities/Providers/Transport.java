@@ -1,9 +1,7 @@
 package com.strataurban.strata.Entities.Providers;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.strataurban.strata.Enums.TransportStatus;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Data
@@ -12,8 +10,7 @@ public class Transport {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    private Long supplierId;
+    private Long providerId;
     private String type; // Taxi or Bus
     private int capacity;
     private String description;
@@ -25,5 +22,7 @@ public class Transport {
     private String company;
     private Long routeId;
     private String status; // Available, Booked, etc.
+//    @Enumerated(EnumType.STRING)
+//    private TransportStatus status;
 
 }

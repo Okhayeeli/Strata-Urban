@@ -1,0 +1,108 @@
+
+1. Authentication Functionalities
+Authentication ensures that users are who they claim to be when they access the app.
+
+User Registration with Email Verification
+Require email verification during registration to ensure the email is valid (e.g., send a verification link or OTP).
+Prevent duplicate email addresses or usernames.
+Secure Login
+Support username/email and password-based login.
+Hash passwords using a strong algorithm (e.g., bcrypt, Argon2).
+Return a secure token (e.g., JWT) upon successful login for subsequent requests.
+Multi-Factor Authentication (MFA)
+Add an extra layer of security by requiring a second factor (e.g., SMS OTP, email OTP, or authenticator app) during login.
+Option to enable/disable MFA for users.
+Password Management
+Allow users to reset their password via email (send a reset link or OTP).
+Enforce strong password policies (e.g., minimum length, special characters).
+Allow users to change their password from their profile.
+Session Management
+Implement session timeouts (e.g., tokens expire after a set period).
+Allow users to log out and invalidate their session/token.
+Support refresh tokens to extend user sessions without re-authentication.
+Account Lockout
+Lock user accounts after a certain number of failed login attempts to prevent brute-force attacks.
+Notify users of suspicious login attempts.
+OAuth/Social Login
+Allow users to log in using third-party providers (e.g., Google, Facebook) for convenience.
+Map third-party user data to your app’s user model.
+API Key Authentication for Providers
+Allow Providers to generate API keys for integrating with your app programmatically (e.g., for automated booking management).
+Device Management
+Track devices used for login (e.g., show a list of active devices).
+Allow users to log out from specific devices remotely.
+2. Authorization Functionalities
+Authorization ensures that users can only access resources and perform actions they are permitted to.
+
+Role-Based Access Control (RBAC)
+Define roles (e.g., CLIENT, PROVIDER, ADMIN) in the EnumRoles field of the User class.
+Restrict endpoints based on roles (e.g., only Providers can access /api/bookings/provider/{providerId}).
+Allow Admins to manage all users, bookings, and providers.
+Permission-Based Access Control
+Define granular permissions (e.g., CREATE_BOOKING, CONFIRM_BOOKING, VIEW_PROVIDER_DASHBOARD).
+Map permissions to roles (e.g., Clients can create bookings, Providers can confirm bookings).
+Resource Ownership
+Ensure users can only access their own resources (e.g., a Client can only see their own bookings, a Provider can only see their own vehicles).
+Validate ownership during API requests (e.g., check if userId matches the clientId in /api/bookings/client/{clientId}).
+Provider-Specific Access
+Restrict Providers to manage only their own bookings, vehicles, and drivers.
+Prevent Providers from accessing other Providers’ data (e.g., bookings, dashboard stats).
+Booking Status-Based Access
+Restrict actions based on booking status (e.g., a Client can’t cancel a booking that’s already in progress).
+Allow Providers to confirm or assign drivers only for PENDING bookings.
+Admin Privileges
+Allow Admins to view and manage all users, providers, bookings, and trips.
+Provide endpoints for Admins to suspend or ban users/Providers.
+Rate Limiting
+Limit the number of API requests per user to prevent abuse (e.g., 100 requests per minute per user).
+Apply stricter limits for unauthenticated requests.
+Data Visibility Control
+Hide sensitive fields (e.g., passwords, email addresses) in API responses.
+Expose only necessary data to Clients (e.g., don’t show Provider’s internal notes).
+Audit Logging
+Log all critical actions (e.g., login, booking creation, status updates) with timestamps and user IDs.
+Allow Admins to view audit logs for troubleshooting or monitoring.
+Secure File Uploads
+Validate and sanitize file uploads (e.g., Provider documents) to prevent malicious files.
+Restrict file types and sizes (e.g., only PDFs for documents, max 5MB).
+Cross-Origin Resource Sharing (CORS)
+Configure CORS to allow requests only from trusted domains (e.g., your app’s frontend).
+Prevent unauthorized domains from accessing your API.
+Token Validation
+Validate JWT tokens on every request to ensure they are not tampered with or expired.
+Blacklist revoked tokens (e.g., after logout).
+Secure Communication
+Enforce HTTPS for all API requests to encrypt data in transit.
+Use secure headers (e.g., X-Content-Type-Options, X-Frame-Options) to prevent attacks like clickjacking.
+Driver Access Control
+If drivers have accounts, restrict them to view only their assigned trips.
+Prevent drivers from modifying booking details (e.g., they can only start/end trips).
+Geolocation Security
+Secure real-time tracking data (e.g., in /api/trips/{id}/track) to prevent unauthorized access.
+Limit tracking access to the Client and Provider involved in the trip.
+3. Additional Security Features
+These are broader security measures to protect the app and its users.
+
+Input Validation and Sanitization
+Validate all user inputs (e.g., email format, phone numbers) to prevent injection attacks (e.g., SQL injection, XSS).
+Sanitize inputs to remove malicious code.
+Data Encryption
+Encrypt sensitive data at rest (e.g., passwords, payment information) using strong encryption (e.g., AES-256).
+Use environment variables to store sensitive keys (e.g., JWT secret, database credentials).
+Payment Security
+If the app handles payments, integrate with a secure payment gateway (e.g., Stripe, PayPal).
+Comply with PCI DSS standards for handling payment data.
+Avoid storing sensitive payment information (e.g., credit card numbers).
+Third-Party Integrations
+Secure API keys for third-party services (e.g., Google Maps for tracking, Twilio for SMS).
+Rotate API keys regularly and store them securely.
+Security Monitoring
+Monitor for suspicious activity (e.g., multiple failed logins, unusual API usage).
+Set up alerts for potential security breaches.
+GDPR/CCPA Compliance
+Allow users to delete their accounts and data (right to be forgotten).
+Provide a privacy policy and obtain user consent for data collection.
+Allow users to export their data (e.g., bookings, trips).
+IP Whitelisting
+Allow Admins to restrict access to certain endpoints (e.g., admin APIs) to specific IP addresses.
+This list covers the major security functionalities you’ll need to consider for your e-hailing app. You can implement these gradually as your app grows, starting with the basics (e.g., secure login, RBAC) and adding more advanced features (e.g., MFA, audit logging) later.
