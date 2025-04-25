@@ -1,19 +1,29 @@
 package com.strataurban.strata.RestControllers.v2;
 
+import com.strataurban.strata.DTOs.v2.AcceptOfferRequest;
 import com.strataurban.strata.DTOs.v2.ContactRequest;
+import com.strataurban.strata.DTOs.v2.CreateOfferRequest;
 import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
+import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
+import com.strataurban.strata.Enums.EnumPriority;
 import com.strataurban.strata.Services.v2.BookingService;
+import com.strataurban.strata.Services.v2.OfferService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.time.LocalDateTime;
+
 
 @RestController
 @RequestMapping("/api/v2/bookings")
@@ -21,10 +31,12 @@ import java.util.List;
 public class BookingRestController {
 
     private final BookingService bookingService;
+    private final OfferService offerService;
 
     @Autowired
-    public BookingRestController(BookingService bookingService) {
+    public BookingRestController(BookingService bookingService, OfferService offerService) {
         this.bookingService = bookingService;
+        this.offerService = offerService;
     }
 
     @PostMapping
@@ -70,7 +82,7 @@ public class BookingRestController {
     }
 
     @PutMapping("/{id}/status")
-    @Operation(summary = "Update booking status", description = "Updates the status of a booking (e.g., Pending, Confirmed)")
+    @Operation(summary = "Update booking status", description = "Updates the status of a booking")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Booking status updated successfully"),
             @ApiResponse(responseCode = "404", description = "Booking not found")
@@ -161,4 +173,43 @@ public class BookingRestController {
         return ResponseEntity.ok(bookingService.getProviderBookingHistory(providerId));
     }
 
+    @GetMapping("/pending")
+    @Operation(summary = "Get all pending bookings with filters", description = "Fetches all pending bookings with optional filters, paginated")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pending bookings retrieved successfully")
+    })
+    public ResponseEntity<Page<BookingRequest>> getPendingBookings(
+            @RequestParam(required = false) String pickupCountry,
+            @RequestParam(required = false) String pickupState,
+            @RequestParam(required = false) String pickupCity,
+            @RequestParam(required = false) String pickupStreet,
+            @RequestParam(required = false) String pickupLga,
+            @RequestParam(required = false) String pickupTown,
+            @RequestParam(required = false) String destinationCountry,
+            @RequestParam(required = false) String destinationState,
+            @RequestParam(required = false) String destinationCity,
+            @RequestParam(required = false) String destinationStreet,
+            @RequestParam(required = false) String destinationLga,
+            @RequestParam(required = false) String destinationTown,
+            @RequestParam(required = false) LocalDateTime serviceStartDate,
+            @RequestParam(required = false) LocalDateTime serviceEndDate,
+            @RequestParam(required = false) LocalDateTime createdStartDate,
+            @RequestParam(required = false) LocalDateTime createdEndDate,
+            @RequestParam(required = false) EnumPriority priority,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(bookingService.getPendingBookingsWithFilters(
+                pickupCountry, pickupState, pickupCity, pickupStreet, pickupLga, pickupTown,
+                destinationCountry, destinationState, destinationCity, destinationStreet, destinationLga, destinationTown,
+                serviceStartDate, serviceEndDate, createdStartDate, createdEndDate, priority, pageable));
+    }
+    @GetMapping
+    @Operation(summary = "Get all bookings", description = "Fetches all booking requests in the system")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Bookings retrieved successfully")
+    })
+    public ResponseEntity<List<BookingRequest>> getAllBookings() {
+        return ResponseEntity.ok(bookingService.getAllBookings());
+    }
 }

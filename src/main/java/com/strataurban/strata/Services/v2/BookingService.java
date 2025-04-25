@@ -4,8 +4,12 @@ import com.strataurban.strata.DTOs.v2.ContactRequest;
 import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
+import com.strataurban.strata.Enums.EnumPriority;
 import com.strataurban.strata.Enums.TripStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BookingService {
@@ -45,4 +49,20 @@ public interface BookingService {
 
     // Get booking history for a provider
     List<BookingRequest> getProviderBookingHistory(Long providerId);
+
+
+    // Confirm a booking
+    BookingRequest claimBooking(Long id, Long providerId);
+
+    Page<BookingRequest> getPendingBookingsWithFilters(
+            String pickupCountry, String pickupState, String pickupCity, String pickupStreet,
+            String pickupLga, String pickupTown, String destinationCountry, String destinationState,
+            String destinationCity, String destinationStreet, String destinationLga, String destinationTown,
+            LocalDateTime serviceStartDate, LocalDateTime serviceEndDate,
+            LocalDateTime createdStartDate, LocalDateTime createdEndDate, EnumPriority priority,
+            Pageable pageable);
+
+    BookingRequest acceptOffer(Long bookingId, Long offerId);
+
+    List<BookingRequest> getAllBookings();
 }
