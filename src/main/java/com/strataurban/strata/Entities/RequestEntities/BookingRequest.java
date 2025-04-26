@@ -44,6 +44,9 @@ public class BookingRequest {
     private Long routeId;
 
     @Column
+    private String offerIds;
+
+    @Column
     private LocalDateTime serviceDate;
 
     @Column

@@ -11,16 +11,20 @@ import com.strataurban.strata.Enums.TripStatus;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Services.v2.BookingService;
+import com.strataurban.strata.Services.v2.OfferService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class BookingServiceImpl implements BookingService {
 
@@ -31,9 +35,13 @@ public class BookingServiceImpl implements BookingService {
     private final OfferRepository offerRepository;
 
     @Autowired
-    public BookingServiceImpl(BookingRepository bookingRepository, OfferRepository offerRepository) {
+    private final OfferService offerService;
+
+    @Autowired
+    public BookingServiceImpl(BookingRepository bookingRepository, OfferRepository offerRepository, OfferService offerService) {
         this.bookingRepository = bookingRepository;
         this.offerRepository = offerRepository;
+        this.offerService = offerService;
     }
 
     @Override
@@ -160,22 +168,31 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingRequest acceptOffer(Long bookingId, Long offerId) {
+        log.info("Accepting offer ID: {} for booking ID: {}", offerId, bookingId);
         BookingRequest booking = getBookingById(bookingId);
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new RuntimeException("Cannot accept offer for non-PENDING booking");
         }
 
+        String offerIds = booking.getOfferIds();
+        if (offerIds == null || !Arrays.asList(offerIds.split(",")).contains(String.valueOf(offerId))) {
+            throw new RuntimeException("Offer ID: " + offerId + " is not associated with booking ID: " + bookingId);
+        }
+
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
 
-        if (!offer.getBookingRequestId().equals(bookingId)) {
-            throw new RuntimeException("Offer does not belong to this booking");
-        }
+        // Delete other offers
+        offerService.deleteOtherOffers(bookingId, offerId);
 
+        // Update booking
         booking.setProviderId(offer.getProviderId());
-        booking.setStatus(BookingStatus.CLAIMED); // Set to CLAIMED upon acceptance and payment
-        return bookingRepository.save(booking);
+        booking.setStatus(BookingStatus.CLAIMED);
+        BookingRequest updatedBooking = bookingRepository.save(booking);
+        log.info("Accepted offer for booking: {}", updatedBooking);
+        return updatedBooking;
     }
 
     @Override
