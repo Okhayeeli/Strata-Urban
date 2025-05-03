@@ -181,4 +181,9 @@ public class OfferServiceImpl implements OfferService {
             logger.info("Deleted {} other offers, updated offerIds to: {}", offerIdList.size(), booking.getOfferIds());
         }
     }
+
+    @Override
+    public Page<Offer> getOfferByProviderId(Long providerId, Pageable pageable) {
+        return offerRepository.findByProviderId(providerId, pageable);
+    }
 }

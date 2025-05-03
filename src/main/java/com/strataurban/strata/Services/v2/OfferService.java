@@ -16,4 +16,6 @@ public interface OfferService {
     void deleteOffer(Long offerId, Long bookingRequestId);
 
     void deleteOtherOffers(Long bookingRequestId, Long acceptedOfferId);
+
+    Page<Offer> getOfferByProviderId(Long providerId, Pageable pageable);
 }

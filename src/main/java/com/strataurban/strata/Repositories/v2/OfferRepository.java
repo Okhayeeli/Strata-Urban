@@ -15,5 +15,7 @@ public interface OfferRepository extends JpaRepository<Offer, Long> {
 
     List<Offer> findAllById(Iterable<Long> ids);
     Long countByBookingRequestIdAndProviderId(Long bookingRequestId, Long providerId);
+
+    Page<Offer> findByProviderId(Long providerId, Pageable pageable);
 }
 

@@ -164,4 +164,17 @@ public class OfferRestController {
         logger.info("Retrieved booking with {} offers for booking ID: {}", offers.size(), bookingId);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/provider")
+    @Operation(summary = "Get a single offer by Provider ID", description = "Fetches details of a specific offer using Provider Id")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Offer(s) retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Offer(s) not found")
+    })
+    public ResponseEntity<Page<Offer>> getOffersByProviderId(@RequestParam Long providerId, Pageable pageable) {
+        logger.info("Fetching offer with provider ID: {}", providerId);
+        Page<Offer> offers = offerService.getOfferByProviderId(providerId, pageable);
+        logger.info("Retrieved offer for Providers: {}", offers);
+        return ResponseEntity.ok(offers);
+    }
 }
