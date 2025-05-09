@@ -3,7 +3,6 @@ package com.strataurban.strata.ServiceImpls.v2;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
-
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Services.v2.OfferService;
@@ -16,9 +15,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.strataurban.strata.Enums.OfferStatus.*;
 
 @Service
 public class OfferServiceImpl implements OfferService {
@@ -37,7 +39,9 @@ public class OfferServiceImpl implements OfferService {
 
     @Override
     @Transactional
-    public Offer createOffer(Long bookingRequestId, Long providerId, Double price, String notes) {
+    public Offer createOffer(Long bookingRequestId, Long providerId, Double price, String notes,
+                             LocalDateTime validUntil, Double discountPercentage, String websiteLink,
+                             String estimatedDuration, String specialConditions) {
         logger.info("Creating offer for bookingRequestId: {}, providerId: {}", bookingRequestId, providerId);
         BookingRequest booking = bookingRepository.findById(bookingRequestId)
                 .orElseThrow(() -> new RuntimeException("Booking request not found with ID: " + bookingRequestId));
@@ -52,11 +56,28 @@ public class OfferServiceImpl implements OfferService {
             throw new RuntimeException("Provider ID: " + providerId + " has reached the maximum of " + MAX_OFFERS_PER_PROVIDER + " offers for booking ID: " + bookingRequestId);
         }
 
+        // Validate new fields
+        if (validUntil != null && validUntil.isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Offer expiration date must be in the future");
+        }
+        if (discountPercentage != null && (discountPercentage < 0 || discountPercentage > 100)) {
+            throw new RuntimeException("Discount percentage must be between 0 and 100");
+        }
+        if (websiteLink != null && !websiteLink.matches("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$")) {
+            throw new RuntimeException("Invalid website URL format");
+        }
+
         Offer offer = new Offer();
         offer.setBookingRequestId(bookingRequestId);
         offer.setProviderId(providerId);
         offer.setPrice(price);
         offer.setNotes(notes);
+        offer.setStatus(PENDING);
+        offer.setValidUntil(validUntil);
+        offer.setDiscountPercentage(discountPercentage);
+        offer.setWebsiteLink(websiteLink);
+        offer.setEstimatedDuration(estimatedDuration);
+        offer.setSpecialConditions(specialConditions);
 
         Offer savedOffer = offerRepository.save(offer);
         logger.info("Created offer: {}", savedOffer);
@@ -93,14 +114,12 @@ public class OfferServiceImpl implements OfferService {
                 .collect(Collectors.toList());
 
         List<Offer> offers = offerRepository.findAllById(offerIdList);
-        // Maintain order based on offerIds
         offers.sort((o1, o2) -> {
             int index1 = offerIdList.indexOf(o1.getId());
             int index2 = offerIdList.indexOf(o2.getId());
             return Integer.compare(index1, index2);
         });
 
-        // Apply pagination
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), offers.size());
         List<Offer> pagedOffers = start < offers.size() ? offers.subList(start, end) : List.of();
@@ -118,13 +137,32 @@ public class OfferServiceImpl implements OfferService {
 
     @Override
     @Transactional
-    public Offer updateOffer(Long offerId, Double price, String notes) {
+    public Offer updateOffer(Long offerId, Double price, String notes, LocalDateTime validUntil,
+                             Double discountPercentage, String websiteLink, String estimatedDuration,
+                             String specialConditions) {
         logger.info("Updating offer with ID: {}", offerId);
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
 
+        // Validate new fields
+        if (validUntil != null && validUntil.isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Offer expiration date must be in the future");
+        }
+        if (discountPercentage != null && (discountPercentage < 0 || discountPercentage > 100)) {
+            throw new RuntimeException("Discount percentage must be between 0 and 100");
+        }
+        if (websiteLink != null && !websiteLink.matches("^(https?://)?([\\w-]+\\.)+[\\w-]+(/[\\w-./?%&=]*)?$")) {
+            throw new RuntimeException("Invalid website URL format");
+        }
+
         offer.setPrice(price);
         offer.setNotes(notes);
+        offer.setValidUntil(validUntil);
+        offer.setDiscountPercentage(discountPercentage);
+        offer.setWebsiteLink(websiteLink);
+        offer.setEstimatedDuration(estimatedDuration);
+        offer.setSpecialConditions(specialConditions);
+
         Offer updatedOffer = offerRepository.save(offer);
         logger.info("Updated offer: {}", updatedOffer);
         return updatedOffer;
@@ -140,7 +178,6 @@ public class OfferServiceImpl implements OfferService {
         BookingRequest booking = bookingRepository.findById(bookingRequestId)
                 .orElseThrow(() -> new RuntimeException("Booking request not found with ID: " + bookingRequestId));
 
-        // Remove offerId from BookingRequest.offerIds
         String offerIds = booking.getOfferIds();
         if (offerIds != null && !offerIds.isEmpty()) {
             List<String> offerIdList = Arrays.stream(offerIds.split(","))
@@ -156,6 +193,7 @@ public class OfferServiceImpl implements OfferService {
         logger.info("Deleted offer with ID: {}", offerId);
     }
 
+    @Override
     @Transactional
     public void deleteOtherOffers(Long bookingRequestId, Long acceptedOfferId) {
         logger.info("Deleting other offers for bookingRequestId: {}, keeping offerId: {}", bookingRequestId, acceptedOfferId);
@@ -179,6 +217,43 @@ public class OfferServiceImpl implements OfferService {
             booking.setOfferIds(String.valueOf(acceptedOfferId));
             bookingRepository.save(booking);
             logger.info("Deleted {} other offers, updated offerIds to: {}", offerIdList.size(), booking.getOfferIds());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void disableOtherOffers(Long bookingRequestId, Long acceptedOfferId) {
+        logger.info("Updating other offers for bookingRequestId: {}, keeping offerId: {}", bookingRequestId, acceptedOfferId);
+        BookingRequest booking = bookingRepository.findById(bookingRequestId)
+                .orElseThrow(() -> new RuntimeException("Booking request not found with ID: " + bookingRequestId));
+
+        String offerIds = booking.getOfferIds();
+        if (offerIds == null || offerIds.isEmpty()) {
+            logger.info("No other offers to update for bookingRequestId: {}", bookingRequestId);
+            return;
+        }
+
+        List<Long> offerIdList = Arrays.stream(offerIds.split(","))
+                .map(String::trim)
+                .map(Long::parseLong)
+                .filter(id -> !id.equals(acceptedOfferId))
+                .collect(Collectors.toList());
+
+        Offer offerToAccept = offerRepository.findById(acceptedOfferId)
+                .orElseThrow(() -> new RuntimeException("No offer with id " + acceptedOfferId + " found"));
+        offerToAccept.setStatus(ACCEPTED);
+        offerRepository.save(offerToAccept);
+
+        if (!offerIdList.isEmpty()) {
+            List<Offer> offersToReject = offerRepository.findAllById(offerIdList);
+            for (Offer offer : offersToReject) {
+                offer.setStatus(REJECTED);
+            }
+            offerRepository.saveAll(offersToReject);
+
+            booking.setOfferIds(String.valueOf(acceptedOfferId));
+            bookingRepository.save(booking);
+            logger.info("Updated {} other offers to REJECTED status, updated offerIds to: {}", offerIdList.size(), booking.getOfferIds());
         }
     }
 

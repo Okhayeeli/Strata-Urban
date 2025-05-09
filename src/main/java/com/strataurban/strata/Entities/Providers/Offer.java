@@ -1,5 +1,6 @@
 package com.strataurban.strata.Entities.Providers;
 
+import com.strataurban.strata.Enums.OfferStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,6 +35,24 @@ public class Offer implements Serializable {
 
     @Column
     private LocalDateTime createdDate;
+
+    @Enumerated(EnumType.STRING)
+    private OfferStatus status;
+
+    @Column
+    private LocalDateTime validUntil; // Optional expiration date for the offer
+
+    @Column
+    private Double discountPercentage; // Optional discount (e.g., 10.0 for 10%)
+
+    @Column
+    private String websiteLink; // Optional link to provider's website
+
+    @Column
+    private String estimatedDuration; // Optional estimated service duration (e.g., "2 hours")
+
+    @Column(length = 500)
+    private String specialConditions; // Optional special terms or conditions
 
     @PrePersist
     protected void onCreate() {

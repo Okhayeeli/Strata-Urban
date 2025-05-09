@@ -1,10 +1,7 @@
 package com.strataurban.strata.RestControllers.v2;
 
-import com.strataurban.strata.DTOs.v2.AcceptOfferRequest;
 import com.strataurban.strata.DTOs.v2.ContactRequest;
-import com.strataurban.strata.DTOs.v2.CreateOfferRequest;
 import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
-import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumPriority;

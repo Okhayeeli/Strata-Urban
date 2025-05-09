@@ -56,7 +56,9 @@ public class OfferRestController {
             @PathVariable Long bookingId,
             @RequestBody CreateOfferRequest request) {
         logger.info("Creating offer for booking ID: {}", bookingId);
-        Offer offer = offerService.createOffer(bookingId, request.getProviderId(), request.getPrice(), request.getNotes());
+        Offer offer = offerService.createOffer(bookingId, request.getProviderId(), request.getPrice(),
+                request.getNotes(), request.getValidUntil(), request.getDiscountPercentage(), request.getWebsiteLink(),
+                request.getEstimatedDuration(), request.getSpecialConditions());
         logger.info("Created offer: {}", offer);
         return ResponseEntity.ok(offer);
     }
@@ -100,7 +102,9 @@ public class OfferRestController {
             @PathVariable Long offerId,
             @RequestBody UpdateOfferRequest request) {
         logger.info("Updating offer with ID: {}", offerId);
-        Offer updatedOffer = offerService.updateOffer(offerId, request.getPrice(), request.getNotes());
+        Offer updatedOffer = offerService.updateOffer(request.getProviderId(), request.getPrice(), request.getNotes(),
+                request.getValidUntil(), request.getDiscountPercentage(), request.getWebsiteLink(),
+                request.getEstimatedDuration(), request.getSpecialConditions());
         logger.info("Updated offer: {}", updatedOffer);
         return ResponseEntity.ok(updatedOffer);
     }

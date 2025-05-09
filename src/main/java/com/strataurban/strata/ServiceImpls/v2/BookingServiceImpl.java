@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.strataurban.strata.Enums.OfferStatus.EXPIRED;
+
 @Slf4j
 @Service
 public class BookingServiceImpl implements BookingService {
@@ -166,7 +168,6 @@ public class BookingServiceImpl implements BookingService {
                 destinationCountry, destinationState, destinationCity, destinationStreet, destinationLga, destinationTown,
                 serviceStartDate, serviceEndDate, createdStartDate, createdEndDate, priority, pageable);
     }
-
     @Override
     @Transactional
     public BookingRequest acceptOffer(Long bookingId, Long offerId) {
@@ -184,8 +185,18 @@ public class BookingServiceImpl implements BookingService {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
 
-        // Delete other offers
-        offerService.deleteOtherOffers(bookingId, offerId);
+        // Check if offer is expired
+        if (offer.getStatus() == EXPIRED) {
+            throw new RuntimeException("Offer ID: " + offerId + " has expired");
+        }
+        if (offer.getValidUntil() != null && offer.getValidUntil().isBefore(LocalDateTime.now())) {
+            offer.setStatus(EXPIRED);
+            offerRepository.save(offer);
+            throw new RuntimeException("Offer ID: " + offerId + " has expired");
+        }
+
+        // Reject other offers
+        offerService.disableOtherOffers(bookingId, offerId);
 
         // Update booking
         booking.setProviderId(offer.getProviderId());
@@ -194,6 +205,7 @@ public class BookingServiceImpl implements BookingService {
         log.info("Accepted offer for booking: {}", updatedBooking);
         return updatedBooking;
     }
+
 
     @Override
     public List<BookingRequest> getAllBookings() {
