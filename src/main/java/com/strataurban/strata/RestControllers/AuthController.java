@@ -4,7 +4,7 @@ import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
-import com.strataurban.strata.Security.jwtConfigs.JwtConfig;
+import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
 import com.strataurban.strata.Services.v2.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,7 +27,7 @@ public class AuthController {
     private BlacklistedTokenRepository blacklistedTokenRepository;
 
     @Autowired
-    private JwtConfig jwtUtil;
+    private JwtUtil jwtUtil;
 
     @Autowired
     private UserRepository userRepository;

@@ -72,4 +72,6 @@ public interface BookingService {
     List<BookingRequest> getAllBookings();
 
     BookingRequestResponseDTO mapToResponseDTO(BookingRequest entity);
+
+    Long getClientIdByUsername(String username);
 }

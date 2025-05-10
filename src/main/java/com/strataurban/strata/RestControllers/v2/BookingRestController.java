@@ -22,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -49,9 +51,11 @@ public class BookingRestController {
                     content = @Content(schema = @Schema(implementation = BookingRequestResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Invalid booking request")
     })
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<BookingRequestResponseDTO> createBooking(
-            @Valid @RequestBody BookingRequestRequestDTO bookingRequestDTO,
-            @Parameter(description = "Client ID", example = "1") @RequestParam Long clientId) {
+            @Valid @RequestBody BookingRequestRequestDTO bookingRequestDTO) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long clientId = bookingService.getClientIdByUsername(username);
         BookingRequest booking = bookingService.createBooking(bookingRequestDTO, clientId);
         BookingRequestResponseDTO responseDTO = bookingService.mapToResponseDTO(booking);
         return ResponseEntity.ok(responseDTO);
@@ -68,6 +72,8 @@ public class BookingRestController {
     public ResponseEntity<List<BookingRequest>> getClientBookings(@PathVariable Long clientId) {
         return ResponseEntity.ok(bookingService.getClientBookings(clientId));
     }
+
+
 
     @GetMapping("/provider/{providerId}")
     @Operation(summary = "Get all bookings for a provider", description = "Fetches all bookings for a specific provider")
@@ -86,12 +92,14 @@ public class BookingRestController {
                     content = @Content(schema = @Schema(implementation = BookingRequestResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Booking not found")
     })
+    @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN', 'PROVIDER')")
     public ResponseEntity<BookingRequestResponseDTO> getBookingById(
             @Parameter(description = "Booking ID", example = "1") @PathVariable Long id) {
         BookingRequest booking = bookingService.getBookingById(id);
         BookingRequestResponseDTO responseDTO = bookingService.mapToResponseDTO(booking);
         return ResponseEntity.ok(responseDTO);
     }
+
 
     @PutMapping("/{id}/status")
     @Operation(summary = "Update booking status", description = "Update the status of a specific booking")
@@ -100,6 +108,7 @@ public class BookingRestController {
                     content = @Content(schema = @Schema(implementation = BookingRequestResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Booking not found")
     })
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROVIDER')")
     public ResponseEntity<BookingRequestResponseDTO> updateBookingStatus(
             @Parameter(description = "Booking ID", example = "1") @PathVariable Long id,
             @Parameter(description = "New booking status", example = "ACCEPTED") @RequestBody BookingStatus status) {
@@ -107,6 +116,8 @@ public class BookingRestController {
         BookingRequestResponseDTO responseDTO = bookingService.mapToResponseDTO(booking);
         return ResponseEntity.ok(responseDTO);
     }
+
+
 
     @PostMapping("/{id}/confirm")
     @Operation(summary = "Confirm a booking", description = "Allows a provider to confirm a booking")
@@ -119,6 +130,8 @@ public class BookingRestController {
         return ResponseEntity.ok(bookingService.confirmBooking(id));
     }
 
+
+    //TODO AUTHENTICATION
     @PostMapping("/{id}/cancel")
     @Operation(summary = "Cancel a booking", description = "Allows a client or provider to cancel a booking")
     @ApiResponses(value = {
@@ -130,6 +143,9 @@ public class BookingRestController {
         return ResponseEntity.ok(bookingService.cancelBooking(id));
     }
 
+
+
+    //TODO AUTHENTICATION
     @PostMapping("/{id}/assign-driver")
     @Operation(summary = "Assign a driver to a booking", description = "Allows a provider to assign a driver to a booking")
     @ApiResponses(value = {
@@ -143,6 +159,9 @@ public class BookingRestController {
         return ResponseEntity.ok(bookingService.assignDriver(id, request));
     }
 
+
+
+    //TODO Set Provider only to view this
     @GetMapping("/provider/{providerId}/status")
     @Operation(summary = "Get bookings by status for a provider", description = "Fetches bookings for a provider by status")
     @ApiResponses(value = {
@@ -154,6 +173,7 @@ public class BookingRestController {
             @RequestParam BookingStatus status) {
         return ResponseEntity.ok(bookingService.getProviderBookingsByStatus(providerId, status));
     }
+
 
     @PostMapping("/{id}/contact")
     @Operation(summary = "Contact a party", description = "Initiates contact with a party involved in a booking")
@@ -167,6 +187,7 @@ public class BookingRestController {
         bookingService.contactParty(id, request);
         return ResponseEntity.ok().build();
     }
+
 
     @GetMapping("/client/{clientId}/history")
     @Operation(summary = "Get booking history for a client", description = "Fetches booking history for a specific client")
@@ -195,6 +216,7 @@ public class BookingRestController {
             @ApiResponse(responseCode = "200", description = "Paginated list of pending bookings",
                     content = @Content(schema = @Schema(implementation = Page.class)))
     })
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROVIDER')")
     public ResponseEntity<Page<BookingRequestResponseDTO>> getPendingBookingsWithFilters(
             @Parameter(description = "Pick-up location", example = "Lagos", required = false) @RequestParam(required = false) String pickUpLocation,
             @Parameter(description = "Destination", example = "Abuja", required = false) @RequestParam(required = false) String destination,
@@ -235,12 +257,15 @@ public class BookingRestController {
         Page<BookingRequestResponseDTO> responseDTOs = bookings.map(bookingService::mapToResponseDTO);
         return ResponseEntity.ok(responseDTOs);
     }
+
+
     @GetMapping
     @Operation(summary = "Get all bookings", description = "Retrieve a list of all bookings")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List of bookings",
                     content = @Content(schema = @Schema(implementation = BookingRequestResponseDTO.class)))
     })
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<BookingRequestResponseDTO>> getAllBookings() {
         List<BookingRequest> bookings = bookingService.getAllBookings();
         List<BookingRequestResponseDTO> responseDTOs = bookings.stream()

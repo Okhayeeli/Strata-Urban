@@ -5,22 +5,18 @@ import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class InitialDataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;
-//    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
-//    @Autowired
-//    public InitialDataLoader(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-//        this.userRepository = userRepository;
-//        this.passwordEncoder = passwordEncoder;
-//    }
-
-    public InitialDataLoader(UserRepository userRepository) {
+    public InitialDataLoader(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -31,8 +27,8 @@ public class InitialDataLoader implements CommandLineRunner {
             admin.setLastName("Admin");
             admin.setEmail("admin@strataurban.com");
             admin.setUsername("admin");
-//            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setPassword("cassillas1nengi!");
+            admin.setPassword(passwordEncoder.encode("cassillas1nengi!"));
+//            admin.setPassword("cassillas1nengi!");
             admin.setPhone("+1234567890");
             admin.setRoles(EnumRoles.ADMIN);
             admin.setEmailVerified(true);

@@ -3,6 +3,7 @@ package com.strataurban.strata.Security.jwtConfigs;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -11,8 +12,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Component
-public class JwtConfig {
+public class JwtUtil {
 
     @Value("${jwt.secret}")
     private String secret;
@@ -26,6 +28,7 @@ public class JwtConfig {
     public String generateAccessToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
+//        log.info("Generated token: " + token);
         return createToken(claims, username, accessTokenExpirationMs);
     }
 

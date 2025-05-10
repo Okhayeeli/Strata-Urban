@@ -5,12 +5,15 @@ import com.strataurban.strata.Entities.Passengers.Client;
 import com.strataurban.strata.Entities.Providers.Provider;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.EnumRoles;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.List;
 
 import java.util.List;
 
-public interface UserService {
+public interface UserService extends UserDetailsService {
 
     // Register a Client
     Client registerClient(ClientRegistrationRequest request);
@@ -53,4 +56,6 @@ public interface UserService {
 
     //User logout
     void logout(String refreshToken);
+
+    UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException;
 }

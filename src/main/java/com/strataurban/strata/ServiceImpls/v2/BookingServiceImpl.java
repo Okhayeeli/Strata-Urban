@@ -6,10 +6,12 @@ import com.strataurban.strata.DTOs.v2.ContactRequest;
 import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
+import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumPriority;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
+import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Services.v2.BookingService;
 import com.strataurban.strata.Services.v2.OfferService;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +41,14 @@ public class BookingServiceImpl implements BookingService {
     private final OfferService offerService;
 
     @Autowired
-    public BookingServiceImpl(BookingRepository bookingRepository, OfferRepository offerRepository, OfferService offerService) {
+    private final UserRepository userRepository;
+
+    @Autowired
+    public BookingServiceImpl(BookingRepository bookingRepository, OfferRepository offerRepository, OfferService offerService, UserRepository userRepository) {
         this.bookingRepository = bookingRepository;
         this.offerRepository = offerRepository;
         this.offerService = offerService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -491,7 +497,14 @@ public class BookingServiceImpl implements BookingService {
             return dto;
         }
 
-        private String determineTransportCategory(BookingRequest entity) {
+    @Override
+    public Long getClientIdByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .map(User::getId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+    }
+
+    private String determineTransportCategory(BookingRequest entity) {
             if (Boolean.TRUE.equals(entity.getIsPassenger())) return "Passenger";
             if (Boolean.TRUE.equals(entity.getIsCargo())) return "Cargo";
             if (Boolean.TRUE.equals(entity.getIsMedical())) return "Medical";

@@ -1,6 +1,7 @@
 package com.strataurban.strata.ServiceImpls.v2;
 
 import com.strataurban.strata.DTOs.v2.*;
+import com.strataurban.strata.Entities.CustomUserDetails;
 import com.strataurban.strata.Entities.Generics.BlacklistedToken;
 import com.strataurban.strata.Entities.Passengers.Client;
 import com.strataurban.strata.Entities.Providers.Provider;
@@ -9,8 +10,12 @@ import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Repositories.v2.ServiceAreaRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
-import com.strataurban.strata.Security.jwtConfigs.JwtConfig;
+import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
 import com.strataurban.strata.Services.v2.UserService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,15 +24,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import com.strataurban.strata.DTOs.v2.*;
+
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
 
-
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -36,7 +40,7 @@ public class UserServiceImpl implements UserService {
     private final BlacklistedTokenRepository blacklistedTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final JwtConfig jwtUtil;
+    private final JwtUtil jwtUtil;
 
     @Autowired
     public UserServiceImpl(
@@ -44,8 +48,8 @@ public class UserServiceImpl implements UserService {
             ServiceAreaRepository serviceAreaRepository,
             BlacklistedTokenRepository blacklistedTokenRepository,
             PasswordEncoder passwordEncoder,
-            AuthenticationManager authenticationManager,
-            JwtConfig jwtUtil) {
+            @Lazy AuthenticationManager authenticationManager,
+            JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.serviceAreaRepository = serviceAreaRepository;
         this.blacklistedTokenRepository = blacklistedTokenRepository;
@@ -268,4 +272,15 @@ public class UserServiceImpl implements UserService {
     public List<User> getUsersByRole(EnumRoles role) {
         return userRepository.findByRoles(role);
     }
+
+    @Override
+    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
+        log.info("Loading user: {}", usernameOrEmail);
+
+        User user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email: " + usernameOrEmail));
+        log.info("Found user: username={}, password={}, roles={}", user.getUsername(), user.getPassword(), user.getRoles());
+        return new CustomUserDetails(user);
+    }
+
 }
