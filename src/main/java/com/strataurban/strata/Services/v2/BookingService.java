@@ -1,5 +1,7 @@
 package com.strataurban.strata.Services.v2;
 
+import com.strataurban.strata.DTOs.v2.BookingRequestRequestDTO;
+import com.strataurban.strata.DTOs.v2.BookingRequestResponseDTO;
 import com.strataurban.strata.DTOs.v2.ContactRequest;
 import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
@@ -15,7 +17,7 @@ import java.util.List;
 public interface BookingService {
 
     // Create a new booking request
-    BookingRequest createBooking(BookingRequest bookingRequest, Long clientId);
+    BookingRequest createBooking(BookingRequestRequestDTO bookingRequest, Long clientId);
 
     // Get all bookings for a client
     List<BookingRequest> getClientBookings(Long clientId);
@@ -55,14 +57,19 @@ public interface BookingService {
     BookingRequest claimBooking(Long id, Long providerId);
 
     Page<BookingRequest> getPendingBookingsWithFilters(
-            String pickupCountry, String pickupState, String pickupCity, String pickupStreet,
-            String pickupLga, String pickupTown, String destinationCountry, String destinationState,
-            String destinationCity, String destinationStreet, String destinationLga, String destinationTown,
+            String pickUpLocation, String destination, String additionalStops,
             LocalDateTime serviceStartDate, LocalDateTime serviceEndDate,
-            LocalDateTime createdStartDate, LocalDateTime createdEndDate, EnumPriority priority,
+            LocalDateTime pickupStartDateTime, LocalDateTime pickupEndDateTime,
+            LocalDateTime createdStartDate, LocalDateTime createdEndDate,
+            EnumPriority priority, Boolean isPassenger, Integer numberOfPassengers,
+            String eventType, Boolean isCargo, Double estimatedWeightKg, String supplyType,
+            Boolean isMedical, String medicalItemType, Boolean isFurniture, String furnitureType,
+            Boolean isFood, String foodType, Boolean isEquipment, String equipmentItem,
             Pageable pageable);
 
     BookingRequest acceptOffer(Long bookingId, Long offerId);
 
     List<BookingRequest> getAllBookings();
+
+    BookingRequestResponseDTO mapToResponseDTO(BookingRequest entity);
 }
