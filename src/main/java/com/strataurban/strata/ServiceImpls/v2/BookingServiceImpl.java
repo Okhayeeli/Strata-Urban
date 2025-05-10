@@ -1,13 +1,13 @@
 package com.strataurban.strata.ServiceImpls.v2;
 
+import com.strataurban.strata.DTOs.v2.BookingRequestRequestDTO;
+import com.strataurban.strata.DTOs.v2.BookingRequestResponseDTO;
 import com.strataurban.strata.DTOs.v2.ContactRequest;
 import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumPriority;
-import com.strataurban.strata.Enums.Status;
-import com.strataurban.strata.Enums.TripStatus;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Services.v2.BookingService;
@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static com.strataurban.strata.Enums.OfferStatus.EXPIRED;
 
@@ -47,15 +46,17 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public BookingRequest createBooking(BookingRequest bookingRequest, Long clientId) {
+    public BookingRequest createBooking(BookingRequestRequestDTO bookingRequest, Long clientId) {
         // Set the client ID (assuming BookingRequest has a clientId field)
         // Note: You might need to add a clientId field to the BookingRequest entity
         // For now, we'll assume the clientId is part of additionalNotes or metadata
-        bookingRequest.setClientId(clientId);
+
+        BookingRequest booking = mapToEntity(bookingRequest);
+        booking.setClientId(clientId);
 
         //TODO After Authentication
-        bookingRequest.setStatus(BookingStatus.PENDING); // Default status
-        return bookingRepository.save(bookingRequest);
+        booking.setStatus(BookingStatus.PENDING); // Default status
+        return bookingRepository.save(booking);
     }
 
     @Override
@@ -70,8 +71,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingRequest getBookingById(Long id) {
-        return bookingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + id));
+        return bookingRepository.findById(id).orElseThrow(() -> new RuntimeException("Booking not found with ID: " + id));
     }
 
     @Override
@@ -154,20 +154,30 @@ public class BookingServiceImpl implements BookingService {
     }
 
 
-
     @Override
     public Page<BookingRequest> getPendingBookingsWithFilters(
-            String pickupCountry, String pickupState, String pickupCity, String pickupStreet,
-            String pickupLga, String pickupTown, String destinationCountry, String destinationState,
-            String destinationCity, String destinationStreet, String destinationLga, String destinationTown,
+            String pickUpLocation, String destination, String additionalStops,
             LocalDateTime serviceStartDate, LocalDateTime serviceEndDate,
-            LocalDateTime createdStartDate, LocalDateTime createdEndDate, EnumPriority priority,
+            LocalDateTime pickupStartDateTime, LocalDateTime pickupEndDateTime,
+            LocalDateTime createdStartDate, LocalDateTime createdEndDate,
+            EnumPriority priority, Boolean isPassenger, Integer numberOfPassengers,
+            String eventType, Boolean isCargo, Double estimatedWeightKg, String supplyType,
+            Boolean isMedical, String medicalItemType, Boolean isFurniture, String furnitureType,
+            Boolean isFood, String foodType, Boolean isEquipment, String equipmentItem,
             Pageable pageable) {
         return bookingRepository.findByStatusAndFilters(
-                BookingStatus.PENDING, pickupCountry, pickupState, pickupCity, pickupStreet, pickupLga, pickupTown,
-                destinationCountry, destinationState, destinationCity, destinationStreet, destinationLga, destinationTown,
-                serviceStartDate, serviceEndDate, createdStartDate, createdEndDate, priority, pageable);
+                BookingStatus.PENDING, pickUpLocation, destination, additionalStops,
+                serviceStartDate, serviceEndDate, pickupStartDateTime, pickupEndDateTime,
+                createdStartDate, createdEndDate, priority,
+                isPassenger, numberOfPassengers, eventType,
+                isCargo, estimatedWeightKg, supplyType,
+                isMedical, medicalItemType,
+                isFurniture, furnitureType,
+                isFood, foodType,
+                isEquipment, equipmentItem,
+                pageable);
     }
+
     @Override
     @Transactional
     public BookingRequest acceptOffer(Long bookingId, Long offerId) {
@@ -182,8 +192,7 @@ public class BookingServiceImpl implements BookingService {
             throw new RuntimeException("Offer ID: " + offerId + " is not associated with booking ID: " + bookingId);
         }
 
-        Offer offer = offerRepository.findById(offerId)
-                .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
+        Offer offer = offerRepository.findById(offerId).orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
 
         // Check if offer is expired
         if (offer.getStatus() == EXPIRED) {
@@ -207,8 +216,288 @@ public class BookingServiceImpl implements BookingService {
     }
 
 
+    public BookingRequest mapToEntity(BookingRequestRequestDTO dto) {
+        BookingRequest entity = new BookingRequest();
+
+        // Map request_details
+        BookingRequestRequestDTO.RequestDetails requestDetails = dto.getBookingRequest().getRequestDetails();
+        entity.setServiceDate(requestDetails.getServiceDate());
+        entity.setPickupDateTime(requestDetails.getPickUpDateTime());
+        entity.setDropOffDateTime(requestDetails.getDropOffDateTime());
+        entity.setTimingFlexible(requestDetails.getTimingFlexible());
+        entity.setIsReturnTrip(requestDetails.getIsReturnTrip());
+        entity.setAdditionalNotes(requestDetails.getAdditionalNotes());
+        entity.setPriority(requestDetails.getUrgencyLevel() != null ? EnumPriority.valueOf(requestDetails.getUrgencyLevel()) : null);
+
+        // Map locations
+        BookingRequestRequestDTO.Locations locations = dto.getBookingRequest().getLocations();
+        entity.setPickUpLocation(locations.getPickUpLocation());
+        entity.setDestination(locations.getDestination());
+        entity.setHasMultipleStops(locations.getHasMultipleStops());
+        entity.setAdditionalStops(locations.getAdditionalStops() != null ? String.join(",", locations.getAdditionalStops()) : null);
+
+        // Map contact_information (assuming stored separately or derived from clientId)
+        BookingRequestRequestDTO.ContactInformation contactInfo = dto.getBookingRequest().getContactInformation();
+        // Assuming clientId is set elsewhere based on authentication
+        // entity.setClientId(fetchClientIdFromContactInfo(contactInfo));
+
+        // Map category_specific_details
+        BookingRequestRequestDTO.CategorySpecificDetails categoryDetails = dto.getBookingRequest().getCategorySpecificDetails();
+
+        // Passenger Details
+        if (categoryDetails.getPassengerDetails() != null) {
+            entity.setIsPassenger(true);
+            BookingRequestRequestDTO.PassengerDetails passenger = categoryDetails.getPassengerDetails();
+            entity.setEventType(passenger.getEventType());
+            entity.setNumberOfPassengers(passenger.getNumberOfPassengers());
+            entity.setLuggageNeeded(passenger.getLuggageNeeded());
+            entity.setLuggageDetails(passenger.getLuggageDetails());
+            entity.setVehiclePreferenceType(passenger.getVehiclePreferenceType());
+
+            // Special Requests
+            if (passenger.getSpecialRequests() != null) {
+                entity.setExtraAmenitiesRequired(true);
+//                entity.setAmenities(passenger.getSpecialRequests().getAmenities());
+                entity.setOtherRequests(passenger.getSpecialRequests().getOtherRequests());
+                // Set individual amenities flags if needed
+                if (passenger.getSpecialRequests().getAmenities() != null) {
+                    entity.setAirConditioningRequired(passenger.getSpecialRequests().getAmenities().contains("Air conditioning"));
+                    entity.setWiFiRequired(passenger.getSpecialRequests().getAmenities().contains("Wi-Fi"));
+                    entity.setWheelChairAccessibility(passenger.getSpecialRequests().getAmenities().contains("Wheelchair accessibility"));
+                    entity.setPowerOutletsRequired(passenger.getSpecialRequests().getAmenities().contains("Power outlets"));
+                    entity.setMusicAndSoundSystemsRequired(passenger.getSpecialRequests().getAmenities().contains("Music and sound systems"));
+                    entity.setTintedWindowsRequired(passenger.getSpecialRequests().getAmenities().contains("Tinted windows"));
+                }
+            } else {
+                entity.setExtraAmenitiesRequired(false);
+            }
+
+            // Waiting Time Details
+            if (passenger.getWaitingTimeDetails() != null) {
+                entity.setWaitOnSite(passenger.getWaitingTimeDetails().getWaitOnSite());
+                entity.setAdditionalStopsDetails(passenger.getWaitingTimeDetails().getAdditionalStopsDetails());
+            }
+
+            // Budget and Pricing
+            if (passenger.getBudgetAndPricing() != null) {
+                entity.setBudgetRange(passenger.getBudgetAndPricing().getBudgetRange());
+            }
+
+            // Quote liamentation Preferences
+            if (passenger.getQuoteComparisonPreferences() != null) {
+                entity.setPreferredFeatures(passenger.getQuoteComparisonPreferences().getPreferredFeatures() != null ? String.join(",", passenger.getQuoteComparisonPreferences().getPreferredFeatures()) : null);
+            }
+        } else {
+            entity.setIsPassenger(false);
+        }
+
+        // Cargo Details
+        if (categoryDetails.getCargoDetails() != null) {
+            entity.setIsCargo(true);
+            BookingRequestRequestDTO.CargoDetails cargo = categoryDetails.getCargoDetails();
+            entity.setSupplyType(cargo.getSupplyType());
+            entity.setEstimatedWeightKg(cargo.getEstimatedWeightKg());
+            entity.setVolumeCubicMeters(cargo.getVolumeCubicMeters());
+            entity.setPackageSize(cargo.getPackageSize());
+            entity.setMaterialType(cargo.getMaterialType());
+            entity.setNeedsFragileHandling(cargo.getNeedsFragileHandling());
+            entity.setEstimatedValue(cargo.getEstimatedValue());
+            entity.setHandlingInstruction(cargo.getHandlingInstruction());
+            entity.setOffloadingHelpRequired(cargo.getOffloadingHelpRequired());
+        } else {
+            entity.setIsCargo(false);
+        }
+
+        // Medical Details
+        if (categoryDetails.getMedicalDetails() != null) {
+            entity.setIsMedical(true);
+            BookingRequestRequestDTO.MedicalDetails medical = categoryDetails.getMedicalDetails();
+            entity.setMedicalItemType(medical.getMedicalItemType());
+            entity.setRefrigerationRequiredMedical(medical.getRefrigerationRequired());
+            entity.setNeedsFragileHandlingMedical(medical.getNeedsFragileHandling());
+        } else {
+            entity.setIsMedical(false);
+        }
+
+        // Furniture Details
+        if (categoryDetails.getFurnitureDetails() != null) {
+            entity.setIsFurniture(true);
+            BookingRequestRequestDTO.FurnitureDetails furniture = categoryDetails.getFurnitureDetails();
+            entity.setFurnitureType(furniture.getFurnitureType());
+            entity.setRequiresDisassembly(furniture.getRequiresDisassembly());
+            entity.setHandlingInstructionFurniture(furniture.getHandlingInstruction());
+            entity.setOffloadingHelpRequiredFurniture(furniture.getOffloadingHelpRequired());
+        } else {
+            entity.setIsFurniture(false);
+        }
+
+        // Food Details
+        if (categoryDetails.getFoodDetails() != null) {
+            entity.setIsFood(true);
+            BookingRequestRequestDTO.FoodDetails food = categoryDetails.getFoodDetails();
+            entity.setFoodType(food.getFoodType());
+            entity.setRequiresHotBox(food.getRequiresHotBox());
+            entity.setRefrigerationRequiredFood(food.getRefrigerationRequired());
+            entity.setDietaryRestriction(food.getDietaryRestriction());
+            entity.setEstimatedWeightKgFood(food.getEstimatedWeightKg());
+            entity.setPackageSizeFood(food.getPackageSize());
+        } else {
+            entity.setIsFood(false);
+        }
+
+        // Equipment Details
+        if (categoryDetails.getEquipmentDetails() != null) {
+            entity.setIsEquipment(true);
+            BookingRequestRequestDTO.EquipmentDetails equipment = categoryDetails.getEquipmentDetails();
+            entity.setEquipmentList(equipment.getEquipmentList());
+            entity.setSetupRequired(equipment.getSetupRequired());
+        } else {
+            entity.setIsEquipment(false);
+        }
+
+        return entity;
+    }
+
+
     @Override
     public List<BookingRequest> getAllBookings() {
         return bookingRepository.findAll();
     }
+
+
+
+
+        public BookingRequestResponseDTO mapToResponseDTO(BookingRequest entity) {
+            BookingRequestResponseDTO dto = new BookingRequestResponseDTO();
+            BookingRequestResponseDTO.BookingRequestDetails bookingDetails = new BookingRequestResponseDTO.BookingRequestDetails();
+            BookingRequestResponseDTO.RequestDetails requestDetails = new BookingRequestResponseDTO.RequestDetails();
+            BookingRequestResponseDTO.Locations locations = new BookingRequestResponseDTO.Locations();
+            BookingRequestResponseDTO.ContactInformation contactInfo = new BookingRequestResponseDTO.ContactInformation();
+            BookingRequestResponseDTO.CategorySpecificDetails categoryDetails = new BookingRequestResponseDTO.CategorySpecificDetails();
+
+            // Map Request Details
+            requestDetails.setTransportCategory(determineTransportCategory(entity));
+            requestDetails.setUrgencyLevel(entity.getPriority() != null ? entity.getPriority().name() : null);
+            requestDetails.setServiceDate(entity.getServiceDate());
+            requestDetails.setPickUpDateTime(entity.getPickupDateTime());
+            requestDetails.setDropOffDateTime(entity.getDropOffDateTime());
+            requestDetails.setTimingFlexible(entity.getTimingFlexible());
+            requestDetails.setIsReturnTrip(entity.getIsReturnTrip());
+            requestDetails.setAdditionalNotes(entity.getAdditionalNotes());
+
+            // Map Locations
+            locations.setPickUpLocation(entity.getPickUpLocation());
+            locations.setDestination(entity.getDestination());
+            locations.setHasMultipleStops(entity.getHasMultipleStops());
+            locations.setAdditionalStops(entity.getAdditionalStops() != null ? List.of(entity.getAdditionalStops().split(",")) : null);
+
+            // Map Contact Information (Assuming these are derived from clientId or authentication)
+            contactInfo.setName("Placeholder Name"); // Replace with actual logic
+            contactInfo.setPhoneNumber("Placeholder Phone"); // Replace with actual logic
+            contactInfo.setEmailAddress("Placeholder Email"); // Replace with actual logic
+
+            // Map Category-Specific Details based on boolean flags
+            if (Boolean.TRUE.equals(entity.getIsPassenger())) {
+                BookingRequestResponseDTO.PassengerDetails passengerDetails = new BookingRequestResponseDTO.PassengerDetails();
+                passengerDetails.setEventType(entity.getEventType());
+                passengerDetails.setNumberOfPassengers(entity.getNumberOfPassengers());
+                passengerDetails.setLuggageNeeded(entity.getLuggageNeeded());
+                passengerDetails.setLuggageDetails(entity.getLuggageDetails());
+                passengerDetails.setVehiclePreferenceType(entity.getVehiclePreferenceType());
+
+                // Special Requests
+                if (Boolean.TRUE.equals(entity.getExtraAmenitiesRequired())) {
+                    BookingRequestResponseDTO.SpecialRequests specialRequests = new BookingRequestResponseDTO.SpecialRequests();
+//                    specialRequests.setAmenities(entity.getAmenities());
+                    specialRequests.setOtherRequests(entity.getOtherRequests());
+                    passengerDetails.setSpecialRequests(specialRequests);
+                }
+
+                // Waiting Time Details
+                BookingRequestResponseDTO.WaitingTimeDetails waitingTimeDetails = new BookingRequestResponseDTO.WaitingTimeDetails();
+                waitingTimeDetails.setWaitOnSite(entity.getWaitOnSite());
+                waitingTimeDetails.setAdditionalStopsDetails(entity.getAdditionalStopsDetails());
+                passengerDetails.setWaitingTimeDetails(waitingTimeDetails);
+
+                // Budget and Pricing
+                BookingRequestResponseDTO.BudgetAndPricing budgetAndPricing = new BookingRequestResponseDTO.BudgetAndPricing();
+                budgetAndPricing.setBudgetRange(entity.getBudgetRange());
+                passengerDetails.setBudgetAndPricing(budgetAndPricing);
+
+                // Quote Comparison Preferences
+                BookingRequestResponseDTO.QuoteComparisonPreferences quotePrefs = new BookingRequestResponseDTO.QuoteComparisonPreferences();
+                quotePrefs.setPreferredFeatures(entity.getPreferredFeatures() != null ? List.of(entity.getPreferredFeatures().split(",")) : null);
+                passengerDetails.setQuoteComparisonPreferences(quotePrefs);
+
+                categoryDetails.setPassengerDetails(passengerDetails);
+            }
+
+            if (Boolean.TRUE.equals(entity.getIsCargo())) {
+                BookingRequestResponseDTO.CargoDetails cargoDetails = new BookingRequestResponseDTO.CargoDetails();
+                cargoDetails.setSupplyType(entity.getSupplyType());
+                cargoDetails.setEstimatedWeightKg(entity.getEstimatedWeightKg());
+                cargoDetails.setVolumeCubicMeters(entity.getVolumeCubicMeters());
+                cargoDetails.setPackageSize(entity.getPackageSize());
+                cargoDetails.setMaterialType(entity.getMaterialType());
+                cargoDetails.setNeedsFragileHandling(entity.getNeedsFragileHandling());
+                cargoDetails.setEstimatedValue(entity.getEstimatedValue());
+                cargoDetails.setHandlingInstruction(entity.getHandlingInstruction());
+                cargoDetails.setOffloadingHelpRequired(entity.getOffloadingHelpRequired());
+                categoryDetails.setCargoDetails(cargoDetails);
+            }
+
+            if (Boolean.TRUE.equals(entity.getIsMedical())) {
+                BookingRequestResponseDTO.MedicalDetails medicalDetails = new BookingRequestResponseDTO.MedicalDetails();
+                medicalDetails.setMedicalItemType(entity.getMedicalItemType());
+                medicalDetails.setRefrigerationRequired(entity.getRefrigerationRequiredMedical());
+                medicalDetails.setNeedsFragileHandling(entity.getNeedsFragileHandlingMedical());
+                categoryDetails.setMedicalDetails(medicalDetails);
+            }
+
+            if (Boolean.TRUE.equals(entity.getIsFurniture())) {
+                BookingRequestResponseDTO.FurnitureDetails furnitureDetails = new BookingRequestResponseDTO.FurnitureDetails();
+                furnitureDetails.setFurnitureType(entity.getFurnitureType());
+                furnitureDetails.setRequiresDisassembly(entity.getRequiresDisassembly());
+                furnitureDetails.setHandlingInstruction(entity.getHandlingInstructionFurniture());
+                furnitureDetails.setOffloadingHelpRequired(entity.getOffloadingHelpRequiredFurniture());
+                categoryDetails.setFurnitureDetails(furnitureDetails);
+            }
+
+            if (Boolean.TRUE.equals(entity.getIsFood())) {
+                BookingRequestResponseDTO.FoodDetails foodDetails = new BookingRequestResponseDTO.FoodDetails();
+                foodDetails.setFoodType(entity.getFoodType());
+                foodDetails.setRequiresHotBox(entity.getRequiresHotBox());
+                foodDetails.setRefrigerationRequired(entity.getRefrigerationRequiredFood());
+                foodDetails.setDietaryRestriction(entity.getDietaryRestriction());
+                foodDetails.setEstimatedWeightKg(entity.getEstimatedWeightKgFood());
+                foodDetails.setPackageSize(entity.getPackageSizeFood());
+                categoryDetails.setFoodDetails(foodDetails);
+            }
+
+            if (Boolean.TRUE.equals(entity.getIsEquipment())) {
+                BookingRequestResponseDTO.EquipmentDetails equipmentDetails = new BookingRequestResponseDTO.EquipmentDetails();
+                equipmentDetails.setEquipmentList(entity.getEquipmentList());
+                equipmentDetails.setSetupRequired(entity.getSetupRequired());
+                categoryDetails.setEquipmentDetails(equipmentDetails);
+            }
+
+            // Set nested structures
+            bookingDetails.setRequestDetails(requestDetails);
+            bookingDetails.setLocations(locations);
+            bookingDetails.setContactInformation(contactInfo);
+            bookingDetails.setCategorySpecificDetails(categoryDetails);
+            dto.setBookingRequest(bookingDetails);
+
+            return dto;
+        }
+
+        private String determineTransportCategory(BookingRequest entity) {
+            if (Boolean.TRUE.equals(entity.getIsPassenger())) return "Passenger";
+            if (Boolean.TRUE.equals(entity.getIsCargo())) return "Cargo";
+            if (Boolean.TRUE.equals(entity.getIsMedical())) return "Medical";
+            if (Boolean.TRUE.equals(entity.getIsFurniture())) return "Furniture";
+            if (Boolean.TRUE.equals(entity.getIsFood())) return "Food";
+            if (Boolean.TRUE.equals(entity.getIsEquipment())) return "Equipment";
+            return null;
+        }
 }

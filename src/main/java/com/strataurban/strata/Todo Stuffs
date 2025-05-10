@@ -113,63 +113,125 @@ In the response for Booking Request, let it fetch the client details too
 
 For the security features you want to implement in your Spring application, here's a comprehensive list based on the approach you're aiming for:
 
+Core Authentication Features:
+User Authentication (JWT)
 
+Secure user login with username and password.
 
+JWT (JSON Web Token) based authentication with refresh tokens.
 
-Phase 1: Core Authentication (Immediate Security)
-JWT-Based User Authentication (integrate with your UserServiceImpl and replace mock token).
-Password Hashing (enable PasswordEncoder in UserServiceImpl).
-Token Expiration and Auto-Refresh (add refresh token logic).
-Role-Based Access Control (RBAC) (secure BookingRestController and UserController with @PreAuthorize).
+Token expiration and auto-refresh logic.
 
+Token invalidation on logout or password reset.
 
+Password Management
 
-Phase 2: Password and Account Security
-Password Strength Enforcement (validate DTOs).
-Temporary Account Lock (add failed login tracking).
-Token Invalidation on Logout/Password Reset (implement blacklist).
-Email Verification (enhance verifyEmail with tokens).
+Password hashing (e.g., BCrypt) for secure storage.
 
+Password strength enforcement (e.g., minimum length, special characters).
 
+Password reset via email with one-time links or codes.
 
-Phase 3: Advanced Authentication and Authorization
-Two-Factor Authentication (2FA) (optional for ADMIN, PROVIDER).
-Fine-Grained Permissions (ABAC) (context-based checks).
-Single-Session Enforcement (limit active sessions).
-Secure Token Storage (HTTP-only cookies).
+Password history check to prevent reuse.
 
+Temporary account lock after multiple failed login attempts (brute force protection).
 
+Password expiration policies (optional).
 
-Phase 4: Monitoring and Protections
-Audit Logging (track user actions).
-Security Alerts (notify failed logins).
-Rate Limiting and Throttling (prevent brute force).
-XSS and CSRF Protection (secure inputs and forms).
-CORS and Same-Origin Policies (restrict domains).
+Two-Factor Authentication (2FA)
 
+Optional second factor for high-security roles (e.g., ADMIN, PROVIDER).
 
+Support for SMS, email, or authenticator apps (TOTP).
 
-Phase 5: Advanced Features
-Password History Check (prevent reuse).
-Account Locking and Unlocking (admin controls).
-Account Recovery (password reset via email).
-Custom Security Annotations (e.g., @CurrentUser).
-Security Event Tracking (monitoring integration).
-Password Expiration Policies (optional).
-Scope-Based Authorization (OAuth2) (future-proofing).
-Starting Point
-Since you already have a User entity, UserRepository, UserServiceImpl,
-and a basic login method with a mock JWT, let’s start with
+Authorization Features:
+Role-Based Access Control (RBAC)
 
+Enum-based roles or database-driven roles (USER, ADMIN, CLIENT, PROVIDER, DEVELOPER, DRIVER, CUSTOMER_SERVICE).
 
+Method and class-level security annotations (@PreAuthorize, @RolesAllowed).
 
-Phase 1: Core Authentication. We’ll:
+Role hierarchy and context-based permissions.
 
-Replace the mock JWT in UserServiceImpl.login with proper JWT generation.
-Enable password hashing with PasswordEncoder.
-Configure Spring Security with JWT authentication.
-Secure BookingRestController with RBAC using @PreAuthorize.
-This builds on your existing code and addresses the immediate need to secure endpoints like POST /api/bookings.
+Integration with Spring Security's @Secured and @PreAuthorize.
 
-We’ll integrate with your User entity (which already has roles as EnumRoles) and ensure compatibility with Client,
-Provider, and internal user registration.
+Fine-Grained Permissions (ABAC - Attribute-Based Access Control)
+
+Granular permissions per role or user, based on custom attributes.
+
+Dynamic permissions based on request context, user attributes, and business rules.
+
+Scope-Based Authorization (Future OAuth2)
+
+OAuth2 scopes for fine-grained access control when you introduce external clients.
+
+Support for client-level permissions and API access levels.
+
+User Session and Security Management:
+Session Management
+
+Single-session enforcement (logout other sessions on login).
+
+Session timeout and inactivity detection.
+
+Secure token storage (e.g., HTTP-only, SameSite cookies).
+
+Token Management
+
+Blacklist/whitelist tokens on logout.
+
+Token invalidation on password reset or role change.
+
+JTI (JWT ID) for unique token tracking.
+
+Token introspection and verification against revocation lists.
+
+Account Security and Integrity:
+Account Locking and Unlocking
+
+Automatic account lock after multiple failed login attempts.
+
+Admin-controlled account lock and unlock.
+
+Security alerts for failed login attempts.
+
+Account Verification and Email Security
+
+Email verification for new accounts.
+
+Multi-step registration (verify email, complete profile).
+
+Account recovery with secure verification methods.
+
+Audit Logging and Monitoring
+
+Detailed logging of user activities (login, logout, password changes).
+
+Security event tracking (e.g., multiple failed login attempts).
+
+Integration with tools like ELK stack or AWS CloudWatch for audit trails.
+
+Miscellaneous Security Features:
+Rate Limiting and Throttling
+
+Prevent brute force and denial-of-service attacks.
+
+Limit login attempts per user/IP.
+
+Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF) Protection
+
+Use of CSRF tokens for critical operations.
+
+Sanitization of user inputs.
+
+CORS and Same-Origin Policies
+
+Restrict API access to trusted domains.
+
+Use of preflight checks for security.
+
+Custom Security Annotations
+
+Clean, reusable annotations for common security checks (e.g., @CurrentUser, @HasPermission).
+
+Separation of concerns for cleaner code.
