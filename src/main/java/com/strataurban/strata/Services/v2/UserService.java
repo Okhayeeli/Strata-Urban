@@ -22,7 +22,7 @@ public interface UserService {
     User registerInternalUser(AdminRegistrationRequest request);
 
     // User login
-    String login(LoginRequest loginRequest);
+//    String login(LoginRequest loginRequest);
 
     // Get user profile by ID
     User getUserById(Long id);
@@ -47,4 +47,10 @@ public interface UserService {
 
     // Get users by role
     List<User> getUsersByRole(EnumRoles role);
+
+    // User login
+    LoginResponse login(LoginRequest loginRequest);
+
+    //User logout
+    void logout(String refreshToken);
 }

@@ -6,13 +6,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Schema(description = "Request to authenticate a user")
-public class LoginRequest {
 
-    @Schema(description = "Username or email of the user", example = "john.doe@example.com")
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+@Data
+@Schema(description = "Request for user login")
+public class LoginRequest {
+    @Schema(description = "Username or email of the user", example = "john.doe")
     private String usernameOrEmail;
 
     @Schema(description = "Password of the user", example = "password123")

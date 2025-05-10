@@ -106,3 +106,70 @@ Allow users to export their data (e.g., bookings, trips).
 IP Whitelisting
 Allow Admins to restrict access to certain endpoints (e.g., admin APIs) to specific IP addresses.
 This list covers the major security functionalities you’ll need to consider for your e-hailing app. You can implement these gradually as your app grows, starting with the basics (e.g., secure login, RBAC) and adding more advanced features (e.g., MFA, audit logging) later.
+
+
+In the response for Booking Request, let it fetch the client details too
+
+
+For the security features you want to implement in your Spring application, here's a comprehensive list based on the approach you're aiming for:
+
+
+
+
+Phase 1: Core Authentication (Immediate Security)
+JWT-Based User Authentication (integrate with your UserServiceImpl and replace mock token).
+Password Hashing (enable PasswordEncoder in UserServiceImpl).
+Token Expiration and Auto-Refresh (add refresh token logic).
+Role-Based Access Control (RBAC) (secure BookingRestController and UserController with @PreAuthorize).
+
+
+
+Phase 2: Password and Account Security
+Password Strength Enforcement (validate DTOs).
+Temporary Account Lock (add failed login tracking).
+Token Invalidation on Logout/Password Reset (implement blacklist).
+Email Verification (enhance verifyEmail with tokens).
+
+
+
+Phase 3: Advanced Authentication and Authorization
+Two-Factor Authentication (2FA) (optional for ADMIN, PROVIDER).
+Fine-Grained Permissions (ABAC) (context-based checks).
+Single-Session Enforcement (limit active sessions).
+Secure Token Storage (HTTP-only cookies).
+
+
+
+Phase 4: Monitoring and Protections
+Audit Logging (track user actions).
+Security Alerts (notify failed logins).
+Rate Limiting and Throttling (prevent brute force).
+XSS and CSRF Protection (secure inputs and forms).
+CORS and Same-Origin Policies (restrict domains).
+
+
+
+Phase 5: Advanced Features
+Password History Check (prevent reuse).
+Account Locking and Unlocking (admin controls).
+Account Recovery (password reset via email).
+Custom Security Annotations (e.g., @CurrentUser).
+Security Event Tracking (monitoring integration).
+Password Expiration Policies (optional).
+Scope-Based Authorization (OAuth2) (future-proofing).
+Starting Point
+Since you already have a User entity, UserRepository, UserServiceImpl,
+and a basic login method with a mock JWT, let’s start with
+
+
+
+Phase 1: Core Authentication. We’ll:
+
+Replace the mock JWT in UserServiceImpl.login with proper JWT generation.
+Enable password hashing with PasswordEncoder.
+Configure Spring Security with JWT authentication.
+Secure BookingRestController with RBAC using @PreAuthorize.
+This builds on your existing code and addresses the immediate need to secure endpoints like POST /api/bookings.
+
+We’ll integrate with your User entity (which already has roles as EnumRoles) and ensure compatibility with Client,
+Provider, and internal user registration.

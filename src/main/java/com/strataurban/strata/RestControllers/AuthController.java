@@ -1,123 +1,108 @@
-//package com.strataurban.strata.RestControllers;
-//
-//import com.strataurban.strata.Entities.Providers.Supplier;
-//import com.strataurban.strata.Entities.User;
-//import com.strataurban.strata.DTOs.*;
-//import com.strataurban.strata.Enums.EnumRoles;
-//import com.strataurban.strata.Security.jwtConfigs.JwtService;
-//import com.strataurban.strata.Services.*;
-//import io.swagger.v3.oas.annotations.tags.Tag;
-//import lombok.extern.slf4j.Slf4j;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.http.HttpStatus;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.security.authentication.AuthenticationManager;
-//import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-//import org.springframework.security.core.Authentication;
-//import org.springframework.security.core.context.SecurityContextHolder;
-//import org.springframework.web.bind.annotation.*;
-//
-//
-//import java.util.HashMap;
-//import java.util.Map;
-//
-//
-//@Slf4j
-//@RestController
-//@RequestMapping("/api/auth")
-//@Tag(name = "User Controller", description = "User management endpoints")
-//public class AuthController {
-//    private final AuthenticationManager authenticationManager;
-//    private final UserService userService;
-//    private final JwtService jwtService;
-//
-//    @Autowired
-//    private SupplierService supplierService;
-//
-//    public AuthController(AuthenticationManager authenticationManager,
-//                          UserService userService,
-//                          SupplierService supplierService,
-//                          JwtService jwtService) {
-//        this.authenticationManager = authenticationManager;
-//        this.userService = userService;
-//        this.supplierService = supplierService;
-//        this.jwtService = jwtService;
-//    }
-//
-//    @PostMapping("/signup")
-//    public ResponseEntity<?> registerUser(@RequestBody User user) {
-//        User registeredUser = userService.registerUser(user);
-//        return ResponseEntity.ok(registeredUser);
-//    }
-//
-////
-//    @PostMapping("/register")
-//    public ResponseEntity<?> registerSupplier(@RequestBody User supplier){
-//        supplier.setRoles(EnumRoles.SUPPLIER);
-//        User registeredUser = userService.registerUser(supplier);
-//
-//        return ResponseEntity.ok(registeredUser);
-//    }
-//
-//    @PostMapping("/signin")
-//    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-//        Authentication authentication = authenticationManager.authenticate(
-//                new UsernamePasswordAuthenticationToken(
-//                        loginRequest.getUsername(),
-//                        loginRequest.getPassword()
-//                )
-//        );
-//
-//        SecurityContextHolder.getContext().setAuthentication(authentication);
-//        User user = (User) authentication.getPrincipal();
-//
-//        String accessToken = jwtService.generateAccessToken(user);
-//        String refreshToken = jwtService.generateRefreshToken(user);
-//
-//        Map<String, Object> response = new HashMap<>();
-//        response.put("accessToken", accessToken);
-//        response.put("refreshToken", refreshToken);
-//        response.put("username", user.getUsername());
-//        response.put("roles", user.getAuthorities());
-//
-//        return ResponseEntity.ok(response);
-//    }
-//
-//    @PostMapping("/refresh")
-//    public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String refreshToken) {
-//        if (refreshToken != null && refreshToken.startsWith("Bearer ")) {
-//            String token = refreshToken.substring(7);
-//            if (jwtService.validateToken(token)) {
-//                String username = jwtService.getUsernameFromToken(token);
-//                User user = (User) userService.loadUserByUsername(username);
-//
-//                String newAccessToken = jwtService.generateAccessToken(user);
-//
-//                Map<String, Object> response = new HashMap<>();
-//                response.put("accessToken", newAccessToken);
-//                return ResponseEntity.ok(response);
-//            }
-//        }
-//        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
-//    }
-//
-//    @PostMapping("/forgot-password")
-//    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-//        try {
-//            userService.initiatePasswordReset(request.getEmail());
-//            return ResponseEntity.ok(Map.of("message", "Password reset email sent"));
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-//        }
-//    }
-//
-//    @PostMapping("/reset-password")
-//    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
-//        try {
-//            userService.resetPassword(request.getToken(), request.getNewPassword());
-//            return ResponseEntity.ok(Map.of("message", "Password successfully reset"));
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-//        }
-//    }
-//}
+package com.strataurban.strata.RestControllers;
+
+import com.strataurban.strata.DTOs.v2.*;
+import com.strataurban.strata.Entities.User;
+import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
+import com.strataurban.strata.Repositories.v2.UserRepository;
+import com.strataurban.strata.Security.jwtConfigs.JwtConfig;
+import com.strataurban.strata.Services.v2.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+
+@RestController
+@RequestMapping("/api/v2/auth")
+public class AuthController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private BlacklistedTokenRepository blacklistedTokenRepository;
+
+    @Autowired
+    private JwtConfig jwtUtil;
+
+    @Autowired
+    private UserRepository userRepository;
+
+
+    @PostMapping("/signup/client")
+    @Operation(summary = "Register a new client", description = "Creates a new client user account")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Client registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid registration request")
+    })
+    public ResponseEntity<User> registerClient(@Valid @RequestBody ClientRegistrationRequest request) {
+        return ResponseEntity.ok(userService.registerClient(request));
+    }
+
+    @PostMapping("/signup/provider")
+    @Operation(summary = "Register a new provider", description = "Creates a new provider user account")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Provider registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid registration request")
+    })
+    public ResponseEntity<User> registerProvider(@Valid @RequestBody ProviderRegistrationRequest request) {
+        return ResponseEntity.ok(userService.registerProvider(request));
+    }
+
+    @PostMapping("/signup/internal")
+    @Operation(summary = "Register an internal user", description = "Creates a new internal user (ADMIN, CUSTOMER_SERVICE, DEVELOPER)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Internal user registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid registration request")
+    })
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<User> registerInternalUser(@Valid @RequestBody AdminRegistrationRequest request) {
+        return ResponseEntity.ok(userService.registerInternalUser(request));
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "User login", description = "Authenticate user and return JWT tokens")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful"),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials")
+    })
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        return ResponseEntity.ok(userService.login(loginRequest));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "User logout", description = "Invalidate refresh token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful"),
+            @ApiResponse(responseCode = "400", description = "Invalid refresh token")
+    })
+    public ResponseEntity<Void> logout(@RequestBody RefreshTokenRequestDTO request) {
+        userService.logout(request.getRefreshToken());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh access token", description = "Generate a new access token using a refresh token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token refreshed"),
+            @ApiResponse(responseCode = "401", description = "Invalid refresh token")
+    })
+    public ResponseEntity<LoginResponse> refreshToken(@Valid @RequestBody RefreshTokenRequestDTO request) {
+        String refreshToken = request.getRefreshToken();
+        if (jwtUtil.validateToken(refreshToken) && blacklistedTokenRepository.findByJti(jwtUtil.getJtiFromToken(refreshToken)).isEmpty()) {
+            String username = jwtUtil.getUsernameFromToken(refreshToken);
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            String newAccessToken = jwtUtil.generateAccessToken(username, user.getRoles().name());
+            LoginResponse response = new LoginResponse();
+            response.setAccessToken(newAccessToken);
+            response.setRefreshToken(refreshToken);
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.status(401).build();
+    }
+}

@@ -1,6 +1,7 @@
 package com.strataurban.strata.ServiceImpls.v2;
 
 import com.strataurban.strata.DTOs.v2.*;
+import com.strataurban.strata.Entities.Generics.BlacklistedToken;
 import com.strataurban.strata.Entities.Passengers.Client;
 import com.strataurban.strata.Entities.Providers.Provider;
 import com.strataurban.strata.Entities.Providers.ServiceArea;
@@ -8,36 +9,53 @@ import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Repositories.v2.ServiceAreaRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
+import com.strataurban.strata.Security.jwtConfigs.JwtConfig;
 import com.strataurban.strata.Services.v2.UserService;
-//import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
-//import org.springframework.security.access.prepost.PreAuthorize;
-//import org.springframework.security.crypto.password.PasswordEncoder;
+import com.strataurban.strata.DTOs.v2.*;
+import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import java.time.LocalDateTime;
+
 
 @Service
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final ServiceAreaRepository serviceAreaRepository;
-//    private final PasswordEncoder passwordEncoder;
+    private final BlacklistedTokenRepository blacklistedTokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtConfig jwtUtil;
 
-    public UserServiceImpl(UserRepository userRepository, ServiceAreaRepository serviceAreaRepository) {
+    @Autowired
+    public UserServiceImpl(
+            UserRepository userRepository,
+            ServiceAreaRepository serviceAreaRepository,
+            BlacklistedTokenRepository blacklistedTokenRepository,
+            PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager,
+            JwtConfig jwtUtil) {
         this.userRepository = userRepository;
         this.serviceAreaRepository = serviceAreaRepository;
+        this.blacklistedTokenRepository = blacklistedTokenRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtUtil = jwtUtil;
     }
-
-//    @Autowired
-//    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-//        this.userRepository = userRepository;
-//        this.passwordEncoder = passwordEncoder;
-//    }
 
     @Override
     public Client registerClient(ClientRegistrationRequest request) {
-        // Check if username or email already exists
         if (userRepository.findByUsernameOrEmail(request.getUsername(), request.getEmail()).isPresent()) {
             throw new RuntimeException("Username or email already exists");
         }
@@ -49,9 +67,7 @@ public class UserServiceImpl implements UserService {
         client.setLastName(request.getLastName());
         client.setEmail(request.getEmail());
         client.setUsername(request.getUsername());
-        client.setPassword(request.getPassword());
-//        client.setPassword(passwordEncoder.encode(request.getPassword()));
-        client.setPassword(request.getPassword());
+        client.setPassword(passwordEncoder.encode(request.getPassword()));
         client.setPhone(request.getPhone());
         client.setPhone2(request.getPhone2());
         client.setAddress(request.getAddress());
@@ -68,7 +84,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Provider registerProvider(ProviderRegistrationRequest request) {
-        // Check if username or email already exists
         if (userRepository.findByUsernameOrEmail(request.getUsername(), request.getEmail()).isPresent()) {
             throw new RuntimeException("Username or email already exists");
         }
@@ -80,8 +95,7 @@ public class UserServiceImpl implements UserService {
         provider.setLastName(request.getLastName());
         provider.setEmail(request.getEmail());
         provider.setUsername(request.getUsername());
-        // provider.setPassword(passwordEncoder.encode(request.getPassword())); // Uncomment if using password encoding
-        provider.setPassword(request.getPassword());
+        provider.setPassword(passwordEncoder.encode(request.getPassword()));
         provider.setPhone(request.getPhone());
         provider.setPhone2(request.getPhone2());
         provider.setAddress(request.getAddress());
@@ -108,13 +122,11 @@ public class UserServiceImpl implements UserService {
         provider.setRoles(EnumRoles.PROVIDER);
         provider.setEmailVerified(false);
 
-        // Map serviceAreaIds to a comma-separated string
         if (request.getServiceAreaIds() != null && !request.getServiceAreaIds().isEmpty()) {
             List<ServiceArea> serviceAreas = serviceAreaRepository.findAllById(request.getServiceAreaIds());
             if (serviceAreas.size() != request.getServiceAreaIds().size()) {
                 throw new RuntimeException("One or more service area IDs are invalid");
             }
-            // Convert serviceAreaIds to a comma-separated string
             String serviceAreasString = request.getServiceAreaIds().stream()
                     .map(String::valueOf)
                     .collect(Collectors.joining(","));
@@ -123,15 +135,13 @@ public class UserServiceImpl implements UserService {
 
         return (Provider) userRepository.save(provider);
     }
+
     @Override
-//    @PreAuthorize("hasRole('ADMIN')")
     public User registerInternalUser(AdminRegistrationRequest request) {
-        // Validate role (must be ADMIN, CUSTOMER_SERVICE, or DEVELOPER)
         if (!List.of(EnumRoles.ADMIN, EnumRoles.CUSTOMER_SERVICE, EnumRoles.DEVELOPER).contains(request.getRole())) {
             throw new RuntimeException("Invalid role for internal user registration. Must be ADMIN, CUSTOMER_SERVICE, or DEVELOPER.");
         }
 
-        // Check if username or email already exists
         if (userRepository.findByUsernameOrEmail(request.getUsername(), request.getEmail()).isPresent()) {
             throw new RuntimeException("Username or email already exists");
         }
@@ -143,8 +153,7 @@ public class UserServiceImpl implements UserService {
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
         user.setUsername(request.getUsername());
-//        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setPhone(request.getPhone());
         user.setPhone2(request.getPhone2());
         user.setAddress(request.getAddress());
@@ -154,23 +163,47 @@ public class UserServiceImpl implements UserService {
         user.setCountry(request.getCountry());
         user.setImageUrl(request.getImageUrl());
         user.setRoles(request.getRole());
-        user.setEmailVerified(true); // Internal users might not need email verification
+        user.setEmailVerified(true);
 
         return userRepository.save(user);
     }
 
     @Override
-    public String login(LoginRequest loginRequest) {
-        User user = userRepository.findByUsernameOrEmail(loginRequest.getUsernameOrEmail(), loginRequest.getUsernameOrEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid username or email"));
+    public LoginResponse login(LoginRequest loginRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getUsernameOrEmail(),
+                        loginRequest.getPassword()
+                )
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Verify password
-//        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-//            throw new RuntimeException("Invalid password");
-//        }
+        User user = userRepository.findByUsernameOrEmail(
+                loginRequest.getUsernameOrEmail(),
+                loginRequest.getUsernameOrEmail()
+        ).orElseThrow(() -> new RuntimeException("User not found"));
 
-        // In a real app, you'd generate a JWT token here using a library like jjwt
-        return "mock-jwt-token-" + user.getId();
+        String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRoles().name());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getUsername());
+
+        LoginResponse response = new LoginResponse();
+        response.setAccessToken(accessToken);
+        response.setRefreshToken(refreshToken);
+        return response;
+    }
+
+    @Override
+    public void logout(String refreshToken) {
+        if (jwtUtil.validateToken(refreshToken)) {
+            String jti = jwtUtil.getJtiFromToken(refreshToken);
+            BlacklistedToken blacklistedToken = new BlacklistedToken();
+            blacklistedToken.setJti(jti);
+            blacklistedToken.setBlacklistedAt(LocalDateTime.now());
+            blacklistedToken.setExpiresAt(LocalDateTime.now().plusDays(7)); // Match refresh token expiration
+            blacklistedTokenRepository.save(blacklistedToken);
+        } else {
+            throw new RuntimeException("Invalid refresh token");
+        }
     }
 
     @Override
@@ -214,16 +247,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public void changePassword(Long id, ChangePasswordRequest request) {
         User user = getUserById(id);
-//        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-//            throw new RuntimeException("Current password is incorrect");
-//        }
-//        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        user.setPassword(request.getNewPassword());
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
 
     @Override
-//    @PreAuthorize("hasRole('ADMIN')")
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
