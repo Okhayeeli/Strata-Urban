@@ -5,6 +5,8 @@ import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
+import com.strataurban.strata.ServiceImpls.v2.UserServiceImpl;
+import com.strataurban.strata.Services.PasswordResetTokenService;
 import com.strataurban.strata.Services.v2.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,11 +19,14 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping("/api/v2/auth")
+@RequestMapping("/api/v2/auth/")
 public class AuthController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private PasswordResetTokenService passwordResetTokenService;
 
     @Autowired
     private BlacklistedTokenRepository blacklistedTokenRepository;
@@ -104,5 +109,16 @@ public class AuthController {
             return ResponseEntity.ok(response);
         }
         return ResponseEntity.status(401).build();
+    }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<RequestResetPasswordResponse> requestPasswordReset(@RequestBody PasswordResetRequest request) {
+        return ResponseEntity.ok(passwordResetTokenService.requestPasswordReset(request.getEmail()));
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<Void> resetPassword(@RequestBody PasswordResetConfirmRequest request) {
+        passwordResetTokenService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok().build();
     }
 }

@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,78 +31,144 @@ public class RouteRestController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Route created successfully",
                     content = @Content(schema = @Schema(implementation = Routes.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid route data supplied")
+            @ApiResponse(responseCode = "400", description = "Invalid route data supplied"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER or ADMIN can create a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    public Routes createRoute(@RequestBody Routes route){
-        return routeService.createRoute(route);
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
+    public Routes createRoute(@RequestBody Routes route) {
+        try {
+            return routeService.createRoute(route);
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only PROVIDER or ADMIN can create a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
+        }
     }
 
     @GetMapping("/get-route")
     @Operation(summary = "Get route by ID", description = "Returns a route based on its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Found the route"),
-            @ApiResponse(responseCode = "404", description = "Route not found")
+            @ApiResponse(responseCode = "404", description = "Route not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized), DRIVER, ADMIN, or DEVELOPER can access a route. CLIENT and others are restricted.")
     })
+    @PreAuthorize("(hasRole('PROVIDER') and @routeService.isAuthorizedProviderRoute(#routeId, principal.id)) or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
     public Routes getRoute(
             @Parameter(description = "ID of the route to fetch")
-            @RequestParam Long routeId){
-        return routeService.getRoute(routeId);
+            @RequestParam Long routeId) {
+        try {
+            return routeService.getRoute(routeId);
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only PROVIDER (if authorized), DRIVER, ADMIN, or DEVELOPER can access a route. CLIENT and others are restricted.");
+        }
     }
 
     @GetMapping("/getall")
     @Operation(summary = "Get all routes based on filter criteria", description = "Returns a list of routes matching the request criteria")
-    public List<Routes> getRoutes(@RequestBody RoutesRequestDTO requestDTO){
-        return routeService.getRoutes(requestDTO);
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Routes retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER, DRIVER, ADMIN, or DEVELOPER can get all routes. CLIENT and others are restricted.")
+    })
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+    public List<Routes> getRoutes(@RequestBody RoutesRequestDTO requestDTO) {
+        try {
+            return routeService.getRoutes(requestDTO);
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only PROVIDER, DRIVER, ADMIN, or DEVELOPER can get all routes. CLIENT and others are restricted.");
+        }
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update a route", description = "Updates an existing route with new information")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Route updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Route not found")
+            @ApiResponse(responseCode = "404", description = "Route not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized) or ADMIN can update a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    public Routes updateRoute(@RequestBody RoutesRequestDTO requestDTO){
-        return routeService.updateRoute(requestDTO);
+    @PreAuthorize("(hasRole('PROVIDER') and @routeService.isAuthorizedProviderRoute(#requestDTO.routeId, principal.id)) or hasRole('ADMIN')")
+    public Routes updateRoute(@RequestBody RoutesRequestDTO requestDTO) {
+        try {
+            return routeService.updateRoute(requestDTO);
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only PROVIDER (if authorized) or ADMIN can update a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
+        }
     }
 
     @PostMapping("/create-multiple")
     @Operation(summary = "Create multiple routes", description = "Creates multiple transportation routes in a single request")
-    public List<Routes> createMultipleRoutes(@RequestBody List<Routes> routes){
-        return routeService.createMultipleRoutes(routes);
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Routes created successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER or ADMIN can create multiple routes. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
+    })
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
+    public List<Routes> createMultipleRoutes(@RequestBody List<Routes> routes) {
+        try {
+            return routeService.createMultipleRoutes(routes);
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only PROVIDER or ADMIN can create multiple routes. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
+        }
     }
 
     @DeleteMapping("/delete-multiple")
     @Operation(summary = "Delete multiple routes", description = "Deletes multiple routes by their IDs")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Routes deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "One or more routes not found")
+            @ApiResponse(responseCode = "404", description = "One or more routes not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized) or ADMIN can delete multiple routes. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    public String deleteMultipleRoutes(@RequestBody List<Long> routeIds){
-        return routeService.deleteRoutes(routeIds);
+    @PreAuthorize("(hasRole('PROVIDER') and @routeService.isAuthorizedProviderRoutes(#routeIds, principal.id)) or hasRole('ADMIN')")
+    public String deleteMultipleRoutes(@RequestBody List<Long> routeIds) {
+        try {
+            return routeService.deleteRoutes(routeIds);
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only PROVIDER (if authorized) or ADMIN can delete multiple routes. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
+        }
     }
 
     @DeleteMapping("/delete")
     @Operation(summary = "Delete a route", description = "Deletes a route by its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Route deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Route not found")
+            @ApiResponse(responseCode = "404", description = "Route not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized) or ADMIN can delete a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    public String deleteRoute(@RequestBody Long routeId){
-        return routeService.deleteRoute(routeId);
+    @PreAuthorize("(hasRole('PROVIDER') and @routeService.isAuthorizedProviderRoute(#routeId, principal.id)) or hasRole('ADMIN')")
+    public String deleteRoute(@RequestBody Long routeId) {
+        try {
+            return routeService.deleteRoute(routeId);
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only PROVIDER (if authorized) or ADMIN can delete a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
+        }
     }
 
     @GetMapping("/search")
     @Operation(summary = "Search routes by start and end locations", description = "Returns routes matching the specified start and end locations")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Routes retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT, PROVIDER, DRIVER, ADMIN, or DEVELOPER can search routes. Others are restricted.")
+    })
+    @PreAuthorize("hasRole('CLIENT') or hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
     public ResponseEntity<List<Routes>> findRoutes(
             @Parameter(description = "Starting location") @RequestParam String start,
             @Parameter(description = "Ending location") @RequestParam String end) {
-        return ResponseEntity.ok(routeService.getRoutesByLocations(start, end));
+        try {
+            return ResponseEntity.ok(routeService.getRoutesByLocations(start, end));
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only CLIENT, PROVIDER, DRIVER, ADMIN, or DEVELOPER can search routes. Others are restricted.");
+        }
     }
 
     @GetMapping("/get-by-provider")
     @Operation(summary = "Get routes by provider", description = "Returns all routes for a specific provider")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Routes retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id matches providerId), DRIVER, ADMIN, or DEVELOPER can access routes by provider. CLIENT and others are restricted.")
+    })
+    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #providerId) or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
     public ResponseEntity<List<Routes>> getRoutesByProvider(
-            @Parameter(description = "ID of the provider") @RequestParam String providerId){
-        return ResponseEntity.ok(routeService.getRoutesByProvider(providerId));
+            @Parameter(description = "ID of the provider") @RequestParam String providerId) {
+        try {
+            return ResponseEntity.ok(routeService.getRoutesByProvider(providerId));
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id matches providerId), DRIVER, ADMIN, or DEVELOPER can access routes by provider. CLIENT and others are restricted.");
+        }
     }
 }

@@ -1,16 +1,21 @@
 package com.strataurban.strata.Entities;
 
+import com.strataurban.strata.Enums.ProviderRole;
 import jakarta.persistence.*;
 
 
 import com.strataurban.strata.Enums.EnumRoles;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.AllArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "user")
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -75,165 +80,27 @@ public class User {
     @Column
     private String imageUrl;
 
-    // Constructors
-    public User() {
-    }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    @Column(name = "failed_login_attempts", columnDefinition = "int default 0")
+    private int failedLoginAttempts;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @Column(name = "account_locked_until")
+    private LocalDateTime accountLockedUntil;
 
-    public String getTitle() {
-        return title;
-    }
+    @Column(name = "last_password_change")
+    private LocalDateTime lastPasswordChange;
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    @Column(name = "preferred_session_timeout_minutes", columnDefinition = "int default 30")
+    private int preferredSessionTimeoutMinutes;
 
-    public String getFirstName() {
-        return firstName;
-    }
+    @Column(name = "last_activity")
+    private LocalDateTime lastActivity;
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+    @Column(name = "current_refresh_token_jti")
+    private String currentRefreshTokenJti;
 
-    public String getMiddleName() {
-        return middleName;
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider_role", columnDefinition = "varchar(255) default 'NONE'")
+    private ProviderRole providerRole;
 
-    public void setMiddleName(String middleName) {
-        this.middleName = middleName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public boolean isEmailVerified() {
-        return emailVerified;
-    }
-
-    public void setEmailVerified(boolean emailVerified) {
-        this.emailVerified = emailVerified;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getPhone2() {
-        return phone2;
-    }
-
-    public void setPhone2(String phone2) {
-        this.phone2 = phone2;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public String getPreferredLanguage() {
-        return preferredLanguage;
-    }
-
-    public void setPreferredLanguage(String preferredLanguage) {
-        this.preferredLanguage = preferredLanguage;
-    }
-
-    public String getCity() {
-        return city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
-    public String getState() {
-        return state;
-    }
-
-    public void setState(String state) {
-        this.state = state;
-    }
-
-    public String getCountry() {
-        return country;
-    }
-
-    public void setCountry(String country) {
-        this.country = country;
-    }
-
-    public EnumRoles getRoles() {
-        return roles;
-    }
-
-    public void setRoles(EnumRoles roles) {
-        this.roles = roles;
-    }
-
-    public String getProviderId() {
-        return providerId;
-    }
-
-    public void setProviderId(String providerId) {
-        this.providerId = providerId;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
-    @Override
-    public String toString() {
-        return "User{id=" + id + ", username=" + username + ", email=" + email + ", roles=" + roles + "}";
-    }
 }

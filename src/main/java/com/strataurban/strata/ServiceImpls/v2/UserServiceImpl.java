@@ -14,6 +14,7 @@ import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
 import com.strataurban.strata.Services.v2.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,7 +23,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
@@ -41,6 +44,16 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+
+    private static final int MAX_PASSWORD_HISTORY = 5;
+    private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
+    private static final int LOCK_DURATION_MINUTES = 30;
+
+    // Password complexity requirements
+    private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
+            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{" + MIN_PASSWORD_LENGTH + ",}$"
+    );
 
     @Autowired
     public UserServiceImpl(
@@ -63,6 +76,8 @@ public class UserServiceImpl implements UserService {
         if (userRepository.findByUsernameOrEmail(request.getUsername(), request.getEmail()).isPresent()) {
             throw new RuntimeException("Username or email already exists");
         }
+
+        validatePassword(request.getPassword());
 
         Client client = new Client();
         client.setTitle(request.getTitle());
@@ -91,6 +106,8 @@ public class UserServiceImpl implements UserService {
         if (userRepository.findByUsernameOrEmail(request.getUsername(), request.getEmail()).isPresent()) {
             throw new RuntimeException("Username or email already exists");
         }
+
+        validatePassword(request.getPassword());
 
         Provider provider = new Provider();
         provider.setTitle(request.getTitle());
@@ -150,6 +167,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Username or email already exists");
         }
 
+        validatePassword(request.getPassword());
         User user = new User();
         user.setTitle(request.getTitle());
         user.setFirstName(request.getFirstName());
@@ -174,37 +192,59 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsernameOrEmail(),
-                        loginRequest.getPassword()
-                )
-        );
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
+        log.debug("Attempting login for: {}", loginRequest.getUsernameOrEmail());
         User user = userRepository.findByUsernameOrEmail(
                 loginRequest.getUsernameOrEmail(),
                 loginRequest.getUsernameOrEmail()
-        ).orElseThrow(() -> new RuntimeException("User not found"));
+        ).orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRoles().name());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getUsername());
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsernameOrEmail(),
+                            loginRequest.getPassword()
+                    )
+            );
+            log.debug("Authentication successful: {}", authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        LoginResponse response = new LoginResponse();
-        response.setAccessToken(accessToken);
-        response.setRefreshToken(refreshToken);
-        return response;
+
+            String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRoles().name());
+            String refreshToken = jwtUtil.generateRefreshToken(user.getUsername());
+//            String newJti = jwtUtil.getJtiFromToken(refreshToken);
+
+
+            // Reset failed login attempts on successful login
+//            user.setCurrentRefreshTokenJti(newJti);
+            resetFailedLoginAttempts(user);
+//            userRepository.save(user);
+
+
+            LoginResponse response = new LoginResponse();
+            response.setAccessToken(accessToken);
+            response.setRefreshToken(refreshToken);
+            log.debug("Login response: accessToken={}, refreshToken={}", accessToken, refreshToken);
+            return response;
+        } catch (BadCredentialsException e) {
+            // Increment failed login attempts on authentication failure
+            incrementFailedLoginAttempts(user);
+            throw new RuntimeException("Invalid credentials", e);
+        }
     }
 
     @Override
     public void logout(String refreshToken) {
         if (jwtUtil.validateToken(refreshToken)) {
             String jti = jwtUtil.getJtiFromToken(refreshToken);
+//            User user = userRepository.findByCurrentRefreshTokenJti(jti)
+//                    .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
             BlacklistedToken blacklistedToken = new BlacklistedToken();
             blacklistedToken.setJti(jti);
             blacklistedToken.setBlacklistedAt(LocalDateTime.now());
-            blacklistedToken.setExpiresAt(LocalDateTime.now().plusDays(7)); // Match refresh token expiration
+            blacklistedToken.setExpiresAt(LocalDateTime.now().plusDays(7));
             blacklistedTokenRepository.save(blacklistedToken);
+//            user.setCurrentRefreshTokenJti(null);
+//            userRepository.save(user);
         } else {
             throw new RuntimeException("Invalid refresh token");
         }
@@ -254,6 +294,7 @@ public class UserServiceImpl implements UserService {
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new RuntimeException("Current password is incorrect");
         }
+        validatePassword(request.getNewPassword());
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
@@ -283,4 +324,100 @@ public class UserServiceImpl implements UserService {
         return new CustomUserDetails(user);
     }
 
+
+    public void validatePassword(String password) {
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+            throw new IllegalArgumentException(
+                    "Password must be at least " + MIN_PASSWORD_LENGTH +
+                            " characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&)"
+            );
+        }
+    }
+
+    @Override
+    public void incrementFailedLoginAttempts(User user) {
+        int attempts = user.getFailedLoginAttempts() + 1;
+        user.setFailedLoginAttempts(attempts);
+        if (attempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+            user.setAccountLockedUntil(LocalDateTime.now().plusMinutes(LOCK_DURATION_MINUTES));
+            log.warn("Account locked for user: {} due to {} failed login attempts", user.getUsername(), attempts);
+        }
+        userRepository.save(user);
+    }
+
+    @Override
+    public void resetFailedLoginAttempts(User user) {
+        user.setFailedLoginAttempts(0);
+        user.setAccountLockedUntil(null);
+        userRepository.save(user);
+    }
+
+    @Override
+    public List<User> getClientsInProviderServiceArea(Long providerId) {
+        User user = getUserById(providerId);
+        if (!EnumRoles.PROVIDER.equals(user.getRoles())) {
+            throw new RuntimeException("User is not a PROVIDER");
+        }
+
+        Provider provider = (Provider) user;
+        if (provider.getServiceAreas() == null || provider.getServiceAreas().isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> serviceAreaIds = Arrays.stream(provider.getServiceAreas().split(","))
+                .map(Long::parseLong)
+                .collect(Collectors.toList());
+
+        return userRepository.findByRoles(EnumRoles.CLIENT).stream()
+                .filter(client -> {
+                    String clientCity = client.getCity();
+                    return serviceAreaRepository.findAllById(serviceAreaIds).stream()
+                            .anyMatch(area -> area.getName().equalsIgnoreCase(clientCity));
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void updateSessionTimeout(Long userId, int timeoutMinutes) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        user.setPreferredSessionTimeoutMinutes(timeoutMinutes);
+        userRepository.save(user);
+    }
+
+    // Update last activity on every request (via a filter or service call)
+    public void updateLastActivity(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        user.setLastActivity(LocalDateTime.now());
+        userRepository.save(user);
+    }
+
+    // Check if session is expired due to inactivity
+    public boolean isSessionExpired(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        if (user.getLastActivity() == null) return false; // No activity tracked yet
+        LocalDateTime timeout = user.getLastActivity().plusMinutes(user.getPreferredSessionTimeoutMinutes());
+        boolean expired = LocalDateTime.now().isAfter(timeout);
+        if (expired) {
+            if (user.getCurrentRefreshTokenJti() != null) {
+                BlacklistedToken blacklistedToken = new BlacklistedToken();
+                blacklistedToken.setJti(user.getCurrentRefreshTokenJti());
+                blacklistedToken.setBlacklistedAt(LocalDateTime.now());
+                blacklistedToken.setExpiresAt(LocalDateTime.now().plusDays(7));
+                blacklistedTokenRepository.save(blacklistedToken);
+                user.setCurrentRefreshTokenJti(null);
+                userRepository.save(user);
+            }
+        }
+        return expired;
+    }
+
+    public User findUserByUsername(String username) {
+      return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
 }

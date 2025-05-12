@@ -58,4 +58,12 @@ public interface UserService extends UserDetailsService {
     void logout(String refreshToken);
 
     UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException;
+
+    void incrementFailedLoginAttempts(User user);
+
+    void resetFailedLoginAttempts(User user);
+
+    List<User> getClientsInProviderServiceArea(Long providerId);
+
+    void updateSessionTimeout(Long userId, int timeoutMinutes);
 }

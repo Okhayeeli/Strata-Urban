@@ -1,9 +1,13 @@
 package com.strataurban.strata.Security.jwtConfigs;
 
+import com.strataurban.strata.Entities.User;
+import com.strataurban.strata.ServiceImpls.v2.UserServiceImpl;
+import com.strataurban.strata.Services.v2.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +29,11 @@ public class JwtUtil {
     @Value("${jwt.refreshTokenExpirationMs}")
     private long refreshTokenExpirationMs;
 
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private UserServiceImpl userServiceImpl;
+
     public String generateAccessToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
@@ -33,10 +42,17 @@ public class JwtUtil {
     }
 
     public String generateRefreshToken(String username) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("jti", UUID.randomUUID().toString());
-        return createToken(claims, username, refreshTokenExpirationMs);
+        User user = userServiceImpl.findUserByUsername(username); // Assume UserService is autowired
+        int timeoutMinutes = user.getPreferredSessionTimeoutMinutes();
+        return Jwts.builder()
+                .setSubject(username)
+                .setId(UUID.randomUUID().toString())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + (long) timeoutMinutes * 60 * 1000))
+                .signWith(SignatureAlgorithm.HS512, secret)
+                .compact();
     }
+
 
     private String createToken(Map<String, Object> claims, String subject, long expirationMs) {
         return Jwts.builder()

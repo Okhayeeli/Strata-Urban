@@ -3,6 +3,7 @@ package com.strataurban.strata.Entities;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -18,6 +19,9 @@ public class CustomUserDetails implements org.springframework.security.core.user
     private final String password;
     private final String role;
     private final boolean emailVerified;
+    private final int failedLoginAttempts;
+    private final LocalDateTime accountLockedUntil;
+
 
     public CustomUserDetails(User user) {
         logger.debug("Constructing CustomUserDetails for user: {}", user.getUsername());
@@ -26,6 +30,8 @@ public class CustomUserDetails implements org.springframework.security.core.user
         this.password = user.getPassword();
         this.role = user.getRoles() != null ? user.getRoles().name() : null;
         this.emailVerified = user.isEmailVerified();
+        this.failedLoginAttempts = user.getFailedLoginAttempts();
+        this.accountLockedUntil = user.getAccountLockedUntil();
     }
 
     public Long getId() {
@@ -67,7 +73,12 @@ public class CustomUserDetails implements org.springframework.security.core.user
     @Override
     public boolean isAccountNonLocked() {
         logger.debug("Checking isAccountNonLocked");
-        return true;
+        if (accountLockedUntil == null) {
+            return true;
+        }
+        boolean isLocked = accountLockedUntil.isAfter(LocalDateTime.now());
+        logger.debug("Account locked status: {}", isLocked);
+        return !isLocked;
     }
 
     @Override

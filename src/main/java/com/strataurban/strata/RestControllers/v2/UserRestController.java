@@ -12,10 +12,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v2/users")
 public class UserRestController {
 
     @Autowired
@@ -25,86 +26,126 @@ public class UserRestController {
     @Operation(summary = "Get user by ID", description = "Retrieve details of a specific user")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User found"),
-            @ApiResponse(responseCode = "404", description = "User not found")
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only CUSTOMER_SERVICE, ADMIN, DEVELOPER, or the user themselves (principal.id == #id) can access this endpoint. CLIENT, PROVIDER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN') or principal.username == #id.toString()")
+    @PreAuthorize("hasRole('CUSTOMER_SERVICE') or hasRole('ADMIN') or hasRole('DEVELOPER') or principal.id == #id")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+        try {
+            return ResponseEntity.ok(userService.getUserById(id));
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only CUSTOMER_SERVICE, ADMIN, DEVELOPER, or the user themselves (principal.id == #id) can access this endpoint. CLIENT, PROVIDER, and others are restricted.");
+        }
     }
 
     @GetMapping
     @Operation(summary = "Get all users", description = "Retrieve a list of all users")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List of users")
+            @ApiResponse(responseCode = "200", description = "List of users"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only CUSTOMER_SERVICE, ADMIN, and DEVELOPER can access this endpoint. CLIENT, PROVIDER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('CUSTOMER_SERVICE') or hasRole('ADMIN') or hasRole('DEVELOPER')")
     public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+        try {
+            return ResponseEntity.ok(userService.getAllUsers());
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only CUSTOMER_SERVICE, ADMIN, and DEVELOPER can access this endpoint. CLIENT, PROVIDER, and others are restricted.");
+        }
     }
 
     @GetMapping("/search")
     @Operation(summary = "Search users", description = "Search users by name or email")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List of matching users")
+            @ApiResponse(responseCode = "200", description = "List of matching users"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN and DEVELOPER can access this endpoint. CUSTOMER_SERVICE, CLIENT, PROVIDER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DEVELOPER')")
     public ResponseEntity<List<User>> searchUsers(@RequestParam String query) {
-        return ResponseEntity.ok(userService.searchUsers(query));
+        try {
+            return ResponseEntity.ok(userService.searchUsers(query));
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only ADMIN and DEVELOPER can access this endpoint. CUSTOMER_SERVICE, CLIENT, PROVIDER, and others are restricted.");
+        }
     }
 
     @GetMapping("/role/{role}")
     @Operation(summary = "Get users by role", description = "Retrieve users with a specific role")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List of users with role")
+            @ApiResponse(responseCode = "200", description = "List of users with role"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN and DEVELOPER can access this endpoint. CUSTOMER_SERVICE, CLIENT, PROVIDER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DEVELOPER')")
     public ResponseEntity<List<User>> getUsersByRole(@PathVariable EnumRoles role) {
-        return ResponseEntity.ok(userService.getUsersByRole(role));
+        try {
+            return ResponseEntity.ok(userService.getUsersByRole(role));
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only ADMIN and DEVELOPER can access this endpoint. CUSTOMER_SERVICE, CLIENT, PROVIDER, and others are restricted.");
+        }
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Update user", description = "Update user details")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User updated"),
-            @ApiResponse(responseCode = "404", description = "User not found")
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN, DEVELOPER, or the user themselves (principal.id == #id) can access this endpoint. PROVIDER can update only if emailVerified and principal.id == #id. CUSTOMER_SERVICE, CLIENT, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN') or principal.username == #id.toString()")
+    @PreAuthorize("(hasRole('ADMIN') or hasRole('DEVELOPER') or (hasRole('PROVIDER') and principal.emailVerified and principal.id == #id)) or principal.id == #id")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.updateUser(id, user));
+        try {
+            return ResponseEntity.ok(userService.updateUser(id, user));
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only ADMIN, DEVELOPER, or the user themselves (principal.id == #id) can access this endpoint. PROVIDER can update only if emailVerified and principal.id == #id. CUSTOMER_SERVICE, CLIENT, and others are restricted.");
+        }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping
     @Operation(summary = "Delete user", description = "Delete a user account")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User deleted"),
-            @ApiResponse(responseCode = "404", description = "User not found")
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN and DEVELOPER can delete a user. CUSTOMER_SERVICE, CLIENT, PROVIDER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN') or principal.username == #id.toString()")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return ResponseEntity.ok().build();
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DEVELOPER')")
+    public ResponseEntity<Void> deleteUser(@RequestBody RequestBodyIdDto request) {
+        try {
+            userService.deleteUser(request.getId());
+            return ResponseEntity.ok().build();
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only ADMIN and DEVELOPER can delete a user. CUSTOMER_SERVICE, CLIENT, PROVIDER, and others are restricted.");
+        }
     }
 
+    @GetMapping("/provider/{providerId}/clients")
+    @Operation(summary = "Get clients in provider service area", description = "Retrieve clients within a provider's service area")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of clients"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only the PROVIDER themselves (principal.id == #providerId) can access this endpoint. ADMIN and DEVELOPER are allowed, but CUSTOMER_SERVICE, CLIENT, and others are restricted. DEVELOPER cannot create or operate PROVIDER-specific endpoints.")
+    })
+    @PreAuthorize("hasRole('PROVIDER') and principal.id == #providerId or hasRole('ADMIN') or hasRole('DEVELOPER')")
+    public ResponseEntity<List<User>> getClientsInProviderServiceArea(@PathVariable Long providerId) {
+        try {
+            List<User> clients = userService.getClientsInProviderServiceArea(providerId);
+            return ResponseEntity.ok(clients);
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only the PROVIDER themselves (principal.id == #providerId) can access this endpoint. ADMIN and DEVELOPER are allowed, but CUSTOMER_SERVICE, CLIENT, and others are restricted. DEVELOPER cannot create or operate PROVIDER-specific endpoints.");
+        }
+    }
 
-    private UserDTO mapToDTO(User user) {
-        return new UserDTO(
-                user.getId(),
-                user.getTitle(),
-                user.getFirstName(),
-                user.getMiddleName(),
-                user.getLastName(),
-                user.isEmailVerified(),
-                user.getEmail(),
-                user.getUsername(),
-                user.getPhone(),
-                user.getPhone2(),
-                user.getAddress(),
-                user.getPreferredLanguage(),
-                user.getCity(),
-                user.getState(),
-                user.getCountry(),
-                user.getRoles(),
-                user.getImageUrl()
-        );
+    @PutMapping("/{id}/session-timeout")
+    @Operation(summary = "Update session timeout", description = "Set a custom session timeout for the user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Session timeout updated"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only the user themselves (principal.id == #id) can update their session timeout. ADMIN, DEVELOPER, CUSTOMER_SERVICE, PROVIDER, CLIENT, and others are restricted.")
+    })
+    @PreAuthorize("principal.id == #id")
+    public ResponseEntity<Void> updateSessionTimeout(@PathVariable Long id, @RequestBody int timeoutMinutes) {
+        try {
+            userService.updateSessionTimeout(id, timeoutMinutes);
+            return ResponseEntity.ok().build();
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only the user themselves (principal.id == #id) can update their session timeout. ADMIN, DEVELOPER, CUSTOMER_SERVICE, PROVIDER, CLIENT, and others are restricted.");
+        }
     }
 }
