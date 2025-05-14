@@ -32,7 +32,19 @@ public class InitialDataLoader implements CommandLineRunner {
             admin.setPhone("+1234567890");
             admin.setRoles(EnumRoles.ADMIN);
             admin.setEmailVerified(true);
+
+            User admin2 = new User();
+            admin.setFirstName("Admin");
+            admin.setLastName("Admin");
+            admin.setEmail("neuroleri");
+            admin.setUsername("neuroleri");
+            admin.setPassword(passwordEncoder.encode("password"));
+//            admin.setPassword("cassillas1nengi!");
+            admin.setPhone("+1234567890");
+            admin.setRoles(EnumRoles.ADMIN);
+            admin.setEmailVerified(true);
             userRepository.save(admin);
+
             System.out.println("Initial Admin user created");
         }
     }
