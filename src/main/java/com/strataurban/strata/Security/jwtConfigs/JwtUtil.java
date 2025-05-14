@@ -9,6 +9,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -30,8 +31,7 @@ public class JwtUtil {
     private long refreshTokenExpirationMs;
 
     @Autowired
-    private UserService userService;
-    @Autowired
+    @Lazy
     private UserServiceImpl userServiceImpl;
 
     public String generateAccessToken(String username, String role) {

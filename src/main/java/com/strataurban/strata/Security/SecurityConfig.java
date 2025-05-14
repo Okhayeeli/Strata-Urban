@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,23 +30,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    private final UserServiceImpl userService;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final SessionTimeoutFilter sessionTimeoutFilter;
-
-    @Autowired
-    public SecurityConfig(UserServiceImpl userService, JwtAuthenticationFilter jwtAuthenticationFilter, SessionTimeoutFilter sessionTimeoutFilter) {
-        this.userService = userService;
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.sessionTimeoutFilter = sessionTimeoutFilter;
-    }
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
-
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtil jwtUtil, UserServiceImpl userService, BlacklistedTokenRepository blacklistedTokenRepository) {
-        logger.debug("Creating JwtAuthenticationFilter");
-        return new JwtAuthenticationFilter(jwtUtil, userService, blacklistedTokenRepository);
-    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -54,7 +39,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public DaoAuthenticationProvider authenticationProvider(UserServiceImpl userService, PasswordEncoder passwordEncoder) {
+    public DaoAuthenticationProvider authenticationProvider(
+            @Lazy UserServiceImpl userService,
+            PasswordEncoder passwordEncoder) {
         logger.debug("Creating DaoAuthenticationProvider");
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userService);
@@ -63,9 +50,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration authenticationConfiguration) throws Exception {
         logger.debug("Creating AuthenticationManager");
-        // Ensure no additional proxying by returning the raw instance
         return authenticationConfiguration.getAuthenticationManager();
     }
 
@@ -77,13 +64,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v2/auth/signup/**", "/api/v2/auth/login", "/api/v2/auth/refresh", "/api/v2/auth/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() // Permit Swagger UI and API docs
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
 
     @Bean
     public RoleHierarchy roleHierarchy() {
@@ -95,20 +82,5 @@ public class SecurityConfig {
                 "ROLE_PROVIDER > ROLE_DRIVER";
         roleHierarchy.setHierarchy(hierarchy);
         return roleHierarchy;
-    }
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v2/auth/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(sessionTimeoutFilter, JwtAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
     }
 }
