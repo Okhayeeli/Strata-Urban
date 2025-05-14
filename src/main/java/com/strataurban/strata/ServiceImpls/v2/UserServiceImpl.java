@@ -388,6 +388,36 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    @Override
+    public User enableUser(UserDTO userDTO) {
+        User user = null;
+
+        // Check id, email, or username in order of preference
+        if (userDTO.getId() != null) {
+            user = userRepository.findById(userDTO.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found with ID: " + userDTO.getId()));
+        } else if (userDTO.getEmail() != null) {
+            user = userRepository.findByEmail(userDTO.getEmail())
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + userDTO.getEmail()));
+        } else if (userDTO.getUsername() != null) {
+            user = userRepository.findByUsername(userDTO.getUsername())
+                    .orElseThrow(() -> new RuntimeException("User not found with username: " + userDTO.getUsername()));
+        } else {
+            throw new IllegalArgumentException("At least one of id, email, or username must be provided");
+        }
+
+        // Update emailVerified field
+        if (!user.isEmailVerified()) {
+            user.setEmailVerified(true);
+            user = userRepository.save(user);
+            log.info("User enabled successfully: {}", user.getUsername());
+        } else {
+            log.info("User is already enabled: {}", user.getUsername());
+        }
+
+        return user;
+    }
+
     // Update last activity on every request (via a filter or service call)
     public void updateLastActivity(Long userId) {
         User user = userRepository.findById(userId)

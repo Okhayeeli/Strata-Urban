@@ -121,4 +121,9 @@ public class AuthController {
         passwordResetTokenService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/verifyuser")
+    public ResponseEntity<User> verifyOrEnableUser(@RequestBody UserDTO userDTO) {
+        return ResponseEntity.ok(userService.enableUser(userDTO));
+    }
 }

@@ -66,4 +66,6 @@ public interface UserService extends UserDetailsService {
     List<User> getClientsInProviderServiceArea(Long providerId);
 
     void updateSessionTimeout(Long userId, int timeoutMinutes);
+
+    User enableUser(UserDTO userDTO);
 }
