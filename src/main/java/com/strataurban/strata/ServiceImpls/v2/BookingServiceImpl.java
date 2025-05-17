@@ -14,16 +14,20 @@ import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Services.v2.BookingService;
 import com.strataurban.strata.Services.v2.OfferService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.strataurban.strata.Enums.OfferStatus.EXPIRED;
 
@@ -66,13 +70,14 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingRequest> getClientBookings(Long clientId) {
-        return bookingRepository.findByClientId(clientId);
+    public Page<BookingRequest> getClientBookings(Long clientId, Pageable pageable) {
+        return bookingRepository.findByClientId(clientId, pageable);
     }
 
     @Override
-    public List<BookingRequest> getProviderBookings(Long providerId) {
-        return bookingRepository.findByProviderId(providerId);
+    public Page<BookingRequestResponseDTO> getProviderBookings(Long providerId, Pageable pageable) {
+       Page<BookingRequest> bookingRequests = bookingRepository.findByProviderId(providerId, pageable);
+       return mapPageToPageResponse(bookingRequests);
     }
 
     @Override
@@ -146,11 +151,33 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingRequest> getClientBookingHistory(Long clientId) {
+    public Page<BookingRequestResponseDTO> getClientBookingHistory(Long clientId, Pageable pageable) {
         // History includes completed and cancelled bookings
         List<BookingStatus> historyStatuses = Arrays.asList(BookingStatus.COMPLETED, BookingStatus.CANCELLED);
-        return bookingRepository.findByClientIdAndStatusIn(clientId, historyStatuses);
+        Page<BookingRequest> bookingPage =  bookingRepository.findByClientIdAndStatusIn(clientId, historyStatuses, pageable);
+        return bookingPage.map(this::mapToResponseDTO);
     }
+
+    public Page<BookingRequestResponseDTO> mapToPageResponse(List<BookingRequest> bookingList, Pageable pageable) {
+        // Map the list of BookingRequest to BookingRequestResponseDTO
+        List<BookingRequestResponseDTO> dtoList = bookingList.stream()
+                .map(this::mapToResponseDTO)
+                .collect(Collectors.toList());
+
+        // Create a PageImpl with the mapped DTOs
+        int pageSize = pageable.getPageSize();
+        int pageNumber = pageable.getPageNumber();
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageSize), dtoList.size());
+
+        // Handle empty list or out-of-bounds cases
+        List<BookingRequestResponseDTO> pageContent = (start < dtoList.size())
+                ? dtoList.subList(start, end)
+                : Collections.emptyList();
+
+        return new PageImpl<>(pageContent, pageable, dtoList.size());
+    }
+
 
     @Override
     public List<BookingRequest> getProviderBookingHistory(Long providerId) {
@@ -219,6 +246,12 @@ public class BookingServiceImpl implements BookingService {
         BookingRequest updatedBooking = bookingRepository.save(booking);
         log.info("Accepted offer for booking: {}", updatedBooking);
         return updatedBooking;
+    }
+
+    public Long getClientIdByBookingId(Long bookingId) {
+        BookingRequest booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Booking not found with ID: " + bookingId));
+        return booking.getClientId();
     }
 
 
@@ -373,7 +406,8 @@ public class BookingServiceImpl implements BookingService {
 
 
 
-        public BookingRequestResponseDTO mapToResponseDTO(BookingRequest entity) {
+    @Override
+    public BookingRequestResponseDTO mapToResponseDTO(BookingRequest entity) {
             BookingRequestResponseDTO dto = new BookingRequestResponseDTO();
             BookingRequestResponseDTO.BookingRequestDetails bookingDetails = new BookingRequestResponseDTO.BookingRequestDetails();
             BookingRequestResponseDTO.RequestDetails requestDetails = new BookingRequestResponseDTO.RequestDetails();
@@ -398,9 +432,14 @@ public class BookingServiceImpl implements BookingService {
             locations.setAdditionalStops(entity.getAdditionalStops() != null ? List.of(entity.getAdditionalStops().split(",")) : null);
 
             // Map Contact Information (Assuming these are derived from clientId or authentication)
-            contactInfo.setName("Placeholder Name"); // Replace with actual logic
-            contactInfo.setPhoneNumber("Placeholder Phone"); // Replace with actual logic
-            contactInfo.setEmailAddress("Placeholder Email"); // Replace with actual logic
+
+            User userDetails = userRepository.findById(entity.getClientId())
+                    .orElseThrow(() -> new RuntimeException("User not found with ID: " + entity.getClientId()));
+
+            String fullName = userDetails.getFirstName() + " " + userDetails.getLastName();
+            contactInfo.setName(fullName); // Replace with actual logic
+            contactInfo.setPhoneNumber(userDetails.getPhone()); // Replace with actual logic
+            contactInfo.setEmailAddress(userDetails.getEmail()); // Replace with actual logic
 
             // Map Category-Specific Details based on boolean flags
             if (Boolean.TRUE.equals(entity.getIsPassenger())) {
@@ -497,13 +536,6 @@ public class BookingServiceImpl implements BookingService {
             return dto;
         }
 
-    @Override
-    public Long getClientIdByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .map(User::getId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
-    }
-
     private String determineTransportCategory(BookingRequest entity) {
             if (Boolean.TRUE.equals(entity.getIsPassenger())) return "Passenger";
             if (Boolean.TRUE.equals(entity.getIsCargo())) return "Cargo";
@@ -513,4 +545,9 @@ public class BookingServiceImpl implements BookingService {
             if (Boolean.TRUE.equals(entity.getIsEquipment())) return "Equipment";
             return null;
         }
+
+    public Page<BookingRequestResponseDTO> mapPageToPageResponse(Page<BookingRequest> bookingPage) {
+        return bookingPage.map(this::mapToResponseDTO);
+    }
+
 }

@@ -7,7 +7,6 @@ import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumPriority;
-import com.strataurban.strata.Enums.TripStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -20,10 +19,10 @@ public interface BookingService {
     BookingRequest createBooking(BookingRequestRequestDTO bookingRequest, Long clientId);
 
     // Get all bookings for a client
-    List<BookingRequest> getClientBookings(Long clientId);
+    Page<BookingRequest> getClientBookings(Long clientId, Pageable pageable);
 
     // Get all bookings for a provider
-    List<BookingRequest> getProviderBookings(Long providerId);
+    Page<BookingRequestResponseDTO> getProviderBookings(Long providerId, Pageable pageable);
 
     // Get booking details by ID
     BookingRequest getBookingById(Long id);
@@ -47,7 +46,7 @@ public interface BookingService {
     void contactParty(Long id, ContactRequest request);
 
     // Get booking history for a client
-    List<BookingRequest> getClientBookingHistory(Long clientId);
+    Page<BookingRequestResponseDTO> getClientBookingHistory(Long clientId, Pageable pageable);
 
     // Get booking history for a provider
     List<BookingRequest> getProviderBookingHistory(Long providerId);
@@ -73,5 +72,4 @@ public interface BookingService {
 
     BookingRequestResponseDTO mapToResponseDTO(BookingRequest entity);
 
-    Long getClientIdByUsername(String username);
 }

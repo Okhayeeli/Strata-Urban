@@ -137,12 +137,17 @@ public class OfferServiceImpl implements OfferService {
 
     @Override
     @Transactional
-    public Offer updateOffer(Long offerId, Double price, String notes, LocalDateTime validUntil,
+    public Offer updateOffer(Long offerId, Long providerId, Double price, String notes, LocalDateTime validUntil,
                              Double discountPercentage, String websiteLink, String estimatedDuration,
                              String specialConditions) {
-        logger.info("Updating offer with ID: {}", offerId);
+        logger.info("Updating offer with ID: {} by provider ID: {}", offerId, providerId);
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
+
+        // Validate provider ownership
+        if (!offer.getProviderId().equals(providerId)) {
+            throw new SecurityException("Provider ID: " + providerId + " is not authorized to update offer ID: " + offerId);
+        }
 
         // Validate new fields
         if (validUntil != null && validUntil.isBefore(LocalDateTime.now())) {
@@ -259,6 +264,25 @@ public class OfferServiceImpl implements OfferService {
 
     @Override
     public Page<Offer> getOfferByProviderId(Long providerId, Pageable pageable) {
+        logger.info("Fetching offers for provider ID: {}", providerId);
         return offerRepository.findByProviderId(providerId, pageable);
+    }
+
+    @Override
+    public boolean isAuthorizedProviderOffer(Long offerId, Long providerId) {
+        logger.info("Checking if provider ID: {} is authorized for offer ID: {}", providerId, offerId);
+        return offerRepository.findById(offerId)
+                .map(offer -> offer.getProviderId().equals(providerId))
+                .orElse(false);
+    }
+
+    @Override
+    public boolean isAuthorizedClientOffer(Long offerId, Long clientId) {
+        logger.info("Checking if client ID: {} is authorized for offer ID: {}", clientId, offerId);
+        return offerRepository.findById(offerId)
+                .map(offer -> bookingRepository.findById(offer.getBookingRequestId())
+                        .map(booking -> booking.getClientId().equals(clientId))
+                        .orElse(false))
+                .orElse(false);
     }
 }

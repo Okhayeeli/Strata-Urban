@@ -7,6 +7,8 @@ import com.strataurban.strata.DTOs.v2.UpdateOfferRequest;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
+import com.strataurban.strata.Security.LoggedUser;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Services.v2.BookingService;
 import com.strataurban.strata.Services.v2.OfferService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,13 +55,14 @@ public class OfferRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER can create an offer. CLIENT, DRIVER, DEVELOPER, ADMIN, and others are restricted.")
     })
-    @PreAuthorize("hasRole('PROVIDER')")
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN') or hasRole('DEVELOPER') or hasRole('CUSTOMER_SERVICE')")
     public ResponseEntity<Offer> createOffer(
             @PathVariable Long bookingId,
-            @RequestBody CreateOfferRequest request) {
+            @RequestBody CreateOfferRequest request,
+            @LoggedUser SecurityUserDetails userDetails) {
         try {
-            logger.info("Creating offer for booking ID: {}", bookingId);
-            Offer offer = offerService.createOffer(bookingId, request.getProviderId(), request.getPrice(),
+            logger.info("Creating offer for booking ID: {} by provider ID: {}", bookingId, userDetails.getId());
+            Offer offer = offerService.createOffer(bookingId, userDetails.getId(), request.getPrice(),
                     request.getNotes(), request.getValidUntil(), request.getDiscountPercentage(), request.getWebsiteLink(),
                     request.getEstimatedDuration(), request.getSpecialConditions());
             logger.info("Created offer: {}", offer);
@@ -120,11 +123,12 @@ public class OfferRestController {
     @PreAuthorize("(hasRole('PROVIDER') and @offerService.isAuthorizedProviderOffer(#offerId, principal.id)) or hasRole('ADMIN')")
     public ResponseEntity<Offer> updateOffer(
             @PathVariable Long offerId,
-            @RequestBody UpdateOfferRequest request) {
+            @RequestBody UpdateOfferRequest request,
+            @LoggedUser SecurityUserDetails userDetails) {
         try {
-            logger.info("Updating offer with ID: {}", offerId);
-            Offer updatedOffer = offerService.updateOffer(request.getProviderId(), request.getPrice(), request.getNotes(),
-                    request.getValidUntil(), request.getDiscountPercentage(), request.getWebsiteLink(),
+            logger.info("Updating offer with ID: {} by provider ID: {}", offerId, userDetails.getId());
+            Offer updatedOffer = offerService.updateOffer(offerId, userDetails.getId(), request.getPrice(),
+                    request.getNotes(), request.getValidUntil(), request.getDiscountPercentage(), request.getWebsiteLink(),
                     request.getEstimatedDuration(), request.getSpecialConditions());
             logger.info("Updated offer: {}", updatedOffer);
             return ResponseEntity.ok(updatedOffer);
@@ -162,7 +166,7 @@ public class OfferRestController {
             @ApiResponse(responseCode = "404", description = "Booking or offer not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT (if authorized) can accept an offer. PROVIDER, DRIVER, DEVELOPER, ADMIN, and others are restricted.")
     })
-    @PreAuthorize("hasRole('CLIENT') and @bookingService.isAuthorizedClientBooking(#bookingId, principal.id)")
+    @PreAuthorize("hasRole('CLIENT') and @methodSecurity.isClientOwner(#bookingId, principal.id)")
     public ResponseEntity<BookingRequest> acceptOffer(
             @PathVariable Long bookingId,
             @RequestBody AcceptOfferRequest request) {
@@ -196,7 +200,6 @@ public class OfferRestController {
                         .map(Long::parseLong)
                         .collect(Collectors.toList());
                 offers = offerRepository.findAllById(offerIdList);
-                // Maintain order based on offerIds
                 offers.sort((o1, o2) -> {
                     int index1 = offerIdList.indexOf(o1.getId());
                     int index2 = offerIdList.indexOf(o2.getId());
@@ -212,21 +215,21 @@ public class OfferRestController {
     }
 
     @GetMapping("/provider")
-    @Operation(summary = "Get a single offer by Provider ID", description = "Fetches details of a specific offer using Provider Id")
+    @Operation(summary = "Get offers by authenticated provider", description = "Fetches all offers submitted by the authenticated provider")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Offer(s) retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Offer(s) not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id == #providerId), DRIVER, ADMIN, or DEVELOPER can access this endpoint. CLIENT and others are restricted.")
+            @ApiResponse(responseCode = "404", description = "No offers found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (self), DRIVER, ADMIN, or DEVELOPER can access this endpoint. CLIENT and others are restricted.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #providerId) or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public ResponseEntity<Page<Offer>> getOffersByProviderId(@RequestParam Long providerId, Pageable pageable) {
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+    public ResponseEntity<Page<Offer>> getOffersByProvider(@LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
         try {
-            logger.info("Fetching offer with provider ID: {}", providerId);
-            Page<Offer> offers = offerService.getOfferByProviderId(providerId, pageable);
-            logger.info("Retrieved offer for Providers: {}", offers);
+            logger.info("Fetching offers for provider ID: {}", userDetails.getId());
+            Page<Offer> offers = offerService.getOfferByProviderId(userDetails.getId(), pageable);
+            logger.info("Retrieved {} offers for provider ID: {}", offers.getTotalElements(), userDetails.getId());
             return ResponseEntity.ok(offers);
         } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id == #providerId), DRIVER, ADMIN, or DEVELOPER can access this endpoint. CLIENT and others are restricted.");
+            throw new AccessDeniedException("Access denied: Only PROVIDER (self), DRIVER, ADMIN, or DEVELOPER can access this endpoint. CLIENT and others are restricted.");
         }
     }
 }

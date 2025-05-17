@@ -5,12 +5,12 @@ import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
-import com.strataurban.strata.ServiceImpls.v2.UserServiceImpl;
 import com.strataurban.strata.Services.PasswordResetTokenService;
 import com.strataurban.strata.Services.v2.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v2/auth/")
+@Tag(name = "Auth Management", description = "APIs for managing authentication and authorization")
 public class AuthController {
 
     @Autowired

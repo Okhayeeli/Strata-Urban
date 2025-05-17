@@ -320,7 +320,7 @@ public class UserServiceImpl implements UserService {
 
         User user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username or email: " + usernameOrEmail));
-        log.info("Found user: username={}, password={}, roles={}", user.getUsername(), user.getPassword(), user.getRoles());
+        log.info("Found user: username={}, roles={}", user.getUsername(), user.getRoles());
         return new CustomUserDetails(user);
     }
 
