@@ -1,11 +1,14 @@
 package com.strataurban.strata.Entities.Providers;
 
-import com.strataurban.strata.Enums.TransportStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 public class Transport {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,7 +25,4 @@ public class Transport {
     private String company;
     private Long routeId;
     private String status; // Available, Booked, etc.
-//    @Enumerated(EnumType.STRING)
-//    private TransportStatus status;
-
 }

@@ -24,6 +24,7 @@ public interface BookingRepository extends JpaRepository<BookingRequest, Long> {
     Page<BookingRequest> findByProviderId(Long providerId, Pageable pageable);
 
     // Find bookings by provider and status
+    Page<BookingRequest> findByProviderIdAndStatus(Long providerId, BookingStatus status, Pageable pageable);
     List<BookingRequest> findByProviderIdAndStatus(Long providerId, BookingStatus status);
 
     // Find booking history for a client (e.g., completed or cancelled bookings)
@@ -71,61 +72,67 @@ public interface BookingRepository extends JpaRepository<BookingRequest, Long> {
     // New query: Find equipment bookings requiring setup
     List<BookingRequest> findByIsEquipmentTrueAndSetupRequiredTrue();
 
-    // Updated filter query for pending bookings
-    @Query("SELECT br FROM BookingRequest br WHERE br.status = :status "
-            + "AND (:pickUpLocation IS NULL OR br.pickUpLocation LIKE %:pickUpLocation%) "
-            + "AND (:destination IS NULL OR br.destination LIKE %:destination%) "
-            + "AND (:additionalStops IS NULL OR br.additionalStops LIKE %:additionalStops%) "
-            + "AND (:serviceStartDate IS NULL OR br.serviceDate >= :serviceStartDate) "
-            + "AND (:serviceEndDate IS NULL OR br.serviceDate <= :serviceEndDate) "
-            + "AND (:pickupStartDateTime IS NULL OR br.pickupDateTime >= :pickupStartDateTime) "
-            + "AND (:pickupEndDateTime IS NULL OR br.pickupDateTime <= :pickupEndDateTime) "
-            + "AND (:createdStartDate IS NULL OR br.createdDate >= :createdStartDate) "
-            + "AND (:createdEndDate IS NULL OR br.createdDate <= :createdEndDate) "
-            + "AND (:priority IS NULL OR br.priority = :priority) "
-            + "AND (:isPassenger IS NULL OR br.isPassenger = :isPassenger) "
-            + "AND (:numberOfPassengers IS NULL OR br.numberOfPassengers = :numberOfPassengers) "
-            + "AND (:eventType IS NULL OR br.eventType = :eventType) "
-            + "AND (:isCargo IS NULL OR br.isCargo = :isCargo) "
-            + "AND (:estimatedWeightKg IS NULL OR br.estimatedWeightKg = :estimatedWeightKg) "
-            + "AND (:supplyType IS NULL OR br.supplyType = :supplyType) "
-            + "AND (:isMedical IS NULL OR br.isMedical = :isMedical) "
-            + "AND (:medicalItemType IS NULL OR br.medicalItemType = :medicalItemType) "
-            + "AND (:isFurniture IS NULL OR br.isFurniture = :isFurniture) "
-            + "AND (:furnitureType IS NULL OR br.furnitureType = :furnitureType) "
-            + "AND (:isFood IS NULL OR br.isFood = :isFood) "
-            + "AND (:foodType IS NULL OR br.foodType = :foodType) "
-            + "AND (:isEquipment IS NULL OR br.isEquipment = :isEquipment) "
-            + "AND (:equipmentItem IS NULL OR :equipmentItem MEMBER OF br.equipmentList)")
-    Page<BookingRequest> findByStatusAndFilters(
-            @Param("status") BookingStatus status,
-            @Param("pickUpLocation") String pickUpLocation,
-            @Param("destination") String destination,
-            @Param("additionalStops") String additionalStops,
-            @Param("serviceStartDate") LocalDateTime serviceStartDate,
-            @Param("serviceEndDate") LocalDateTime serviceEndDate,
-            @Param("pickupStartDateTime") LocalDateTime pickupStartDateTime,
-            @Param("pickupEndDateTime") LocalDateTime pickupEndDateTime,
-            @Param("createdStartDate") LocalDateTime createdStartDate,
-            @Param("createdEndDate") LocalDateTime createdEndDate,
-            @Param("priority") EnumPriority priority,
-            @Param("isPassenger") Boolean isPassenger,
-            @Param("numberOfPassengers") Integer numberOfPassengers,
-            @Param("eventType") String eventType,
-            @Param("isCargo") Boolean isCargo,
-            @Param("estimatedWeightKg") Double estimatedWeightKg,
-            @Param("supplyType") String supplyType,
-            @Param("isMedical") Boolean isMedical,
-            @Param("medicalItemType") String medicalItemType,
-            @Param("isFurniture") Boolean isFurniture,
-            @Param("furnitureType") String furnitureType,
-            @Param("isFood") Boolean isFood,
-            @Param("foodType") String foodType,
-            @Param("isEquipment") Boolean isEquipment,
-            @Param("equipmentItem") String equipmentItem,
-            Pageable pageable);
+        @Query("SELECT br FROM BookingRequest br WHERE br.status = :status "
+                + "AND (:pickUpLocation IS NULL OR br.pickUpLocation LIKE %:pickUpLocation%) "
+                + "AND (:destination IS NULL OR br.destination LIKE %:destination%) "
+                + "AND (:additionalStops IS NULL OR br.additionalStops LIKE %:additionalStops%) "
+                + "AND (:serviceStartDate IS NULL OR br.serviceDate >= :serviceStartDate) "
+                + "AND (:serviceEndDate IS NULL OR br.serviceDate <= :serviceEndDate) "
+                + "AND (:pickupStartDateTime IS NULL OR br.pickupDateTime >= :pickupStartDateTime) "
+                + "AND (:pickupEndDateTime IS NULL OR br.pickupDateTime <= :pickupEndDateTime) "
+                + "AND (:createdStartDate IS NULL OR br.createdDate >= :createdStartDate) "
+                + "AND (:createdEndDate IS NULL OR br.createdDate <= :createdEndDate) "
+                + "AND (:priority IS NULL OR br.priority = :priority) "
+                + "AND (:isPassenger IS NULL OR br.isPassenger = :isPassenger) "
+                + "AND (:numberOfPassengers IS NULL OR br.numberOfPassengers = :numberOfPassengers) "
+                + "AND (:eventType IS NULL OR br.eventType = :eventType) "
+                + "AND (:isCargo IS NULL OR br.isCargo = :isCargo) "
+                + "AND (:estimatedWeightKg IS NULL OR br.estimatedWeightKg = :estimatedWeightKg) "
+                + "AND (:supplyType IS NULL OR br.supplyType = :supplyType) "
+                + "AND (:isMedical IS NULL OR br.isMedical = :isMedical) "
+                + "AND (:medicalItemType IS NULL OR br.medicalItemType = :medicalItemType) "
+                + "AND (:isFurniture IS NULL OR br.isFurniture = :isFurniture) "
+                + "AND (:furnitureType IS NULL OR br.furnitureType = :furnitureType) "
+                + "AND (:isFood IS NULL OR br.isFood = :isFood) "
+                + "AND (:foodType IS NULL OR br.foodType = :foodType) "
+                + "AND (:isEquipment IS NULL OR br.isEquipment = :isEquipment) "
+                + "AND (:equipmentItem IS NULL OR :equipmentItem MEMBER OF br.equipmentList) "
+                + "AND (:city IS NULL OR br.city LIKE %:city%) "
+                + "AND (:state IS NULL OR br.state LIKE %:state%) "
+                + "AND (:country IS NULL OR br.country LIKE %:country%)")
+        Page<BookingRequest> findByStatusAndFilters(
+                @Param("status") BookingStatus status,
+                @Param("pickUpLocation") String pickUpLocation,
+                @Param("destination") String destination,
+                @Param("additionalStops") String additionalStops,
+                @Param("serviceStartDate") LocalDateTime serviceStartDate,
+                @Param("serviceEndDate") LocalDateTime serviceEndDate,
+                @Param("pickupStartDateTime") LocalDateTime pickupStartDateTime,
+                @Param("pickupEndDateTime") LocalDateTime pickupEndDateTime,
+                @Param("createdStartDate") LocalDateTime createdStartDate,
+                @Param("createdEndDate") LocalDateTime createdEndDate,
+                @Param("priority") EnumPriority priority,
+                @Param("isPassenger") Boolean isPassenger,
+                @Param("numberOfPassengers") Integer numberOfPassengers,
+                @Param("eventType") String eventType,
+                @Param("isCargo") Boolean isCargo,
+                @Param("estimatedWeightKg") Double estimatedWeightKg,
+                @Param("supplyType") String supplyType,
+                @Param("isMedical") Boolean isMedical,
+                @Param("medicalItemType") String medicalItemType,
+                @Param("isFurniture") Boolean isFurniture,
+                @Param("furnitureType") String furnitureType,
+                @Param("isFood") Boolean isFood,
+                @Param("foodType") String foodType,
+                @Param("isEquipment") Boolean isEquipment,
+                @Param("equipmentItem") String equipmentItem,
+                @Param("city") String city,
+                @Param("state") String state,
+                @Param("country") String country,
+                Pageable pageable);
 
         boolean existsByIdAndClientId(Long bookingId, Long clientId);
 
         boolean existsByIdAndProviderId(Long entityId, Long providerId);
+
 }

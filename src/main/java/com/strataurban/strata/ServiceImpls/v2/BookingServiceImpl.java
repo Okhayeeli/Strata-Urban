@@ -1,17 +1,19 @@
 package com.strataurban.strata.ServiceImpls.v2;
 
-import com.strataurban.strata.DTOs.v2.BookingRequestRequestDTO;
-import com.strataurban.strata.DTOs.v2.BookingRequestResponseDTO;
-import com.strataurban.strata.DTOs.v2.ContactRequest;
-import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
+import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.Providers.Offer;
+import com.strataurban.strata.Entities.Providers.Transport;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumPriority;
+import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
+import com.strataurban.strata.Repositories.v2.TransportRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
+import com.strataurban.strata.Security.SecurityUserDetails;
+import com.strataurban.strata.Security.SecurityUserDetailsService;
 import com.strataurban.strata.Services.v2.BookingService;
 import com.strataurban.strata.Services.v2.OfferService;
 import jakarta.persistence.EntityNotFoundException;
@@ -47,12 +49,18 @@ public class BookingServiceImpl implements BookingService {
     @Autowired
     private final UserRepository userRepository;
 
+    private final SecurityUserDetailsService securityUserDetailsService;
+
+    private final TransportRepository transportRepository;
+
     @Autowired
-    public BookingServiceImpl(BookingRepository bookingRepository, OfferRepository offerRepository, OfferService offerService, UserRepository userRepository) {
+    public BookingServiceImpl(BookingRepository bookingRepository, OfferRepository offerRepository, OfferService offerService, UserRepository userRepository, SecurityUserDetailsService securityUserDetailsService, TransportRepository transportRepository) {
         this.bookingRepository = bookingRepository;
         this.offerRepository = offerRepository;
         this.offerService = offerService;
         this.userRepository = userRepository;
+        this.securityUserDetailsService = securityUserDetailsService;
+        this.transportRepository = transportRepository;
     }
 
     @Override
@@ -63,6 +71,10 @@ public class BookingServiceImpl implements BookingService {
 
         BookingRequest booking = mapToEntity(bookingRequest);
         booking.setClientId(clientId);
+        SecurityUserDetails userDetails = securityUserDetailsService.getSecurityUserDetails();
+        booking.setCity(userDetails.getCity());
+        booking.setState(userDetails.getState());
+        booking.setCountry(userDetails.getCountry());
 
         //TODO After Authentication
         booking.setStatus(BookingStatus.PENDING); // Default status
@@ -125,20 +137,63 @@ public class BookingServiceImpl implements BookingService {
         return bookingRepository.save(booking);
     }
 
+
     @Override
     public BookingRequest assignDriver(Long id, DriverAssignmentRequest request) {
+        // Fetch booking
         BookingRequest booking = getBookingById(id);
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new RuntimeException("Driver can only be assigned to a CONFIRMED booking");
+
+        // Check booking status
+        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.CLAIMED) {
+            throw new IllegalStateException("Driver and vehicle can only be assigned to a CONFIRMED or CLAIMED booking");
         }
-        // Logic to assign driver and vehicle (you might need to update the BookingRequest entity to store driverId and vehicleId)
-        // For now, we'll assume this is handled in additionalNotes or a future field
+
+        // Fetch driver
+        User driver = userRepository.findById(request.getDriverId())
+                .orElseThrow(() -> new IllegalArgumentException("Driver not found with ID: " + request.getDriverId()));
+
+        // Validate driver role
+        if (driver.getRoles() != EnumRoles.DRIVER) {
+            throw new IllegalArgumentException("User with ID " + request.getDriverId() + " is not a DRIVER");
+        }
+
+        // Fetch vehicle
+        Transport vehicle = transportRepository.findById(request.getVehicleId())
+                .orElseThrow(() -> new IllegalArgumentException("Vehicle not found with ID: " + request.getVehicleId()));
+
+        // Validate vehicle status
+        if (!"Available".equals(vehicle.getStatus())) {
+            throw new IllegalStateException("Vehicle with ID " + request.getVehicleId() + " is not Available");
+        }
+
+        // Get authenticated user
+        SecurityUserDetails userDetails = securityUserDetailsService.getSecurityUserDetails();
+
+        // Validate provider ID for driver and vehicle (for PROVIDER role)
+        if (userDetails.getRole() == EnumRoles.PROVIDER) {
+            if (driver.getProviderId() != null && !driver.getProviderId().equals(String.valueOf(userDetails.getId()))) {
+                throw new SecurityException("Driver does not belong to this provider");
+            }
+            if (!vehicle.getProviderId().equals(userDetails.getId())) {
+                throw new SecurityException("Vehicle does not belong to this provider");
+            }
+        }
+
+        // Assign driver and vehicle to booking
+        booking.setDriverId(request.getDriverId());
+        booking.setVehicleId(request.getVehicleId());
+        booking.setStatus(BookingStatus.CONFIRMED);
+        vehicle.setStatus("Booked");
+        transportRepository.save(vehicle);
+
+        // Save and return booking
         return bookingRepository.save(booking);
     }
 
+
     @Override
-    public List<BookingRequest> getProviderBookingsByStatus(Long providerId, BookingStatus status) {
-        return bookingRepository.findByProviderIdAndStatus(providerId, status);
+    public Page<BookingRequestResponseDTO> getProviderBookingsByStatus(Long providerId, BookingStatus status, Pageable pageable) {
+        return mapPageToPageResponse(bookingRepository.findByProviderIdAndStatus(providerId, status, pageable));
     }
 
     @Override
@@ -196,8 +251,15 @@ public class BookingServiceImpl implements BookingService {
             EnumPriority priority, Boolean isPassenger, Integer numberOfPassengers,
             String eventType, Boolean isCargo, Double estimatedWeightKg, String supplyType,
             Boolean isMedical, String medicalItemType, Boolean isFurniture, String furnitureType,
-            Boolean isFood, String foodType, Boolean isEquipment, String equipmentItem,
+            Boolean isFood, String foodType, Boolean isEquipment, String equipmentItem, String city, String state, String country,
             Pageable pageable) {
+
+        SecurityUserDetails userDetails = securityUserDetailsService.getSecurityUserDetails();
+        // Check if the user is a provider
+        if (userDetails.getRole() == EnumRoles.PROVIDER) {
+            country = userDetails.getCountry();
+        }
+
         return bookingRepository.findByStatusAndFilters(
                 BookingStatus.PENDING, pickUpLocation, destination, additionalStops,
                 serviceStartDate, serviceEndDate, pickupStartDateTime, pickupEndDateTime,
@@ -207,7 +269,7 @@ public class BookingServiceImpl implements BookingService {
                 isMedical, medicalItemType,
                 isFurniture, furnitureType,
                 isFood, foodType,
-                isEquipment, equipmentItem,
+                isEquipment, equipmentItem, city, state, country,
                 pageable);
     }
 
@@ -548,6 +610,46 @@ public class BookingServiceImpl implements BookingService {
 
     public Page<BookingRequestResponseDTO> mapPageToPageResponse(Page<BookingRequest> bookingPage) {
         return bookingPage.map(this::mapToResponseDTO);
+    }
+
+
+    public List<DriverResponse> getAvailableDrivers() {
+
+        // Get authenticated user
+        SecurityUserDetails userDetails = securityUserDetailsService.getSecurityUserDetails();
+
+        // Fetch drivers
+        List<User> drivers;
+        if (userDetails.getRole() == EnumRoles.PROVIDER) {
+            // For PROVIDER, only get drivers with matching providerId
+            drivers = userRepository.findByRolesAndProviderId(EnumRoles.DRIVER, String.valueOf(userDetails.getId()));
+        } else {
+            // For ADMIN or CUSTOMER_SERVICE, get all DRIVERs
+            drivers = userRepository.findByRoles(EnumRoles.DRIVER);
+        }
+
+        // Map to DriverResponse
+        return drivers.stream()
+                .map(user -> {
+                    DriverResponse response = new DriverResponse();
+                    response.setId(user.getId());
+                    response.setFullName(buildFullName(user));
+                    response.setAddress(user.getAddress());
+                    response.setEmail(user.getEmail());
+                    return response;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private String buildFullName(User user) {
+        StringBuilder fullName = new StringBuilder(user.getFirstName());
+        if (user.getMiddleName() != null && !user.getMiddleName().isEmpty()) {
+            fullName.append(" ").append(user.getMiddleName());
+        }
+        if (user.getLastName() != null && !user.getLastName().isEmpty()) {
+            fullName.append(" ").append(user.getLastName());
+        }
+        return fullName.toString();
     }
 
 }

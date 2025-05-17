@@ -57,6 +57,15 @@ public class BookingRequest {
     private String destination;
 
     @Column
+    private String city;
+
+    @Column
+    private String state;
+
+    @Column
+    private String country;
+
+    @Column
     private String rateInformation;
 
     @Column

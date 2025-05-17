@@ -103,4 +103,6 @@ public class User {
     @Column(name = "provider_role", columnDefinition = "varchar(255) default 'NONE'")
     private ProviderRole providerRole;
 
+    @Column
+    private Boolean selfCreated = true;
 }

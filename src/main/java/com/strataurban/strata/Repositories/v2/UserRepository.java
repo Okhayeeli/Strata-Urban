@@ -41,5 +41,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findProvidersByServiceAreaName(@Param("serviceAreaName") String serviceAreaName);
 
 //    Optional<User> findByCurrentRefreshTokenJti(String jti);
-
+    List<User> findByRolesAndProviderId(EnumRoles role, String providerId);
 }

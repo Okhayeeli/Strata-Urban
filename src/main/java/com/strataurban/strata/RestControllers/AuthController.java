@@ -4,6 +4,8 @@ import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
+import com.strataurban.strata.Security.LoggedUser;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
 import com.strataurban.strata.Services.PasswordResetTokenService;
 import com.strataurban.strata.Services.v2.UserService;

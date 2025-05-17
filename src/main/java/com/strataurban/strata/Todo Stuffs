@@ -1,47 +1,45 @@
 
-1. Authentication Functionalities
-Authentication ensures that users are who they claim to be when they access the app.
-
 User Registration with Email Verification
 Require email verification during registration to ensure the email is valid (e.g., send a verification link or OTP).
 Prevent duplicate email addresses or usernames.
-Secure Login
-Support username/email and password-based login.
-Hash passwords using a strong algorithm (e.g., bcrypt, Argon2).
-Return a secure token (e.g., JWT) upon successful login for subsequent requests.
+
+Users whose details were created for them, have a column that indicates this and forces them to reset their password before doing anything, and must update that column.
+
+
 Multi-Factor Authentication (MFA)
 Add an extra layer of security by requiring a second factor (e.g., SMS OTP, email OTP, or authenticator app) during login.
-Option to enable/disable MFA for users.
-Password Management
-Allow users to reset their password via email (send a reset link or OTP).
-Enforce strong password policies (e.g., minimum length, special characters).
+
+
+
+
 Allow users to change their password from their profile.
 Session Management
 Implement session timeouts (e.g., tokens expire after a set period).
 Allow users to log out and invalidate their session/token.
 Support refresh tokens to extend user sessions without re-authentication.
-Account Lockout
-Lock user accounts after a certain number of failed login attempts to prevent brute-force attacks.
+
+
+
 Notify users of suspicious login attempts.
 OAuth/Social Login
 Allow users to log in using third-party providers (e.g., Google, Facebook) for convenience.
 Map third-party user data to your app’s user model.
 API Key Authentication for Providers
 Allow Providers to generate API keys for integrating with your app programmatically (e.g., for automated booking management).
-Device Management
-Track devices used for login (e.g., show a list of active devices).
+
+//Todo Track devices used for login (e.g., show a list of active devices).
 Allow users to log out from specific devices remotely.
+
 2. Authorization Functionalities
 Authorization ensures that users can only access resources and perform actions they are permitted to.
 
 Role-Based Access Control (RBAC)
-Define roles (e.g., CLIENT, PROVIDER, ADMIN) in the EnumRoles field of the User class.
-Restrict endpoints based on roles (e.g., only Providers can access /api/bookings/provider/{providerId}).
-Allow Admins to manage all users, bookings, and providers.
+
+
+
 Permission-Based Access Control
-Define granular permissions (e.g., CREATE_BOOKING, CONFIRM_BOOKING, VIEW_PROVIDER_DASHBOARD).
-Map permissions to roles (e.g., Clients can create bookings, Providers can confirm bookings).
-Resource Ownership
+
+
 Ensure users can only access their own resources (e.g., a Client can only see their own bookings, a Provider can only see their own vehicles).
 Validate ownership during API requests (e.g., check if userId matches the clientId in /api/bookings/client/{clientId}).
 Provider-Specific Access

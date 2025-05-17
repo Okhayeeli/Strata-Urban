@@ -16,4 +16,8 @@ public class StrataMethodSecurity {
         return bookingRepository.existsByIdAndClientId(entityId, clientId);
     }
 
+    public boolean isProviderOwner(Long entityId, Long providerId) {
+        return bookingRepository.existsByIdAndProviderId(entityId, providerId);
+    }
+
 }

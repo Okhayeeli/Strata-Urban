@@ -8,8 +8,10 @@ import com.strataurban.strata.Entities.Providers.Provider;
 import com.strataurban.strata.Entities.Providers.ServiceArea;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.EnumRoles;
+import com.strataurban.strata.Enums.ProviderRole;
 import com.strataurban.strata.Repositories.v2.ServiceAreaRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
 import com.strataurban.strata.Services.v2.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
@@ -186,6 +189,7 @@ public class UserServiceImpl implements UserService {
         user.setImageUrl(request.getImageUrl());
         user.setRoles(request.getRole());
         user.setEmailVerified(true);
+        user.setSelfCreated(false);
 
         return userRepository.save(user);
     }
@@ -416,6 +420,58 @@ public class UserServiceImpl implements UserService {
         }
 
         return user;
+    }
+    @Override
+    public User registerDriver(AdminRegistrationRequest request, SecurityUserDetails userDetails) {
+        // Check for existing username or email
+        if (userRepository.findByUsernameOrEmail(request.getUsername(), request.getEmail()).isPresent()) {
+            throw new RuntimeException("Username or email already exists");
+        }
+
+        // Validate password
+        validatePassword(request.getPassword());
+
+        // Create new user
+        User user = new User();
+        user.setTitle(request.getTitle());
+        user.setFirstName(request.getFirstName());
+        user.setMiddleName(request.getMiddleName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPhone(request.getPhone());
+        user.setPhone2(request.getPhone2());
+        user.setAddress(request.getAddress());
+        user.setPreferredLanguage(request.getPreferredLanguage());
+        user.setImageUrl(request.getImageUrl());
+        user.setRoles(EnumRoles.DRIVER);
+        user.setEmailVerified(true);
+        user.setSelfCreated(false);
+
+        // Set fields based on user role
+        if (userDetails.getRole() == EnumRoles.PROVIDER) {
+            // For PROVIDER: use userDetails for city, state, country, and id
+            user.setCity(userDetails.getCity());
+            user.setState(userDetails.getState());
+            user.setCountry(userDetails.getCountry());
+            user.setProviderId(String.valueOf(userDetails.getId()));
+            user.setProviderRole(ProviderRole.DRIVER);
+        } else {
+            // For ADMIN, CUSTOMER_SERVICE: use request body for city, state, country
+            user.setCity(request.getCity());
+            user.setState(request.getState());
+            user.setCountry(request.getCountry());
+            if (StringUtils.hasText(request.getProviderId())) {
+                user.setProviderId(request.getProviderId());
+            }
+            else{
+                throw new RuntimeException("Provider ID is required for driver registration");
+            }
+            user.setProviderRole(null); // Adjust based on your requirements
+        }
+
+        return userRepository.save(user);
     }
 
     // Update last activity on every request (via a filter or service call)

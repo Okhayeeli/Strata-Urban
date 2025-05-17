@@ -48,8 +48,8 @@ public class Provider extends User {
     @ElementCollection
     @Enumerated(EnumType.STRING)
     private List<LogisticsServiceType> serviceTypes;
-
     @Column
     private String serviceAreas;
-
+    @Column
+    private Integer transportCount;
 }

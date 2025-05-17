@@ -1,19 +1,21 @@
 package com.strataurban.strata.RestControllers.v2;
 
+import com.strataurban.strata.DTOs.v2.RequestBodyIdDto;
 import com.strataurban.strata.DTOs.v2.TransportDTO;
 import com.strataurban.strata.DTOs.v2.TransportStatusRequest;
 import com.strataurban.strata.Entities.Providers.Transport;
+import com.strataurban.strata.Security.LoggedUser;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Services.v2.TransportService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
@@ -23,30 +25,32 @@ public class TransportRestController {
 
     private final TransportService transportService;
 
-    @Autowired
     public TransportRestController(TransportService transportService) {
         this.transportService = transportService;
     }
 
     @PostMapping
-    @Operation(summary = "Add a new transport", description = "Allows a provider to add a new transport to their fleet")
+    @Operation(summary = "Add a new transport", description = "Allows a PROVIDER to add a new transport to their fleet, or ADMIN/CUSTOMER_SERVICE to add for any provider")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Transport added successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid transport data")
+            @ApiResponse(responseCode = "400", description = "Invalid transport data"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER, ADMIN, or CUSTOMER_SERVICE allowed")
     })
-    public ResponseEntity<TransportDTO> addTransport(@RequestBody Transport transport) {
-        Transport savedTransport = transportService.addTransport(transport);
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN', 'CUSTOMER_SERVICE')")
+    public ResponseEntity<TransportDTO> addTransport(@RequestBody Transport transport, @LoggedUser SecurityUserDetails userDetails) {
+        Transport savedTransport = transportService.addTransport(transport, userDetails);
         return ResponseEntity.ok(mapToDTO(savedTransport));
     }
 
-    @GetMapping("/provider/{providerId}")
-    @Operation(summary = "Get all transports for a provider", description = "Fetches all transports owned by a specific provider")
+    @GetMapping
+    @Operation(summary = "Get all transports for the authenticated provider", description = "Fetches all transports owned by the authenticated PROVIDER, or all transports for ADMIN/CUSTOMER_SERVICE")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Transports retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Provider not found")
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER, ADMIN, or CUSTOMER_SERVICE allowed")
     })
-    public ResponseEntity<List<TransportDTO>> getProviderTransports(@PathVariable Long providerId) {
-        List<Transport> transports = transportService.getProviderTransports(providerId);
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN', 'CUSTOMER_SERVICE')")
+    public ResponseEntity<List<TransportDTO>> getProviderTransports(@LoggedUser SecurityUserDetails userDetails) {
+        List<Transport> transports = transportService.getProviderTransports(userDetails);
         List<TransportDTO> transportDTOs = transports.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
@@ -54,50 +58,58 @@ public class TransportRestController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get transport details by ID", description = "Fetches details of a specific transport")
+    @Operation(summary = "Get transport details by ID", description = "Fetches details of a specific transport, restricted to the PROVIDER owning it or ADMIN/CUSTOMER_SERVICE")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Transport retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER owning the transport, ADMIN, or CUSTOMER_SERVICE allowed"),
             @ApiResponse(responseCode = "404", description = "Transport not found")
     })
+    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
     public ResponseEntity<TransportDTO> getTransportById(@PathVariable Long id) {
         Transport transport = transportService.getTransportById(id);
         return ResponseEntity.ok(mapToDTO(transport));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update transport details", description = "Updates the details of a specific transport")
+    @Operation(summary = "Update transport details", description = "Updates a specific transport, restricted to the PROVIDER owning it or ADMIN/CUSTOMER_SERVICE")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Transport updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid transport data"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER owning the transport, ADMIN, or CUSTOMER_SERVICE allowed"),
             @ApiResponse(responseCode = "404", description = "Transport not found")
     })
-    public ResponseEntity<TransportDTO> updateTransport(
-            @PathVariable Long id,
-            @RequestBody Transport transport) {
-        Transport updatedTransport = transportService.updateTransport(id, transport);
+    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
+    public ResponseEntity<TransportDTO> updateTransport(@PathVariable Long id, @RequestBody Transport transport, @LoggedUser SecurityUserDetails userDetails) throws IllegalAccessException {
+        Transport updatedTransport = transportService.updateTransport(id, transport, userDetails);
         return ResponseEntity.ok(mapToDTO(updatedTransport));
     }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a transport", description = "Deletes a specific transport from the provider's fleet")
+    @DeleteMapping()
+    @Operation(summary = "Delete a transport", description = "Deletes a specific transport, restricted to the PROVIDER owning it or ADMIN/CUSTOMER_SERVICE")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Transport deleted successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER owning the transport, ADMIN, or CUSTOMER_SERVICE allowed"),
             @ApiResponse(responseCode = "404", description = "Transport not found")
     })
-    public ResponseEntity<Void> deleteTransport(@PathVariable Long id) {
-        transportService.deleteTransport(id);
+    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
+    public ResponseEntity<Void> deleteTransport(@RequestBody RequestBodyIdDto requestBodyIdDto) {
+        transportService.deleteTransport(requestBodyIdDto.getId());
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/available")
-    @Operation(summary = "Get available transports", description = "Fetches available transports for a booking based on provider, category, and capacity")
+    @Operation(summary = "Get available transports", description = "Fetches available transports for a booking, restricted to the authenticated PROVIDER's fleet or all transports for ADMIN/CUSTOMER_SERVICE")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Available transports retrieved successfully")
+            @ApiResponse(responseCode = "200", description = "Available transports retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid category or capacity"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER, ADMIN, or CUSTOMER_SERVICE allowed")
     })
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN', 'CUSTOMER_SERVICE')")
     public ResponseEntity<List<TransportDTO>> getAvailableTransports(
-            @RequestParam Long providerId,
             @RequestParam String transportCategory,
-            @RequestParam Integer capacity) {
-        List<Transport> transports = transportService.getAvailableTransports(providerId, transportCategory, capacity);
+            @RequestParam Integer capacity,
+            @LoggedUser SecurityUserDetails userDetails) {
+        List<Transport> transports = transportService.getAvailableTransports(userDetails, transportCategory, capacity);
         List<TransportDTO> transportDTOs = transports.stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
@@ -105,12 +117,14 @@ public class TransportRestController {
     }
 
     @PutMapping("/{id}/status")
-    @Operation(summary = "Update transport status", description = "Updates the status of a specific transport (e.g., Available, Booked)")
+    @Operation(summary = "Update transport status", description = "Updates the status of a specific transport, restricted to the PROVIDER owning it or ADMIN/CUSTOMER_SERVICE")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Transport status updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Transport not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid status")
+            @ApiResponse(responseCode = "400", description = "Invalid status"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER owning the transport, ADMIN, or CUSTOMER_SERVICE allowed"),
+            @ApiResponse(responseCode = "404", description = "Transport not found")
     })
+    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
     public ResponseEntity<TransportDTO> updateTransportStatus(
             @PathVariable Long id,
             @RequestBody TransportStatusRequest statusRequest) {
@@ -118,7 +132,6 @@ public class TransportRestController {
         return ResponseEntity.ok(mapToDTO(updatedTransport));
     }
 
-    // Helper method to map Transport entity to TransportDTO
     private TransportDTO mapToDTO(Transport transport) {
         return new TransportDTO(
                 transport.getId(),

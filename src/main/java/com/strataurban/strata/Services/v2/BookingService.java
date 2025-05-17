@@ -1,9 +1,6 @@
 package com.strataurban.strata.Services.v2;
 
-import com.strataurban.strata.DTOs.v2.BookingRequestRequestDTO;
-import com.strataurban.strata.DTOs.v2.BookingRequestResponseDTO;
-import com.strataurban.strata.DTOs.v2.ContactRequest;
-import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
+import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumPriority;
@@ -40,7 +37,7 @@ public interface BookingService {
     BookingRequest assignDriver(Long id, DriverAssignmentRequest request);
 
     // Get bookings by status for a provider
-    List<BookingRequest> getProviderBookingsByStatus(Long providerId, BookingStatus status);
+    Page<BookingRequestResponseDTO> getProviderBookingsByStatus(Long providerId, BookingStatus status, Pageable pageable);
 
     // Contact a party involved in a booking
     void contactParty(Long id, ContactRequest request);
@@ -63,7 +60,7 @@ public interface BookingService {
             EnumPriority priority, Boolean isPassenger, Integer numberOfPassengers,
             String eventType, Boolean isCargo, Double estimatedWeightKg, String supplyType,
             Boolean isMedical, String medicalItemType, Boolean isFurniture, String furnitureType,
-            Boolean isFood, String foodType, Boolean isEquipment, String equipmentItem,
+            Boolean isFood, String foodType, Boolean isEquipment, String equipmentItem, String city, String state, String country,
             Pageable pageable);
 
     BookingRequest acceptOffer(Long bookingId, Long offerId);
@@ -72,4 +69,5 @@ public interface BookingService {
 
     BookingRequestResponseDTO mapToResponseDTO(BookingRequest entity);
 
+    List<DriverResponse> getAvailableDrivers();
 }

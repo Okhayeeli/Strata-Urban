@@ -1,9 +1,6 @@
 package com.strataurban.strata.RestControllers.v2;
 
-import com.strataurban.strata.DTOs.v2.BookingRequestRequestDTO;
-import com.strataurban.strata.DTOs.v2.BookingRequestResponseDTO;
-import com.strataurban.strata.DTOs.v2.ContactRequest;
-import com.strataurban.strata.DTOs.v2.DriverAssignmentRequest;
+import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumPriority;
@@ -24,6 +21,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -112,9 +111,9 @@ public class BookingRestController {
                     "hasRole('CUSTOMER_SERVICE') or " +
                     "hasRole('DEVELOPER') or " +
                     // PROVIDER can only see bookings they’re assigned to:
-                    "(hasRole('PROVIDER') and @bookingService.isAuthorizedProviderBooking(#id, #userDetails.id)) or " +
+                    "(hasRole('PROVIDER')or " +
                     // CLIENT can only see their own bookings:
-                    "(hasRole('CLIENT') and @methodSecurity.isClientOwner(#id, principal.id))"
+                    "(hasRole('CLIENT') and @methodSecurity.isClientOwner(#id, principal.id)))"
     )
     public ResponseEntity<BookingRequestResponseDTO> getBookingById(
             @Parameter(description = "Booking ID", example = "1") @PathVariable Long id,
@@ -132,11 +131,14 @@ public class BookingRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER or ADMIN can update booking status. CLIENT, DEVELOPER, and others are not allowed.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @bookingService.isAuthorizedProviderBooking(#id, principal.id)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id))  or hasRole('ADMIN')")
     public ResponseEntity<BookingRequestResponseDTO> updateBookingStatus(
             @Parameter(description = "Booking ID", example = "1") @PathVariable Long id,
-            @Parameter(description = "New booking status", example = "ACCEPTED") @RequestBody BookingStatus status) {
+            @Parameter(description = "New booking status", example = "ACCEPTED") @RequestBody(required = false) BookingStatus status) {
         try {
+            if(ObjectUtils.isEmpty(status)){
+                throw new RuntimeException("Please enter a status");
+            }
             BookingRequest booking = bookingService.updateBookingStatus(id, status);
             BookingRequestResponseDTO responseDTO = bookingService.mapToResponseDTO(booking);
             return ResponseEntity.ok(responseDTO);
@@ -170,7 +172,7 @@ public class BookingRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT (if authorized) or PROVIDER (if authorized) can cancel a booking. ADMIN can also cancel, but DEVELOPER and others are restricted.")
     })
-    @PreAuthorize("(hasRole('CLIENT') and @bookingService.isAuthorizedClientBooking(#id, principal.id)) or (hasRole('PROVIDER') and @bookingService.isAuthorizedProviderBooking(#id, principal.id)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('CLIENT') and @methodSecurity.isClientOwner(#id, principal.id)) or hasRole('CUSTOMER_SERVICE')")
     public ResponseEntity<BookingRequest> cancelBooking(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(bookingService.cancelBooking(id));
@@ -187,7 +189,7 @@ public class BookingRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER or ADMIN can assign a driver. CLIENT, DEVELOPER, and others are not allowed.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @bookingService.isAuthorizedProviderBooking(#id, principal.id)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasRole('ADMIN') or hasRole('CUSTOMER_SERVICE')")
     public ResponseEntity<BookingRequest> assignDriver(
             @PathVariable Long id,
             @RequestBody DriverAssignmentRequest request) {
@@ -205,12 +207,13 @@ public class BookingRestController {
             @ApiResponse(responseCode = "404", description = "Provider not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id == #providerId) or ADMIN can access this endpoint. CLIENT, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #providerId) or hasRole('ADMIN')")
-    public ResponseEntity<List<BookingRequest>> getProviderBookingsByStatus(
+    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #providerId) or hasRole('CUSTOMER_SERVICE')")
+    public ResponseEntity<Page<BookingRequestResponseDTO>> getProviderBookingsByStatus(
             @PathVariable Long providerId,
-            @RequestParam BookingStatus status) {
+            @RequestParam BookingStatus status,
+            Pageable pageable) {
         try {
-            return ResponseEntity.ok(bookingService.getProviderBookingsByStatus(providerId, status));
+            return ResponseEntity.ok(bookingService.getProviderBookingsByStatus(providerId, status, pageable));
         } catch (SecurityException e) {
             throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id == #providerId) or ADMIN can access this endpoint. CLIENT, DEVELOPER, and others are restricted.");
         }
@@ -278,6 +281,9 @@ public class BookingRestController {
     public ResponseEntity<Page<BookingRequestResponseDTO>> getPendingBookingsWithFilters(
             @Parameter(description = "Pick-up location", example = "Lagos", required = false) @RequestParam(required = false) String pickUpLocation,
             @Parameter(description = "Destination", example = "Abuja", required = false) @RequestParam(required = false) String destination,
+            @Parameter(description = "Country", example = "Abuja", required = false) @RequestParam(required = false) String country,
+            @Parameter(description = "City", example = "Abuja", required = false) @RequestParam(required = false) String city,
+            @Parameter(description = "State", example = "Abuja", required = false) @RequestParam(required = false) String state,
             @Parameter(description = "Additional stops", example = "Ikeja", required = false) @RequestParam(required = false) String additionalStops,
             @Parameter(description = "Service start date", example = "2025-05-01T00:00:00", required = false) @RequestParam(required = false) LocalDateTime serviceStartDate,
             @Parameter(description = "Service end date", example = "2025-05-31T23:59:59", required = false) @RequestParam(required = false) LocalDateTime serviceEndDate,
@@ -311,30 +317,12 @@ public class BookingRestController {
                     isMedical, medicalItemType,
                     isFurniture, furnitureType,
                     isFood, foodType,
-                    isEquipment, equipmentItem,
+                    isEquipment, equipmentItem, city, state, country,
                     pageable);
             Page<BookingRequestResponseDTO> responseDTOs = bookings.map(bookingService::mapToResponseDTO);
             return ResponseEntity.ok(responseDTOs);
         } catch (SecurityException e) {
             throw new AccessDeniedException("Access denied: Only PROVIDER or ADMIN can access this endpoint. CLIENT, DEVELOPER, and others are restricted.");
-        }
-    }
-
-    @GetMapping
-    @Operation(summary = "Get all bookings", description = "Retrieve a list of all bookings")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List of bookings",
-                    content = @Content(schema = @Schema(implementation = BookingRequestResponseDTO.class))),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can access this endpoint. PROVIDER, CLIENT, DEVELOPER, and others are restricted.")
-    })
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<BookingRequestResponseDTO>> getAllBookings(Pageable pageable) {
-        try {
-            List<BookingRequest> bookings = bookingService.getAllBookings();
-
-            return ResponseEntity.ok(bookingServiceImpl.mapToPageResponse(bookings, pageable));
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only ADMIN can access this endpoint. PROVIDER, CLIENT, DEVELOPER, and others are restricted.");
         }
     }
 }

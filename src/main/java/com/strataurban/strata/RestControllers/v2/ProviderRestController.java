@@ -1,12 +1,15 @@
 package com.strataurban.strata.RestControllers.v2;
 
-import com.strataurban.strata.DTOs.v2.ProviderDTO;
-import com.strataurban.strata.DTOs.v2.ProviderDashboard;
-import com.strataurban.strata.DTOs.v2.ProviderDocumentDTO;
-import com.strataurban.strata.DTOs.v2.RatingRequest;
+import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.Providers.Provider;
 import com.strataurban.strata.Entities.Providers.ProviderDocument;
+import com.strataurban.strata.Entities.User;
+import com.strataurban.strata.Security.LoggedUser;
+import com.strataurban.strata.Security.SecurityUserDetails;
+import com.strataurban.strata.Services.v2.BookingService;
 import com.strataurban.strata.Services.v2.ProviderService;
+import com.strataurban.strata.Services.v2.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,10 +29,14 @@ import java.util.stream.Collectors;
 public class ProviderRestController {
 
     private final ProviderService providerService;
+    private final UserService userService;
+    private final BookingService bookingService;
 
     @Autowired
-    public ProviderRestController(ProviderService providerService) {
+    public ProviderRestController(ProviderService providerService, UserService userService, BookingService bookingService) {
         this.providerService = providerService;
+        this.userService = userService;
+        this.bookingService = bookingService;
     }
 
     @PostMapping("/register")
@@ -279,5 +286,33 @@ public class ProviderRestController {
                 document.getProviderNameDocument(),
                 document.getTaxDocument()
         );
+    }
+
+
+
+    @PostMapping("/signup/driver")
+    @Operation(summary = "Register a driver for a Provider", description = "Creates a new driver (ADMIN, CUSTOMER_SERVICE, DEVELOPER, Provider)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Driver registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid registration request")
+    })
+    @PreAuthorize("hasAnyRole('CUSTOMER_SERVICE', 'ADMIN', 'PROVIDER', 'DRIVER', 'DEVELOPER')")
+    public ResponseEntity<User> registerDriver(@Valid @RequestBody AdminRegistrationRequest request,
+                                               @LoggedUser SecurityUserDetails userDetails) {
+        return ResponseEntity.ok(userService.registerDriver(request, userDetails));
+    }
+
+
+    @GetMapping("/available-drivers")
+    @Operation(summary = "Get available drivers for a booking", description = "Returns a list of drivers (id, full name, address, email) who can be assigned to a CONFIRMED or CLAIMED booking")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of available drivers retrieved successfully"),
+            @ApiResponse(responseCode = "400", description = "Booking is not in CONFIRMED or CLAIMED status"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER, ADMIN, or CUSTOMER_SERVICE can access this endpoint"),
+            @ApiResponse(responseCode = "404", description = "Booking not found")
+    })
+    @PreAuthorize("hasRole('PROVIDER')")
+    public ResponseEntity<List<DriverResponse>> getAvailableDrivers() {
+        return ResponseEntity.ok(bookingService.getAvailableDrivers());
     }
 }

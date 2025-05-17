@@ -18,6 +18,6 @@ public class SecurityUserDetailsService {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username).orElseThrow(() -> new IllegalStateException("User not found for username: " + username));
 
-        return new SecurityUserDetails(user.getId(), user.getFirstName(), user.getMiddleName(), user.getLastName(), user.getPhone(), user.getEmail(), user.getUsername(), user.getCountry());
+        return new SecurityUserDetails(user.getId(), user.getFirstName(), user.getMiddleName(), user.getLastName(), user.getRoles(), user.getPhone(), user.getEmail(), user.getUsername(), user.getCity(), user.getState(), user.getCountry());
     }
 }

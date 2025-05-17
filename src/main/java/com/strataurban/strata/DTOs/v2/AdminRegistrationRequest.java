@@ -60,4 +60,8 @@ public class AdminRegistrationRequest {
 
     @Schema(description = "Role of the user", example = "ADMIN")
     private EnumRoles role;
+
+    @Schema(description = "Id of the Provider if a driver is being created", example = "123")
+    private String providerId;
+
 }

@@ -5,6 +5,8 @@ import com.strataurban.strata.Entities.Passengers.Client;
 import com.strataurban.strata.Entities.Providers.Provider;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.EnumRoles;
+import com.strataurban.strata.Security.SecurityUserDetails;
+import jakarta.validation.Valid;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -68,4 +70,6 @@ public interface UserService extends UserDetailsService {
     void updateSessionTimeout(Long userId, int timeoutMinutes);
 
     User enableUser(UserDTO userDTO);
+
+    User registerDriver(@Valid AdminRegistrationRequest request, SecurityUserDetails userDetails);
 }
