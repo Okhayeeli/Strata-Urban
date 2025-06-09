@@ -325,4 +325,62 @@ public class BookingRestController {
             throw new AccessDeniedException("Access denied: Only PROVIDER or ADMIN can access this endpoint. CLIENT, DEVELOPER, and others are restricted.");
         }
     }
+
+
+    @GetMapping("")
+    @Operation(summary = "Get all bookings with filters", description = "Retrieve paginated pending bookings with optional filters")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Paginated list of pending bookings",
+                    content = @Content(schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN and CUSTOMER SERVICE and DEVELOPERS can access this endpoint. CLIENT, DEVELOPER, and others are restricted.")
+    })
+    @PreAuthorize("hasAnyRole('CUSTOMER_SERVICE', 'ADMIN', 'DEVELOPER')")
+    public ResponseEntity<Page<BookingRequestResponseDTO>> getAllBookings(
+            @Parameter(description = "Booking Status", example = "PENDING", required = false) @RequestParam(required = false) BookingStatus status,
+            @Parameter(description = "Pick-up location", example = "Lagos", required = false) @RequestParam(required = false) String pickUpLocation,
+            @Parameter(description = "Destination", example = "Abuja", required = false) @RequestParam(required = false) String destination,
+            @Parameter(description = "Country", example = "Abuja", required = false) @RequestParam(required = false) String country,
+            @Parameter(description = "City", example = "Abuja", required = false) @RequestParam(required = false) String city,
+            @Parameter(description = "State", example = "Abuja", required = false) @RequestParam(required = false) String state,
+            @Parameter(description = "Additional stops", example = "Ikeja", required = false) @RequestParam(required = false) String additionalStops,
+            @Parameter(description = "Service start date", example = "2025-05-01T00:00:00", required = false) @RequestParam(required = false) LocalDateTime serviceStartDate,
+            @Parameter(description = "Service end date", example = "2025-05-31T23:59:59", required = false) @RequestParam(required = false) LocalDateTime serviceEndDate,
+            @Parameter(description = "Pick-up start date-time", example = "2025-05-01T00:00:00", required = false) @RequestParam(required = false) LocalDateTime pickupStartDateTime,
+            @Parameter(description = "Pick-up end date-time", example = "2025-05-31T23:59:59", required = false) @RequestParam(required = false) LocalDateTime pickupEndDateTime,
+            @Parameter(description = "Created start date", example = "2025-04-01T00:00:00", required = false) @RequestParam(required = false) LocalDateTime createdStartDate,
+            @Parameter(description = "Created end date", example = "2025-04-30T23:59:59", required = false) @RequestParam(required = false) LocalDateTime createdEndDate,
+            @Parameter(description = "Priority", example = "STANDARD", required = false) @RequestParam(required = false) EnumPriority priority,
+            @Parameter(description = "Is passenger booking", example = "true", required = false) @RequestParam(required = false) Boolean isPassenger,
+            @Parameter(description = "Number of passengers", example = "4", required = false) @RequestParam(required = false) Integer numberOfPassengers,
+            @Parameter(description = "Event type", example = "Business", required = false) @RequestParam(required = false) String eventType,
+            @Parameter(description = "Is cargo booking", example = "true", required = false) @RequestParam(required = false) Boolean isCargo,
+            @Parameter(description = "Estimated weight in kg", example = "100.5", required = false) @RequestParam(required = false) Double estimatedWeightKg,
+            @Parameter(description = "Supply type", example = "Electronics", required = false) @RequestParam(required = false) String supplyType,
+            @Parameter(description = "Is medical booking", example = "true", required = false) @RequestParam(required = false) Boolean isMedical,
+            @Parameter(description = "Medical item type", example = "Medical supplies", required = false) @RequestParam(required = false) String medicalItemType,
+            @Parameter(description = "Is furniture booking", example = "true", required = false) @RequestParam(required = false) Boolean isFurniture,
+            @Parameter(description = "Furniture type", example = "Sofa", required = false) @RequestParam(required = false) String furnitureType,
+            @Parameter(description = "Is food booking", example = "true", required = false) @RequestParam(required = false) Boolean isFood,
+            @Parameter(description = "Food type", example = "Perishable", required = false) @RequestParam(required = false) String foodType,
+            @Parameter(description = "Is equipment booking", example = "true", required = false) @RequestParam(required = false) Boolean isEquipment,
+            @Parameter(description = "Equipment item", example = "Projector", required = false) @RequestParam(required = false) String equipmentItem,
+            @Parameter(description = "Pagination information") Pageable pageable) {
+        try {
+            Page<BookingRequest> bookings = bookingService.getAllBookings(status,
+                    pickUpLocation, destination, additionalStops,
+                    serviceStartDate, serviceEndDate, pickupStartDateTime, pickupEndDateTime,
+                    createdStartDate, createdEndDate, priority,
+                    isPassenger, numberOfPassengers, eventType,
+                    isCargo, estimatedWeightKg, supplyType,
+                    isMedical, medicalItemType,
+                    isFurniture, furnitureType,
+                    isFood, foodType,
+                    isEquipment, equipmentItem, city, state, country,
+                    pageable);
+            Page<BookingRequestResponseDTO> responseDTOs = bookings.map(bookingService::mapToResponseDTO);
+            return ResponseEntity.ok(responseDTOs);
+        } catch (SecurityException e) {
+            throw new AccessDeniedException("Access denied: Only PROVIDER or ADMIN can access this endpoint. CLIENT, DEVELOPER, and others are restricted.");
+        }
+    }
 }

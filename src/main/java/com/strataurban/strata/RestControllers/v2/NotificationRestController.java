@@ -3,7 +3,11 @@ package com.strataurban.strata.RestControllers.v2;
 import com.strataurban.strata.DTOs.v2.NotificationDTO;
 import com.strataurban.strata.DTOs.v2.NotificationRequest;
 import com.strataurban.strata.Entities.Generics.Notification;
+import com.strataurban.strata.Security.LoggedUser;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Services.v2.NotificationService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,7 +40,6 @@ public class NotificationRestController {
             @ApiResponse(responseCode = "400", description = "Invalid notification request"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can send notifications. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> sendNotification(@RequestBody NotificationRequest notificationRequest) {
         try {
             notificationService.sendNotification(notificationRequest);
@@ -46,20 +49,17 @@ public class NotificationRestController {
         }
     }
 
-    @GetMapping("/user/{userId}")
+    @GetMapping("/user")
     @Operation(summary = "Get all notifications for a user", description = "Fetches all notifications for a specific user")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Notifications retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "User not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only the user (CLIENT, PROVIDER, DRIVER with principal.id == #userId), ADMIN, or DEVELOPER can access this endpoint. Others are restricted.")
     })
-    @PreAuthorize("((hasRole('CLIENT') or hasRole('PROVIDER') or hasRole('DRIVER')) and principal.id == #userId) or hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public ResponseEntity<List<NotificationDTO>> getUserNotifications(@PathVariable Long userId) {
+    public ResponseEntity<Page<NotificationDTO>> getUserNotifications(@LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
         try {
-            List<Notification> notifications = notificationService.getUserNotifications(userId);
-            List<NotificationDTO> notificationDTOs = notifications.stream()
-                    .map(this::mapToDTO)
-                    .collect(Collectors.toList());
+            Page<Notification> notifications = notificationService.getUserNotifications(userDetails.getId(), pageable);
+            Page<NotificationDTO> notificationDTOs = notifications.map(this::mapToDTO);
             return ResponseEntity.ok(notificationDTOs);
         } catch (SecurityException e) {
             throw new AccessDeniedException("Access denied: Only the user (CLIENT, PROVIDER, DRIVER with principal.id == #userId), ADMIN, or DEVELOPER can access this endpoint. Others are restricted.");
@@ -73,7 +73,7 @@ public class NotificationRestController {
             @ApiResponse(responseCode = "404", description = "Notification not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only the user (CLIENT, PROVIDER, DRIVER if authorized) or ADMIN can mark a notification as read. DEVELOPER and others are restricted.")
     })
-    @PreAuthorize("((hasRole('CLIENT') or hasRole('PROVIDER') or hasRole('DRIVER')) and @notificationService.isAuthorizedUserNotification(#id, principal.id)) or hasRole('ADMIN')")
+//    @PreAuthorize("((hasRole('CLIENT') or hasRole('PROVIDER') or hasRole('DRIVER')) and @notificationService.isAuthorizedUserNotification(#id, principal.id)) or hasRole('ADMIN')")
     public ResponseEntity<Void> markAsRead(@PathVariable Long id) {
         try {
             notificationService.markAsRead(id);
@@ -90,7 +90,7 @@ public class NotificationRestController {
             @ApiResponse(responseCode = "404", description = "Notification not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can delete a notification. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteNotification(@PathVariable Long id) {
         try {
             notificationService.deleteNotification(id);
@@ -107,7 +107,7 @@ public class NotificationRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can send booking request notifications. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> sendBookingRequestNotification(@PathVariable Long bookingId) {
         try {
             notificationService.sendBookingRequestNotification(bookingId);
@@ -124,7 +124,7 @@ public class NotificationRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can send booking confirmation notifications. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> sendBookingConfirmationNotification(@PathVariable Long bookingId) {
         try {
             notificationService.sendBookingConfirmationNotification(bookingId);

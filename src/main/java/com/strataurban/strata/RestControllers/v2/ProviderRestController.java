@@ -9,16 +9,19 @@ import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Services.v2.BookingService;
 import com.strataurban.strata.Services.v2.ProviderService;
 import com.strataurban.strata.Services.v2.UserService;
-import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,163 +49,135 @@ public class ProviderRestController {
             @ApiResponse(responseCode = "400", description = "Invalid provider data"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER or ADMIN can register a provider. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN')")
     public ResponseEntity<ProviderDTO> registerProvider(@RequestBody Provider provider) {
-        try {
-            Provider savedProvider = providerService.registerProvider(provider);
-            return ResponseEntity.ok(mapToDTO(savedProvider));
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only PROVIDER or ADMIN can register a provider. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
-        }
+        Provider savedProvider = providerService.registerProvider(provider);
+        return ResponseEntity.ok(mapToDTO(savedProvider));
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Get provider profile by ID", description = "Fetches the profile of a specific provider")
+    @GetMapping(value = {"", "/{id}"})
+    @Operation(summary = "Get provider profile", description = "Fetches a provider's profile. For PROVIDER role, ID is optional and defaults to the authenticated user's ID. For ADMIN, CUSTOMER_SERVICE, DRIVER, or DEVELOPER, ID is required in the path.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Provider retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Provider not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id == #id), DRIVER, ADMIN, or DEVELOPER can access this endpoint. CLIENT and others are restricted.")
+            @ApiResponse(responseCode = "400", description = "ID required for ADMIN, CUSTOMER_SERVICE, DRIVER, or DEVELOPER roles"),
+            @ApiResponse(responseCode = "403", description = "Access denied: PROVIDER can only access their own profile"),
+            @ApiResponse(responseCode = "404", description = "Provider not found")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #id) or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public ResponseEntity<ProviderDTO> getProviderById(@PathVariable Long id) {
-        try {
-            Provider provider = providerService.getProviderById(id);
-            return ResponseEntity.ok(mapToDTO(provider));
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id == #id), DRIVER, ADMIN, or DEVELOPER can access this endpoint. CLIENT and others are restricted.");
-        }
+    @PreAuthorize("hasAnyRole('PROVIDER', 'DRIVER', 'ADMIN', 'CUSTOMER_SERVICE', 'DEVELOPER')")
+    public ResponseEntity<ProviderDTO> getProviderById(@PathVariable(required = false) Long id, @LoggedUser SecurityUserDetails userDetails) {
+        Long providerId = resolveProviderId(id, userDetails, List.of("ADMIN", "CUSTOMER_SERVICE", "DRIVER", "DEVELOPER"));
+        Provider provider = providerService.getProviderById(providerId);
+        return ResponseEntity.ok(mapToDTO(provider));
     }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Update provider profile", description = "Updates the profile of a specific provider")
+    @PutMapping(value = {"", "/{id}"})
+    @Operation(summary = "Update provider profile", description = "Updates a provider's profile. For PROVIDER role, ID is optional and defaults to the authenticated user's ID. For ADMIN, ID is required in the path.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Provider updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Provider not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id == #id) or ADMIN can update a provider. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
+            @ApiResponse(responseCode = "400", description = "ID required for ADMIN role"),
+            @ApiResponse(responseCode = "403", description = "Access denied: PROVIDER can only update their own profile"),
+            @ApiResponse(responseCode = "404", description = "Provider not found")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #id) or hasRole('ADMIN')")
-    public ResponseEntity<ProviderDTO> updateProvider(
-            @PathVariable Long id,
-            @RequestBody Provider provider) {
-        try {
-            Provider updatedProvider = providerService.updateProvider(id, provider);
-            return ResponseEntity.ok(mapToDTO(updatedProvider));
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id == #id) or ADMIN can update a provider. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
-        }
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN')")
+    public ResponseEntity<ProviderDTO> updateProvider(@PathVariable(required = false) Long id, @RequestBody Provider provider, @LoggedUser SecurityUserDetails userDetails) {
+        Long providerId = resolveProviderId(id, userDetails, List.of("ADMIN"));
+        Provider updatedProvider = providerService.updateProvider(providerId, provider);
+        return ResponseEntity.ok(mapToDTO(updatedProvider));
     }
 
-    @PostMapping("/{id}/documents")
-    @Operation(summary = "Upload provider documents", description = "Uploads documents for a specific provider")
+    @PostMapping(value = {"", "/{id}/documents"})
+    @Operation(summary = "Upload provider documents", description = "Uploads documents for a provider. For PROVIDER role, ID is optional and defaults to the authenticated user's ID. For ADMIN, ID is required in the path.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Documents uploaded successfully"),
-            @ApiResponse(responseCode = "404", description = "Provider not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id == #id) or ADMIN can upload documents. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
+            @ApiResponse(responseCode = "400", description = "ID required for ADMIN role"),
+            @ApiResponse(responseCode = "403", description = "Access denied: PROVIDER can only upload their own documents"),
+            @ApiResponse(responseCode = "404", description = "Provider not found")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #id) or hasRole('ADMIN')")
-    public ResponseEntity<ProviderDocumentDTO> uploadDocuments(
-            @PathVariable Long id,
-            @RequestBody ProviderDocument documents) {
-        try {
-            ProviderDocument savedDocuments = providerService.uploadDocuments(id, documents);
-            return ResponseEntity.ok(mapToDocumentDTO(savedDocuments));
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id == #id) or ADMIN can upload documents. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
-        }
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN')")
+    public ResponseEntity<ProviderDocumentDTO> uploadDocuments(@PathVariable(required = false) Long id, @RequestBody ProviderDocument documents, @LoggedUser SecurityUserDetails userDetails) {
+        Long providerId = resolveProviderId(id, userDetails, List.of("ADMIN"));
+        ProviderDocument savedDocuments = providerService.uploadDocuments(providerId, documents);
+        return ResponseEntity.ok(mapToDocumentDTO(savedDocuments));
     }
 
-    @GetMapping("/{id}/documents")
-    @Operation(summary = "Get provider documents", description = "Fetches documents for a specific provider")
+    @GetMapping(value = {"", "/{id}/documents"})
+    @Operation(summary = "Get provider documents", description = "Fetches documents for a provider. For PROVIDER role, ID is optional and defaults to the authenticated user's ID. For ADMIN, DRIVER, or DEVELOPER, ID is required in the path.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Documents retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Documents not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id == #id), DRIVER, ADMIN, or DEVELOPER can access documents. CLIENT and others are restricted.")
+            @ApiResponse(responseCode = "400", description = "ID required for ADMIN, DRIVER, or DEVELOPER roles"),
+            @ApiResponse(responseCode = "403", description = "Access denied: PROVIDER can only access their own documents"),
+            @ApiResponse(responseCode = "404", description = "Documents not found")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #id) or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public ResponseEntity<ProviderDocumentDTO> getProviderDocuments(@PathVariable Long id) {
-        try {
-            ProviderDocument documents = providerService.getProviderDocuments(id);
-            return ResponseEntity.ok(mapToDocumentDTO(documents));
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id == #id), DRIVER, ADMIN, or DEVELOPER can access documents. CLIENT and others are restricted.");
-        }
+    @PreAuthorize("hasAnyRole('PROVIDER', 'DRIVER', 'ADMIN', 'DEVELOPER')")
+    public ResponseEntity<ProviderDocumentDTO> getProviderDocuments(@PathVariable(required = false) Long id, @LoggedUser SecurityUserDetails userDetails) {
+        Long providerId = resolveProviderId(id, userDetails, List.of("ADMIN", "DRIVER", "DEVELOPER"));
+        ProviderDocument documents = providerService.getProviderDocuments(providerId);
+        return ResponseEntity.ok(mapToDocumentDTO(documents));
     }
 
-    @PutMapping("/{id}/documents")
-    @Operation(summary = "Update provider documents", description = "Updates documents for a specific provider")
+    @PutMapping(value = {"", "/{id}/documents"})
+    @Operation(summary = "Update provider documents", description = "Updates documents for a provider. For PROVIDER role, ID is optional and defaults to the authenticated user's ID. For ADMIN, ID is required in the path.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Documents updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Documents not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id == #id) or ADMIN can update documents. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
+            @ApiResponse(responseCode = "400", description = "ID required for ADMIN role"),
+            @ApiResponse(responseCode = "403", description = "Access denied: PROVIDER can only update their own documents"),
+            @ApiResponse(responseCode = "404", description = "Documents not found")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #id) or hasRole('ADMIN')")
-    public ResponseEntity<ProviderDocumentDTO> updateProviderDocuments(
-            @PathVariable Long id,
-            @RequestBody ProviderDocument documents) {
-        try {
-            ProviderDocument updatedDocuments = providerService.updateProviderDocuments(id, documents);
-            return ResponseEntity.ok(mapToDocumentDTO(updatedDocuments));
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id == #id) or ADMIN can update documents. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
-        }
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN')")
+    public ResponseEntity<ProviderDocumentDTO> updateProviderDocuments(@PathVariable(required = false) Long id, @RequestBody ProviderDocument documents, @LoggedUser SecurityUserDetails userDetails) {
+        Long providerId = resolveProviderId(id, userDetails, List.of("ADMIN"));
+        ProviderDocument updatedDocuments = providerService.updateProviderDocuments(providerId, documents);
+        return ResponseEntity.ok(mapToDocumentDTO(updatedDocuments));
     }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete provider account", description = "Deletes a specific provider account")
+    @DeleteMapping
+    @Operation(summary = "Delete provider account", description = "Deletes a provider account. For PROVIDER role, ID is taken from the request body and must match the authenticated user's ID. For ADMIN, any provider ID can be specified in the request body.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Provider deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Provider not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can delete a provider. PROVIDER, CLIENT, DRIVER, DEVELOPER, and others are restricted.")
+            @ApiResponse(responseCode = "400", description = "Provider ID is required"),
+            @ApiResponse(responseCode = "403", description = "Access denied: PROVIDER can only delete their own account"),
+            @ApiResponse(responseCode = "404", description = "Provider not found")
     })
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteProvider(@PathVariable Long id) {
-        try {
-            providerService.deleteProvider(id);
-            return ResponseEntity.ok().build();
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only ADMIN can delete a provider. PROVIDER, CLIENT, DRIVER, DEVELOPER, and others are restricted.");
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN')")
+    public ResponseEntity<Void> deleteProvider(@RequestBody RequestBodyIdDto request, @LoggedUser SecurityUserDetails userDetails) {
+        if (request == null || request.getId() == null) {
+            throw new IllegalArgumentException("Provider ID is required");
         }
+        if (userDetails.getRole().name().equals("PROVIDER") && !request.getId().equals(userDetails.getId())) {
+            throw new AccessDeniedException("PROVIDER can only delete their own account");
+        }
+        providerService.deleteProvider(request.getId());
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping
-    @Operation(summary = "Get all providers", description = "Fetches all providers in the system")
+    @GetMapping("/all")
+    @Operation(summary = "Get all providers", description = "Fetches a paginated list of all providers in the system, accessible to all users")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Providers retrieved successfully"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN or DEVELOPER can access all providers. PROVIDER, CLIENT, DRIVER, and others are restricted.")
+            @ApiResponse(responseCode = "400", description = "Invalid pagination parameters")
     })
-    @PreAuthorize("hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public ResponseEntity<List<ProviderDTO>> getAllProviders() {
-        try {
-            List<Provider> providers = providerService.getAllProviders();
-            List<ProviderDTO> providerDTOs = providers.stream()
-                    .map(this::mapToDTO)
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(providerDTOs);
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only ADMIN or DEVELOPER can access all providers. PROVIDER, CLIENT, DRIVER, and others are restricted.");
-        }
+//    @PreAuthorize("hasAnyRole('CLIENT', 'PROVIDER', 'DRIVER', 'ADMIN', 'CUSTOMER_SERVICE', 'DEVELOPER')")
+    public ResponseEntity<Page<ProviderDTO>> getAllProviders(Pageable pageable) {
+        Page<Provider> providers = providerService.getAllProviders(pageable);
+        Page<ProviderDTO> providerDTOs = providers.map(this::mapToDTO);
+        return ResponseEntity.ok(providerDTOs);
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Search providers", description = "Searches providers by service type, city, and minimum rating")
+    @Operation(summary = "Search providers", description = "Searches providers by name (contains, case-insensitive), service type, city, and minimum rating, returning a paginated list, accessible to all users")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Providers retrieved successfully"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT, PROVIDER, DRIVER, ADMIN, or DEVELOPER can search providers. Others are restricted.")
+            @ApiResponse(responseCode = "400", description = "Invalid query or pagination parameters")
     })
-    @PreAuthorize("hasRole('CLIENT') or hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public ResponseEntity<List<ProviderDTO>> searchProviders(
+    public ResponseEntity<Page<ProviderDTO>> searchProviders(
+            @RequestParam(required = false) String name,
             @RequestParam(required = false) String serviceType,
             @RequestParam(required = false) String city,
-            @RequestParam(required = false) Double minRating) {
-        try {
-            List<Provider> providers = providerService.searchProviders(serviceType, city, minRating);
-            List<ProviderDTO> providerDTOs = providers.stream()
-                    .map(this::mapToDTO)
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(providerDTOs);
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only CLIENT, PROVIDER, DRIVER, ADMIN, or DEVELOPER can search providers. Others are restricted.");
-        }
+            @RequestParam(required = false) Double minRating,
+            Pageable pageable) {
+        Page<Provider> providers = providerService.searchProviders(name, serviceType, city, minRating, pageable);
+        Page<ProviderDTO> providerDTOs = providers.map(this::mapToDTO);
+        return ResponseEntity.ok(providerDTOs);
     }
 
     @PostMapping("/{id}/rate")
@@ -210,85 +185,28 @@ public class ProviderRestController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Provider rated successfully"),
             @ApiResponse(responseCode = "404", description = "Provider not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT can rate a provider. PROVIDER, DRIVER, ADMIN, DEVELOPER, and others are restricted.")
+            @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT can rate a provider")
     })
     @PreAuthorize("hasRole('CLIENT')")
-    public ResponseEntity<Void> rateProvider(
-            @PathVariable Long id,
-            @RequestBody RatingRequest rating) {
-        try {
-            providerService.rateProvider(id, rating);
-            return ResponseEntity.ok().build();
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only CLIENT can rate a provider. PROVIDER, DRIVER, ADMIN, DEVELOPER, and others are restricted.");
-        }
+    public ResponseEntity<Void> rateProvider(@PathVariable Long id, @RequestBody RatingRequest rating) {
+        providerService.rateProvider(id, rating);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}/dashboard")
-    @Operation(summary = "Get provider dashboard", description = "Fetches dashboard statistics for a specific provider")
+    @Operation(summary = "Get provider dashboard", description = "Fetches dashboard statistics for a provider. For PROVIDER role, ID must match the authenticated user's ID. For ADMIN, any provider ID is allowed.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Dashboard retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "Provider not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id == #id) or ADMIN can access the dashboard. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
+            @ApiResponse(responseCode = "403", description = "Access denied: PROVIDER can only access their own dashboard")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #id) or hasRole('ADMIN')")
-    public ResponseEntity<ProviderDashboard> getProviderDashboard(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(providerService.getProviderDashboard(id));
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id == #id) or ADMIN can access the dashboard. CLIENT, DRIVER, DEVELOPER, and others are restricted.");
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN')")
+    public ResponseEntity<ProviderDashboard> getProviderDashboard(@PathVariable Long id, @LoggedUser SecurityUserDetails userDetails) {
+        if (userDetails.getRole().name().equals("PROVIDER") && !id.equals(userDetails.getId())) {
+            throw new AccessDeniedException("PROVIDER can only access their own dashboard");
         }
+        return ResponseEntity.ok(providerService.getProviderDashboard(id));
     }
-
-    // Helper method to map Provider entity to ProviderDTO
-    private ProviderDTO mapToDTO(Provider provider) {
-        return new ProviderDTO(
-                provider.getId(),
-                provider.getTitle(),
-                provider.getFirstName(),
-                provider.getMiddleName(),
-                provider.getLastName(),
-                provider.isEmailVerified(),
-                provider.getEmail(),
-                provider.getUsername(),
-                provider.getPhone(),
-                provider.getPhone2(),
-                provider.getAddress(),
-                provider.getPreferredLanguage(),
-                provider.getCity(),
-                provider.getState(),
-                provider.getCountry(),
-                provider.getRoles(),
-                provider.getImageUrl(),
-                provider.getCompanyLogoUrl(),
-                provider.getPrimaryContactPosition(),
-                provider.getPrimaryContactDepartment(),
-                provider.getCompanyBannerUrl(),
-                provider.getSupplierCode(),
-                provider.getCompanyName(),
-                provider.getCompanyAddress(),
-                provider.getCompanyRegistrationNumber(),
-                provider.getDescription(),
-                provider.getZipCode(),
-                provider.getRating(),
-                provider.getNumberOfRatings(),
-                provider.getServiceTypes(),
-                provider.getServiceAreas()
-        );
-    }
-
-    // Helper method to map ProviderDocument entity to ProviderDocumentDTO
-    private ProviderDocumentDTO mapToDocumentDTO(ProviderDocument document) {
-        return new ProviderDocumentDTO(
-                document.getId(),
-                document.getProviderRegistrationDocument(),
-                document.getProviderLicenseDocument(),
-                document.getProviderNameDocument(),
-                document.getTaxDocument()
-        );
-    }
-
-
 
     @PostMapping("/signup/driver")
     @Operation(summary = "Register a driver for a Provider", description = "Creates a new driver (ADMIN, CUSTOMER_SERVICE, DEVELOPER, Provider)")
@@ -297,11 +215,9 @@ public class ProviderRestController {
             @ApiResponse(responseCode = "400", description = "Invalid registration request")
     })
     @PreAuthorize("hasAnyRole('CUSTOMER_SERVICE', 'ADMIN', 'PROVIDER', 'DRIVER', 'DEVELOPER')")
-    public ResponseEntity<User> registerDriver(@Valid @RequestBody AdminRegistrationRequest request,
-                                               @LoggedUser SecurityUserDetails userDetails) {
+    public ResponseEntity<User> registerDriver(@Valid @RequestBody AdminRegistrationRequest request, @LoggedUser SecurityUserDetails userDetails) {
         return ResponseEntity.ok(userService.registerDriver(request, userDetails));
     }
-
 
     @GetMapping("/available-drivers")
     @Operation(summary = "Get available drivers for a booking", description = "Returns a list of drivers (id, full name, address, email) who can be assigned to a CONFIRMED or CLAIMED booking")
@@ -314,5 +230,33 @@ public class ProviderRestController {
     @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<List<DriverResponse>> getAvailableDrivers() {
         return ResponseEntity.ok(bookingService.getAvailableDrivers());
+    }
+
+    private Long resolveProviderId(Long id, SecurityUserDetails userDetails, List<String> rolesRequiringId) {
+        if (id == null && rolesRequiringId.contains(userDetails.getRole().name())) {
+            throw new IllegalArgumentException("ID is required for " + String.join(", ", rolesRequiringId) + " roles");
+        }
+        Long providerId = userDetails.getRole().name().equals("PROVIDER") ? userDetails.getId() : id;
+        if (userDetails.getRole().name().equals("PROVIDER") && id != null && !id.equals(userDetails.getId())) {
+            throw new AccessDeniedException("PROVIDER can only access their own data");
+        }
+        return providerId;
+    }
+
+    private ProviderDTO mapToDTO(Provider provider) {
+        return new ProviderDTO(provider.getId(), provider.getTitle(), provider.getFirstName(), provider.getMiddleName(),
+                provider.getLastName(), provider.isEmailVerified(), provider.getEmail(), provider.getUsername(),
+                provider.getPhone(), provider.getPhone2(), provider.getAddress(), provider.getPreferredLanguage(),
+                provider.getCity(), provider.getState(), provider.getCountry(), provider.getRoles(), provider.getImageUrl(),
+                provider.getCompanyLogoUrl(), provider.getPrimaryContactPosition(), provider.getPrimaryContactDepartment(),
+                provider.getCompanyBannerUrl(), provider.getSupplierCode(), provider.getCompanyName(),
+                provider.getCompanyAddress(), provider.getCompanyRegistrationNumber(), provider.getDescription(),
+                provider.getZipCode(), provider.getRating(), provider.getNumberOfRatings(), provider.getServiceTypes(),
+                provider.getServiceAreas());
+    }
+
+    private ProviderDocumentDTO mapToDocumentDTO(ProviderDocument document) {
+        return new ProviderDocumentDTO(document.getId(), document.getProviderRegistrationDocument(),
+                document.getProviderLicenseDocument(), document.getProviderNameDocument(), document.getTaxDocument());
     }
 }

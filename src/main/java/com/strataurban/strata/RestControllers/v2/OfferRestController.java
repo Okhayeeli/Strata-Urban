@@ -79,7 +79,7 @@ public class OfferRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT (if authorized), PROVIDER, DRIVER, ADMIN, or DEVELOPER can access this endpoint. Others are restricted.")
     })
-    @PreAuthorize("(hasRole('CLIENT') and @bookingService.isAuthorizedClientBooking(#bookingId, principal.id)) or hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENT', 'CUSTOMER_SERVICE', 'DEVELOPER')")
     public ResponseEntity<Page<Offer>> getOffersForBooking(
             @PathVariable Long bookingId,
             Pageable pageable) {

@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -106,8 +108,8 @@ public class TransportRestController {
     })
     @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN', 'CUSTOMER_SERVICE')")
     public ResponseEntity<List<TransportDTO>> getAvailableTransports(
-            @RequestParam String transportCategory,
-            @RequestParam Integer capacity,
+            @RequestParam(required = false) String transportCategory,
+            @RequestParam(required = false) Integer capacity,
             @LoggedUser SecurityUserDetails userDetails) {
         List<Transport> transports = transportService.getAvailableTransports(userDetails, transportCategory, capacity);
         List<TransportDTO> transportDTOs = transports.stream()
@@ -130,6 +132,28 @@ public class TransportRestController {
             @RequestBody TransportStatusRequest statusRequest) {
         Transport updatedTransport = transportService.updateTransportStatus(id, statusRequest.getStatus());
         return ResponseEntity.ok(mapToDTO(updatedTransport));
+    }
+
+    @GetMapping("/filter")
+    @PreAuthorize("hasAnyRole('PROVIDER', 'ADMIN', 'CUSTOMER_SERVICE')")
+    public ResponseEntity<Page<Transport>> getTransportsByFilters(
+            @RequestParam(required = false) Long providerId,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) Integer capacity,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String plateNumber,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String model,
+            @RequestParam(required = false) String color,
+            @RequestParam(required = false) String state,
+            @RequestParam(required = false) String company,
+            @RequestParam(required = false) Long routeId,
+            @RequestParam(required = false) String status,
+            Pageable pageable) {
+        Page<Transport> transports = transportService.findTransportsByFilters(
+                providerId, type, capacity, description, plateNumber, brand, model,
+                color, state, company, routeId, status, pageable);
+        return ResponseEntity.ok(transports);
     }
 
     private TransportDTO mapToDTO(Transport transport) {

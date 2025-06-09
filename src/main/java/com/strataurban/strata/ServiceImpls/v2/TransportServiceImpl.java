@@ -8,6 +8,8 @@ import com.strataurban.strata.Repositories.v2.TransportRepository;
 import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Security.SecurityUserDetailsService;
 import com.strataurban.strata.Services.v2.TransportService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -112,5 +114,25 @@ public class TransportServiceImpl implements TransportService {
         }
         transport.setStatus(status);
         return transportRepository.save(transport);
+    }
+
+    @Override
+    public Page<Transport> findTransportsByFilters(
+            Long providerId,
+            String type,
+            Integer capacity,
+            String description,
+            String plateNumber,
+            String brand,
+            String model,
+            String color,
+            String state,
+            String company,
+            Long routeId,
+            String status,
+            Pageable pageable) {
+        return transportRepository.findByFilters(
+                providerId, type, capacity, description, plateNumber, brand, model,
+                color, state, company, routeId, status, pageable);
     }
 }

@@ -34,7 +34,7 @@ public class RouteRestController {
             @ApiResponse(responseCode = "400", description = "Invalid route data supplied"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER or ADMIN can create a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PROVIDER') or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
     public Routes createRoute(@RequestBody Routes route) {
         try {
             return routeService.createRoute(route);
@@ -50,7 +50,7 @@ public class RouteRestController {
             @ApiResponse(responseCode = "404", description = "Route not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized), DRIVER, ADMIN, or DEVELOPER can access a route. CLIENT and others are restricted.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @routeService.isAuthorizedProviderRoute(#routeId, principal.id)) or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
     public Routes getRoute(
             @Parameter(description = "ID of the route to fetch")
             @RequestParam Long routeId) {

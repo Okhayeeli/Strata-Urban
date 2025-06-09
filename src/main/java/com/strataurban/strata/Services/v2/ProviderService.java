@@ -4,6 +4,8 @@ import com.strataurban.strata.DTOs.v2.ProviderDashboard;
 import com.strataurban.strata.DTOs.v2.RatingRequest;
 import com.strataurban.strata.Entities.Providers.Provider;
 import com.strataurban.strata.Entities.Providers.ProviderDocument;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -30,12 +32,8 @@ public interface ProviderService {
     // Delete provider account
     void deleteProvider(Long id);
 
-    // Get all providers
-    List<Provider> getAllProviders();
-
-    // Search providers by criteria
-    List<Provider> searchProviders(String serviceType, String city, Double minRating);
-
+    Page<Provider> getAllProviders(Pageable pageable);
+    Page<Provider> searchProviders(String name, String serviceType, String city, Double minRating, Pageable pageable);
     // Rate a provider
     void rateProvider(Long providerId, RatingRequest rating);
 

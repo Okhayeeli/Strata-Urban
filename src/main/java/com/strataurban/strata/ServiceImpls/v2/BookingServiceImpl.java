@@ -178,7 +178,6 @@ public class BookingServiceImpl implements BookingService {
                 throw new SecurityException("Vehicle does not belong to this provider");
             }
         }
-
         // Assign driver and vehicle to booking
         booking.setDriverId(request.getDriverId());
         booking.setVehicleId(request.getVehicleId());
@@ -650,6 +649,39 @@ public class BookingServiceImpl implements BookingService {
             fullName.append(" ").append(user.getLastName());
         }
         return fullName.toString();
+    }
+
+
+
+    @Override
+    public Page<BookingRequest> getAllBookings(BookingStatus status,
+            String pickUpLocation, String destination, String additionalStops,
+            LocalDateTime serviceStartDate, LocalDateTime serviceEndDate,
+            LocalDateTime pickupStartDateTime, LocalDateTime pickupEndDateTime,
+            LocalDateTime createdStartDate, LocalDateTime createdEndDate,
+            EnumPriority priority, Boolean isPassenger, Integer numberOfPassengers,
+            String eventType, Boolean isCargo, Double estimatedWeightKg, String supplyType,
+            Boolean isMedical, String medicalItemType, Boolean isFurniture, String furnitureType,
+            Boolean isFood, String foodType, Boolean isEquipment, String equipmentItem, String city, String state, String country,
+            Pageable pageable) {
+
+        SecurityUserDetails userDetails = securityUserDetailsService.getSecurityUserDetails();
+        // Check if the user is a provider
+        if (userDetails.getRole() == EnumRoles.PROVIDER) {
+            country = userDetails.getCountry();
+        }
+
+        return bookingRepository.findByStatusAndFilters(
+                status, pickUpLocation, destination, additionalStops,
+                serviceStartDate, serviceEndDate, pickupStartDateTime, pickupEndDateTime,
+                createdStartDate, createdEndDate, priority,
+                isPassenger, numberOfPassengers, eventType,
+                isCargo, estimatedWeightKg, supplyType,
+                isMedical, medicalItemType,
+                isFurniture, furnitureType,
+                isFood, foodType,
+                isEquipment, equipmentItem, city, state, country,
+                pageable);
     }
 
 }

@@ -63,6 +63,17 @@ public interface BookingService {
             Boolean isFood, String foodType, Boolean isEquipment, String equipmentItem, String city, String state, String country,
             Pageable pageable);
 
+    Page<BookingRequest> getAllBookings(BookingStatus status,
+            String pickUpLocation, String destination, String additionalStops,
+            LocalDateTime serviceStartDate, LocalDateTime serviceEndDate,
+            LocalDateTime pickupStartDateTime, LocalDateTime pickupEndDateTime,
+            LocalDateTime createdStartDate, LocalDateTime createdEndDate,
+            EnumPriority priority, Boolean isPassenger, Integer numberOfPassengers,
+            String eventType, Boolean isCargo, Double estimatedWeightKg, String supplyType,
+            Boolean isMedical, String medicalItemType, Boolean isFurniture, String furnitureType,
+            Boolean isFood, String foodType, Boolean isEquipment, String equipmentItem, String city, String state, String country,
+            Pageable pageable);
+
     BookingRequest acceptOffer(Long bookingId, Long offerId);
 
     List<BookingRequest> getAllBookings();

@@ -13,6 +13,8 @@ import com.strataurban.strata.Repositories.v2.ProviderRepository;
 import com.strataurban.strata.Repositories.v2.TransportRepository;
 import com.strataurban.strata.Services.v2.ProviderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -111,13 +113,13 @@ public class ProviderServiceImpl implements ProviderService {
     }
 
     @Override
-    public List<Provider> getAllProviders() {
-        return providerRepository.findAll();
+    public Page<Provider> getAllProviders(Pageable pageable) {
+        return providerRepository.findAll(pageable);
     }
 
     @Override
-    public List<Provider> searchProviders(String serviceType, String city, Double minRating) {
-        return providerRepository.searchProviders(serviceType, city, minRating);
+    public Page<Provider> searchProviders(String name, String serviceType, String city, Double minRating, Pageable pageable) {
+        return providerRepository.findByCriteria(name, serviceType, city, minRating, pageable);
     }
 
     @Override

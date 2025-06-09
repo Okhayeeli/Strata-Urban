@@ -72,7 +72,8 @@ public interface BookingRepository extends JpaRepository<BookingRequest, Long> {
     // New query: Find equipment bookings requiring setup
     List<BookingRequest> findByIsEquipmentTrueAndSetupRequiredTrue();
 
-        @Query("SELECT br FROM BookingRequest br WHERE br.status = :status "
+
+    @Query("SELECT br FROM BookingRequest br WHERE (:status IS NULL OR br.status = :status) "
                 + "AND (:pickUpLocation IS NULL OR br.pickUpLocation LIKE %:pickUpLocation%) "
                 + "AND (:destination IS NULL OR br.destination LIKE %:destination%) "
                 + "AND (:additionalStops IS NULL OR br.additionalStops LIKE %:additionalStops%) "
