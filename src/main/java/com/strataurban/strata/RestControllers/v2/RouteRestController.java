@@ -50,7 +50,7 @@ public class RouteRestController {
             @ApiResponse(responseCode = "404", description = "Route not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized), DRIVER, ADMIN, or DEVELOPER can access a route. CLIENT and others are restricted.")
     })
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+//    @PreAuthorize("hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
     public Routes getRoute(
             @Parameter(description = "ID of the route to fetch")
             @RequestParam Long routeId) {
@@ -83,7 +83,7 @@ public class RouteRestController {
             @ApiResponse(responseCode = "404", description = "Route not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized) or ADMIN can update a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @routeService.isAuthorizedProviderRoute(#requestDTO.routeId, principal.id)) or hasRole('ADMIN')")
+
     public Routes updateRoute(@RequestBody RoutesRequestDTO requestDTO) {
         try {
             return routeService.updateRoute(requestDTO);
@@ -114,7 +114,7 @@ public class RouteRestController {
             @ApiResponse(responseCode = "404", description = "One or more routes not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized) or ADMIN can delete multiple routes. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @routeService.isAuthorizedProviderRoutes(#routeIds, principal.id)) or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public String deleteMultipleRoutes(@RequestBody List<Long> routeIds) {
         try {
             return routeService.deleteRoutes(routeIds);
@@ -130,7 +130,7 @@ public class RouteRestController {
             @ApiResponse(responseCode = "404", description = "Route not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized) or ADMIN can delete a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @routeService.isAuthorizedProviderRoute(#routeId, principal.id)) or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PROVIDER')  or hasRole('ADMIN')")
     public String deleteRoute(@RequestBody Long routeId) {
         try {
             return routeService.deleteRoute(routeId);
@@ -145,7 +145,7 @@ public class RouteRestController {
             @ApiResponse(responseCode = "200", description = "Routes retrieved successfully"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT, PROVIDER, DRIVER, ADMIN, or DEVELOPER can search routes. Others are restricted.")
     })
-    @PreAuthorize("hasRole('CLIENT') or hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+//    @PreAuthorize("hasRole('CLIENT') or hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
     public ResponseEntity<List<Routes>> findRoutes(
             @Parameter(description = "Starting location") @RequestParam String start,
             @Parameter(description = "Ending location") @RequestParam String end) {
@@ -162,7 +162,7 @@ public class RouteRestController {
             @ApiResponse(responseCode = "200", description = "Routes retrieved successfully"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if principal.id matches providerId), DRIVER, ADMIN, or DEVELOPER can access routes by provider. CLIENT and others are restricted.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #providerId) or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+//    @PreAuthorize("(hasRole('PROVIDER') and principal.id == #providerId) or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
     public ResponseEntity<List<Routes>> getRoutesByProvider(
             @Parameter(description = "ID of the provider") @RequestParam String providerId) {
         try {
