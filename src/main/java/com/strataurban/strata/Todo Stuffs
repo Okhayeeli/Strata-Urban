@@ -27,6 +27,7 @@ Map third-party user data to your app’s user model.
 API Key Authentication for Providers
 Allow Providers to generate API keys for integrating with your app programmatically (e.g., for automated booking management).
 
+
 //Todo Track devices used for login (e.g., show a list of active devices).
 Allow users to log out from specific devices remotely.
 
@@ -78,6 +79,10 @@ Prevent drivers from modifying booking details (e.g., they can only start/end tr
 Geolocation Security
 Secure real-time tracking data (e.g., in /api/trips/{id}/track) to prevent unauthorized access.
 Limit tracking access to the Client and Provider involved in the trip.
+
+
+
+
 3. Additional Security Features
 These are broader security measures to protect the app and its users.
 
