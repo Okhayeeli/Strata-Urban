@@ -58,7 +58,7 @@ public class SecurityConfig {
         logger.debug("Configuring SecurityFilterChain");
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
+//                .cors(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v2/auth/signup/**", "/api/v2/auth/login", "/api/v2/auth/refresh", "/api/v2/auth/**","/api/v2/auth/get-all").permitAll()
