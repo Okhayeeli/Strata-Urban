@@ -1,13 +1,13 @@
 package com.strataurban.strata.RestControllers;
 
 import com.strataurban.strata.DTOs.v2.*;
+import com.strataurban.strata.Entities.Generics.Notification;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
-import com.strataurban.strata.Security.LoggedUser;
-import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
 import com.strataurban.strata.Services.PasswordResetTokenService;
+import com.strataurban.strata.Services.v2.NotificationService;
 import com.strataurban.strata.Services.v2.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +41,9 @@ public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
 
     @PostMapping("/signup/client")
@@ -128,5 +133,11 @@ public class AuthController {
     @PutMapping("/verifyuser")
     public ResponseEntity<User> verifyOrEnableUser(@RequestBody UserDTO userDTO) {
         return ResponseEntity.ok(userService.enableUser(userDTO));
+    }
+
+    @GetMapping("/get-all")
+    @Operation(summary = "Get all notifications", description = "Fetches all notifications")
+    public Page<Notification> getAllNotifications(Pageable pageable) {
+        return notificationService.getAllUserNotifications(pageable);
     }
 }

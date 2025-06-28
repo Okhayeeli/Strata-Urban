@@ -26,4 +26,6 @@ public interface NotificationService {
 
     // Send a booking confirmation notification to a client
     void sendBookingConfirmationNotification(Long bookingId);
+
+    Page<Notification> getAllUserNotifications(Pageable pageable);
 }

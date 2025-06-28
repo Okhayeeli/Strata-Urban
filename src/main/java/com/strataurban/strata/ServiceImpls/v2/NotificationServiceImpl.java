@@ -105,4 +105,11 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationRepository.save(notification);
     }
+
+    @Override
+    public Page<Notification> getAllUserNotifications(Pageable pageable) {
+        return notificationRepository.findAll(pageable);
+    }
+
+
 }
