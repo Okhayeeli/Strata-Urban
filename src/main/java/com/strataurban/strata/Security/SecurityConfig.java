@@ -2,11 +2,16 @@ package com.strataurban.strata.Security;
 
 import com.strataurban.strata.Security.jwtConfigs.JwtAuthenticationFilter;
 import com.strataurban.strata.ServiceImpls.v2.UserServiceImpl;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,10 +27,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
 import java.util.List;
 
 @Configuration
@@ -60,18 +68,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, CorsLoggingFilter corsLoggingFilter) throws Exception {
         logger.debug("Configuring SecurityFilterChain");
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Explicitly allow all OPTIONS requests
                         .requestMatchers("/api/v2/auth/signup/**", "/api/v2/auth/login", "/api/v2/auth/refresh", "/api/v2/auth/**","/api/v2/auth/get-all").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() // Permit Swagger UI and API docs
                         .requestMatchers("/api/v2/service-areas/report", "/api/v2/notifications/get-all", "/api/v2/auth/get-all/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(corsLoggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -91,16 +101,36 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        logger.info("Configuring CORS");
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*", "http://localhost:3000",   // React dev
-                "http://localhost:5500/**", "/http://localhost:5500/*", "http://localhost:5500/", "http://localhost:5500"));   // Live Server (VS Code)));
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5500"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true); // if needed
-
+        configuration.setExposedHeaders(List.of("Authorization")); // Include if your API returns specific headers
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L); // Cache preflight for 1 hour
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+        logger.info("CORS configured with origins: {}", configuration.getAllowedOrigins());
         return source;
+    }
+
+    @Component
+    public class CorsLoggingFilter extends OncePerRequestFilter {
+        private static final Logger logger = LoggerFactory.getLogger(CorsLoggingFilter.class);
+
+        @Override
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+                throws ServletException, IOException {
+            logger.info("Request: Method={}, URL={}, Origin={}, Access-Control-Request-Method={}, Access-Control-Request-Headers={}",
+                    request.getMethod(),
+                    request.getRequestURL(),
+                    request.getHeader("Origin"),
+                    request.getHeader("Access-Control-Request-Method"),
+                    request.getHeader("Access-Control-Request-Headers"));
+            filterChain.doFilter(request, response);
+            logger.info("Response: Status={}, Headers={}", response.getStatus(), response.getHeaderNames());
+        }
     }
 
 }
