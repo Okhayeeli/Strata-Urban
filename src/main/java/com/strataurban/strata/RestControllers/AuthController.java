@@ -110,10 +110,11 @@ public class AuthController {
             String username = jwtUtil.getUsernameFromToken(refreshToken);
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            String newAccessToken = jwtUtil.generateAccessToken(username, user.getRoles().name());
+            String newAccessToken = jwtUtil.generateAccessToken(user);
             LoginResponse response = new LoginResponse();
             response.setAccessToken(newAccessToken);
             response.setRefreshToken(refreshToken);
+            response.setId(user.getId());
             return ResponseEntity.ok(response);
         }
         return ResponseEntity.status(401).build();

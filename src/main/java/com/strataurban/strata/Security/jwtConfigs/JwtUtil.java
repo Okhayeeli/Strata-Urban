@@ -34,11 +34,16 @@ public class JwtUtil {
     @Lazy
     private UserServiceImpl userServiceImpl;
 
-    public String generateAccessToken(String username, String role) {
+    public String generateAccessToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role);
+        claims.put("id", user.getId());
+        claims.put("firstName", user.getFirstName());
+        claims.put("lastName", user.getLastName());
+        claims.put("role", user.getRoles());
+        claims.put("username", user.getUsername());
+        claims.put("email", user.getEmail());
 //        log.info("Generated token: " + token);
-        return createToken(claims, username, accessTokenExpirationMs);
+        return createToken(claims, user.getUsername(), accessTokenExpirationMs);
     }
 
     public String generateRefreshToken(String username) {

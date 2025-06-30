@@ -213,8 +213,9 @@ public class UserServiceImpl implements UserService {
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
 
-            String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRoles().name());
+            String accessToken = jwtUtil.generateAccessToken(user);
             String refreshToken = jwtUtil.generateRefreshToken(user.getUsername());
+            Long userId = user.getId();
 //            String newJti = jwtUtil.getJtiFromToken(refreshToken);
 
 
@@ -227,6 +228,7 @@ public class UserServiceImpl implements UserService {
             LoginResponse response = new LoginResponse();
             response.setAccessToken(accessToken);
             response.setRefreshToken(refreshToken);
+            response.setId(userId);
             log.debug("Login response: accessToken={}, refreshToken={}", accessToken, refreshToken);
             return response;
         } catch (BadCredentialsException e) {
