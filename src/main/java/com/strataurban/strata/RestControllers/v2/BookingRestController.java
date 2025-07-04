@@ -277,7 +277,7 @@ public class BookingRestController {
                     content = @Content(schema = @Schema(implementation = Page.class))),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER or ADMIN can access this endpoint. CLIENT, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN') or hasRole('CLIENT')")
     public ResponseEntity<Page<BookingRequestResponseDTO>> getPendingBookingsWithFilters(
             @Parameter(description = "Pick-up location", example = "Lagos", required = false) @RequestParam(required = false) String pickUpLocation,
             @Parameter(description = "Destination", example = "Abuja", required = false) @RequestParam(required = false) String destination,
