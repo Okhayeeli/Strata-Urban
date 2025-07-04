@@ -477,6 +477,7 @@ public class BookingServiceImpl implements BookingService {
             BookingRequestResponseDTO.CategorySpecificDetails categoryDetails = new BookingRequestResponseDTO.CategorySpecificDetails();
 
             // Map Request Details
+            requestDetails.setId(entity.getId());
             requestDetails.setTransportCategory(determineTransportCategory(entity));
             requestDetails.setUrgencyLevel(entity.getPriority() != null ? entity.getPriority().name() : null);
             requestDetails.setServiceDate(entity.getServiceDate());

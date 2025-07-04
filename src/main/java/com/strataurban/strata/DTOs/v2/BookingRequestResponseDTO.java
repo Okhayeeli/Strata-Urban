@@ -42,6 +42,10 @@ public class BookingRequestResponseDTO {
     @AllArgsConstructor
     @Schema(description = "Request details")
     public static class RequestDetails {
+
+        @Schema(description = "Id of the Booking Request")
+        private Long id;
+
         @Schema(description = "Type of transport needed", example = "Passenger")
         private String transportCategory;
 
