@@ -103,7 +103,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         logger.info("Configuring CORS");
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5500"));
+//        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5500"));
+        configuration.setAllowedOriginPatterns(List.of("*", "http://localhost:3000", "http://localhost:5500", "https://localhost"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization")); // Include if your API returns specific headers
