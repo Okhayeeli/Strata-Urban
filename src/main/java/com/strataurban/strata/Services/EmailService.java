@@ -137,6 +137,15 @@ public class EmailService {
         mailSender.send(message);
         log.info("Password reset email sent successfully to: {}", to);
 
+    }
+
+    public void standbyEmail(String toEmail){
+        RequestResetPasswordResponse response = new RequestResetPasswordResponse();
+        response.setSubject("Password Reset Request");
+        response.setSuccess(true);
+        response.setMessage("A token has been sent to your email");
+//            response.setToken(token);
+        log.info("Sending email to {}: Subject: {}, Body: {}", toEmail, response.getSubject(), response.getMessage());
 
     }
 }

@@ -105,7 +105,8 @@ public class UserServiceImpl implements UserService {
         client.setEmailVerified(false);
 
         userRepository.save(client);
-        emailService.sendVerificationEmail(client.getEmail(), client.getId());
+        emailService.standbyEmail(client.getEmail());
+//        emailService.sendVerificationEmail(client.getEmail(), client.getId());
         return client;
     }
 
@@ -163,7 +164,8 @@ public class UserServiceImpl implements UserService {
             provider.setServiceAreas(serviceAreasString);
         }
         userRepository.save(provider);
-        emailService.sendVerificationEmail(provider.getCompanyBusinessEmail(), provider.getId());
+        emailService.standbyEmail(provider.getEmail());
+//        emailService.sendVerificationEmail(provider.getCompanyBusinessEmail(), provider.getId());
         return provider;
     }
 

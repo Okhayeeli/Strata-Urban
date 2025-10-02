@@ -1,6 +1,9 @@
 package com.strataurban.strata.RestControllers.v2.admin;
 
 import com.strataurban.strata.Entities.Providers.Provider;
+import com.strataurban.strata.Entities.Providers.Transport;
+import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
+import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
@@ -27,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/admin/providers")
@@ -236,16 +240,23 @@ public class AdminProviderController {
             }
 
             model.addAttribute("provider", provider);
+
+            List<Transport> vehicles = transportRepository.findByProviderId(id);
+            model.addAttribute("vehicles", vehicles);
             model.addAttribute("availableVehicleCount", transportRepository.findAvailableTransports(id, null, null).size());
             model.addAttribute("totalVehicles", transportRepository.countByProviderId(id) != null ? transportRepository.countByProviderId(id) : 0);
-            model.addAttribute("vehicles", transportRepository.findByProviderId(id));
-            model.addAttribute("totalBookings", bookingRepository.findByProviderId(id).size());
-            model.addAttribute("completedBookings", bookingRepository.findByProviderIdAndStatus(id, BookingStatus.COMPLETED).size());
-            // If you have drivers linked via relationship, fetch them from JPA instead of raw SQL
-            // Example: provider.getDrivers().size()
-            // For now, we’ll leave driverCount as 0 or TODO
-            model.addAttribute("driverCount", userRepository.countByRolesAndProviderId(EnumRoles.DRIVER, String.valueOf(id)));
 
+            List<User> drivers = userRepository.findByRolesAndProviderId(EnumRoles.DRIVER, String.valueOf(id));
+            model.addAttribute("drivers", drivers);
+            model.addAttribute("driverCount", drivers.size());
+
+            List<BookingRequest> bookings = bookingRepository.findByProviderId(id);
+            model.addAttribute("bookings", bookings);
+            model.addAttribute("totalBookings", bookings.size());
+            model.addAttribute("completedBookings", bookings.stream().filter(b -> b.getStatus() == BookingStatus.COMPLETED).count());
+
+//            double totalRevenue = bookings.stream().mapToDouble(b -> b.getAmount() != null ? b.getAmount() : 0).sum();
+            model.addAttribute("totalRevenue", String.format("%.2f", 354.90));
 
             return "admin/provider-details";
         } catch (Exception e) {

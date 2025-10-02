@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Provider Details - StrataUrban Admin</title>
+    <title>Client Details - StrataUrban Admin</title>
     <style>
         * {
             margin: 0;
@@ -127,7 +127,7 @@
             padding: 30px;
         }
 
-        .provider-header {
+        .client-header {
             background: white;
             padding: 30px;
             border-radius: 15px;
@@ -144,7 +144,7 @@
             border-bottom: 1px solid #f0f0f0;
         }
 
-        .provider-logo-large {
+        .client-logo-large {
             width: 120px;
             height: 120px;
             border-radius: 15px;
@@ -158,23 +158,23 @@
             flex-shrink: 0;
         }
 
-        .provider-main-info {
+        .client-main-info {
             flex: 1;
         }
 
-        .provider-main-info h1 {
+        .client-main-info h1 {
             font-size: 2rem;
             margin-bottom: 5px;
         }
 
-        .provider-main-info h2 {
+        .client-main-info h2 {
             font-size: 1.2rem;
             color: #666;
             font-weight: 500;
             margin-bottom: 15px;
         }
 
-        .provider-meta {
+        .client-meta {
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
@@ -309,13 +309,13 @@
             grid-column: 1 / -1;
         }
 
-        .vehicles-table, .drivers-table, .bookings-table {
+        .bookings-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
         }
 
-        .vehicles-table th, .drivers-table th, .bookings-table th {
+        .bookings-table th {
             background: #f5f7fa;
             padding: 12px;
             text-align: left;
@@ -324,30 +324,13 @@
             font-size: 0.9rem;
         }
 
-        .vehicles-table td, .drivers-table td, .bookings-table td {
+        .bookings-table td {
             padding: 12px;
             border-top: 1px solid #f0f0f0;
         }
 
-        .vehicles-table tbody tr:hover, .drivers-table tbody tr:hover, .bookings-table tbody tr:hover {
+        .bookings-table tbody tr:hover {
             background: #f9fafb;
-        }
-
-        .vehicle-badge {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .vehicle-available {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .vehicle-booked {
-            background: #fef3c7;
-            color: #92400e;
         }
 
         .empty-state {
@@ -356,35 +339,9 @@
             color: #999;
         }
 
-        .tabs {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .tab {
-            padding: 12px 20px;
-            background: none;
-            border: none;
-            color: #666;
-            font-weight: 600;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-
-        .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
+        .empty-state-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
         }
 
         .table-filter {
@@ -430,7 +387,7 @@
                 flex-direction: column;
             }
 
-            .provider-meta {
+            .client-meta {
                 flex-direction: column;
             }
 
@@ -468,13 +425,13 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="/admin/providers" class="nav-link active">
+            <a href="/admin/providers" class="nav-link">
                 <span class="nav-icon">🏢</span>
                 <span>Providers</span>
             </a>
         </li>
         <li class="nav-item">
-            <a href="/admin/clients" class="nav-link">
+            <a href="/admin/clients" class="nav-link active">
                 <span class="nav-icon">👥</span>
                 <span>Clients</span>
             </a>
@@ -491,303 +448,175 @@
 <main class="main-content">
     <header class="top-header">
         <div class="header-left">
-            <a href="/admin/providers" class="back-link">
-                <span>←</span> Back to Providers
+            <a href="/admin/clients" class="back-link">
+                <span>←</span> Back to Clients
             </a>
         </div>
     </header>
 
     <div class="page-content">
-        <div class="provider-header">
+        <div class="client-header">
             <div class="header-top">
-                <div class="provider-logo-large">
-                    <span th:text="${#strings.substring(provider.companyName ?: 'P', 0, 1)}">P</span>
+                <div class="client-logo-large">
+                    <span th:text="${#strings.substring(client.firstName ?: 'C', 0, 1)}">C</span>
                 </div>
 
-                <div class="provider-main-info">
-                    <h1 th:text="${provider.companyName}">Company Name</h1>
-                    <h2 th:text="${provider.firstName + ' ' + provider.lastName}">Contact Person</h2>
+                <div class="client-main-info">
+                    <h1 th:text="${client.title != null ? client.title + ' ' : ''}${client.firstName} ${client.middleName != null ? client.middleName + ' ' : ''}${client.lastName}">Client Name</h1>
+                    <h2 th:text="${client.email}">Email</h2>
 
-                    <div class="provider-meta">
-                        <div class="meta-item">
-                            <span>⭐</span>
-                            <span th:text="${provider.rating != null ? provider.rating + ' (' + provider.numberOfRatings + ' ratings)' : 'No ratings'}">Rating</span>
-                        </div>
+                    <div class="client-meta">
                         <div class="meta-item">
                             <span>📍</span>
-                            <span th:text="${provider.city + ', ' + provider.state + ', ' + provider.country}">Location</span>
+                            <span th:text="${client.city != null ? client.city + ', ' + client.state + ', ' + client.country : 'No location'}">Location</span>
                         </div>
                         <div class="meta-item">
                             <span>📧</span>
-                            <span th:text="${provider.email}">Email</span>
+                            <span th:text="${client.email}">Email</span>
                         </div>
                         <div class="meta-item">
                             <span>📞</span>
-                            <span th:text="${provider.phone} ?: 'No phone'">Phone</span>
+                            <span th:text="${client.phone} ?: 'No phone'">Phone</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="header-actions">
-                    <span class="badge badge-success" th:if="${provider.emailVerified}">✓ Verified</span>
-                    <span class="badge badge-warning" th:unless="${provider.emailVerified}">⚠ Unverified</span>
-                    <button class="btn btn-primary" onclick="editProvider()">✏️ Edit</button>
-                    <button class="btn btn-danger" onclick="deleteProvider()">🗑️ Delete</button>
+                    <span class="badge badge-success" th:if="${client.emailVerified}">✓ Verified</span>
+                    <span class="badge badge-warning" th:unless="${client.emailVerified}">⚠ Unverified</span>
+                    <button class="btn btn-primary" onclick="editClient()">✏️ Edit</button>
+                    <button class="btn btn-danger" onclick="deleteClient()">🗑️ Delete</button>
                 </div>
             </div>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card">
-                <h4>Total Vehicles</h4>
-                <p th:text="${totalVehicles} ?: '0'">0</p>
-            </div>
-            <div class="stat-card">
-                <h4>Available Vehicles</h4>
-                <p th:text="${availableVehicleCount} ?: '0'">0</p>
-            </div>
-            <div class="stat-card">
-                <h4>Total Drivers</h4>
-                <p th:text="${driverCount} ?: '0'">0</p>
-            </div>
-            <div class="stat-card">
                 <h4>Total Bookings</h4>
                 <p th:text="${totalBookings} ?: '0'">0</p>
             </div>
             <div class="stat-card">
-                <h4>Completed</h4>
+                <h4>Completed Bookings</h4>
                 <p th:text="${completedBookings} ?: '0'">0</p>
             </div>
             <div class="stat-card">
-                <h4>Total Revenue</h4>
-                <p th:text="'₦' + ${totalRevenue} ?: '₦0'">₦0</p>
+                <h4>Total Spent</h4>
+                <p th:text="'₦' + ${totalSpent} ?: '₦0'">₦0</p>
             </div>
         </div>
 
         <div class="content-grid">
             <div class="section-card">
-                <h3>Company Information</h3>
+                <h3>Personal Information</h3>
                 <div class="detail-row">
-                    <span class="detail-label">Company Name:</span>
-                    <span class="detail-value" th:text="${provider.companyName}">N/A</span>
+                    <span class="detail-label">Full Name:</span>
+                    <span class="detail-value" th:text="${client.title != null ? client.title + ' ' : ''}${client.firstName} ${client.middleName != null ? client.middleName + ' ' : ''}${client.lastName}">N/A</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Registration No:</span>
-                    <span class="detail-value" th:text="${provider.companyRegistrationNumber} ?: 'N/A'">N/A</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Supplier Code:</span>
-                    <span class="detail-value" th:text="${provider.supplierCode} ?: 'N/A'">N/A</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Business Type:</span>
-                    <span class="detail-value" th:text="${provider.companyBusinessType} ?: 'N/A'">N/A</span>
+                    <span class="detail-label">Username:</span>
+                    <span class="detail-value" th:text="${client.username} ?: 'N/A'">N/A</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Address:</span>
-                    <span class="detail-value" th:text="${provider.companyAddress} ?: 'N/A'">N/A</span>
+                    <span class="detail-value" th:text="${client.address} ?: 'N/A'">N/A</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Zip Code:</span>
-                    <span class="detail-value" th:text="${provider.zipCode} ?: 'N/A'">N/A</span>
+                    <span class="detail-label">City:</span>
+                    <span class="detail-value" th:text="${client.city} ?: 'N/A'">N/A</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Description:</span>
-                    <span class="detail-value" th:text="${provider.description} ?: 'N/A'">N/A</span>
+                    <span class="detail-label">State:</span>
+                    <span class="detail-value" th:text="${client.state} ?: 'N/A'">N/A</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Country:</span>
+                    <span class="detail-value" th:text="${client.country} ?: 'N/A'">N/A</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Preferred Language:</span>
+                    <span class="detail-value" th:text="${client.preferredLanguage} ?: 'N/A'">N/A</span>
                 </div>
             </div>
 
             <div class="section-card">
                 <h3>Contact Details</h3>
                 <div class="detail-row">
-                    <span class="detail-label">Contact Person:</span>
-                    <span class="detail-value" th:text="${provider.firstName + ' ' + provider.lastName}">N/A</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Position:</span>
-                    <span class="detail-value" th:text="${provider.primaryContactPosition} ?: 'N/A'">N/A</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Department:</span>
-                    <span class="detail-value" th:text="${provider.primaryContactDepartment} ?: 'N/A'">N/A</span>
-                </div>
-                <div class="detail-row">
                     <span class="detail-label">Email:</span>
-                    <span class="detail-value" th:text="${provider.email}">N/A</span>
+                    <span class="detail-value" th:text="${client.email}">N/A</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Phone:</span>
-                    <span class="detail-value" th:text="${provider.phone} ?: 'N/A'">N/A</span>
+                    <span class="detail-value" th:text="${client.phone} ?: 'N/A'">N/A</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Alt Phone:</span>
-                    <span class="detail-value" th:text="${provider.phone2} ?: 'N/A'">N/A</span>
+                    <span class="detail-label">Alternate Phone:</span>
+                    <span class="detail-value" th:text="${client.phone2} ?: 'N/A'">N/A</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Username:</span>
-                    <span class="detail-value" th:text="${provider.username}">N/A</span>
+                    <span class="detail-label">Last Activity:</span>
+                    <span class="detail-value" th:text="${#temporals.format(client.lastActivity, 'yyyy-MM-dd HH:mm:ss')} ?: 'N/A'">N/A</span>
                 </div>
             </div>
         </div>
 
         <div class="section-card full-width">
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('vehicles')">Vehicles</button>
-                <button class="tab" onclick="switchTab('drivers')">Drivers</button>
-                <button class="tab" onclick="switchTab('bookings')">Booking History</button>
+            <h3>Booking History</h3>
+            <div th:if="${bookings == null || bookings.isEmpty()}" class="empty-state">
+                <div class="empty-state-icon">📅</div>
+                <h3>No Bookings Found</h3>
+                <p>No booking history for this client.</p>
             </div>
 
-            <!-- Vehicles Tab -->
-            <div id="vehicles-tab" class="tab-content active">
-                <div th:if="${vehicles == null || vehicles.isEmpty()}" class="empty-state">
-                    <div class="empty-state-icon">🚙</div>
-                    <h3>No Vehicles Found</h3>
-                    <p>This provider hasn't added any vehicles yet.</p>
+            <div th:unless="${bookings == null || bookings.isEmpty()}">
+                <div class="table-filter">
+                    <input type="text" class="table-search" placeholder="Search bookings..." data-table-id="bookings-table">
                 </div>
-
-                <div th:unless="${vehicles == null || vehicles.isEmpty()}">
-                    <div class="table-filter">
-                        <input type="text" class="table-search" placeholder="Search vehicles..." data-table-id="vehicles-table">
-                    </div>
-                    <table class="vehicles-table" id="vehicles-table">
-                        <thead>
-                        <tr>
-                            <th class="sortable">Type</th>
-                            <th class="sortable">Vehicle</th>
-                            <th class="sortable">Plate Number</th>
-                            <th class="sortable">Capacity</th>
-                            <th class="sortable">Color</th>
-                            <th class="sortable">State</th>
-                            <th class="sortable">Status</th>
-                            <th class="sortable">Description</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:each="vehicle : ${vehicles}">
-                            <td>
-                                <span th:if="${vehicle.type == 'Bus'}">🚌</span>
-                                <span th:if="${vehicle.type == 'Taxi'}">🚕</span>
-                                <span th:if="${vehicle.type != 'Bus' && vehicle.type != 'Taxi'}">🚙</span>
-                                <span th:text="${vehicle.type}">Type</span>
-                            </td>
-                            <td th:text="${vehicle.brand + ' ' + vehicle.model}">Vehicle Name</td>
-                            <td th:text="${vehicle.plateNumber}">Plate Number</td>
-                            <td th:text="${vehicle.capacity + ' seats'}">Capacity</td>
-                            <td th:text="${vehicle.color}">Color</td>
-                            <td th:text="${vehicle.state}">State</td>
-                            <td>
-                                <span class="vehicle-badge vehicle-available" th:if="${vehicle.status == 'Available'}">Available</span>
-                                <span class="vehicle-badge vehicle-booked" th:if="${vehicle.status != 'Available'}" th:text="${vehicle.status}">Status</span>
-                            </td>
-                            <td th:text="${vehicle.description != null && !vehicle.description.isEmpty()} ? ${vehicle.description} : 'N/A'">N/A</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Drivers Tab -->
-            <div id="drivers-tab" class="tab-content">
-                <div th:if="${drivers == null || drivers.isEmpty()}" class="empty-state">
-                    <div class="empty-state-icon">🚗</div>
-                    <h3>No Drivers Found</h3>
-                    <p>No drivers registered for this provider.</p>
-                </div>
-
-                <div th:unless="${drivers == null || drivers.isEmpty()}">
-                    <div class="table-filter">
-                        <input type="text" class="table-search" placeholder="Search drivers..." data-table-id="drivers-table">
-                    </div>
-                    <table class="drivers-table" id="drivers-table">
-                        <thead>
-                        <tr>
-                            <th class="sortable">Name</th>
-                            <th class="sortable">Email</th>
-                            <th class="sortable">Phone</th>
-                            <th class="sortable">Status</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:each="driver : ${drivers}">
-                            <td th:text="${driver.firstName + ' ' + driver.lastName}">Driver Name</td>
-                            <td th:text="${driver.email}">email@example.com</td>
-                            <td th:text="${driver.phone}">Phone</td>
-                            <td>
-                                <span class="badge badge-success">Active</span>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Bookings Tab -->
-            <div id="bookings-tab" class="tab-content">
-                <div th:if="${bookings == null || bookings.isEmpty()}" class="empty-state">
-                    <div class="empty-state-icon">📅</div>
-                    <h3>No Bookings Found</h3>
-                    <p>No booking history for this provider.</p>
-                </div>
-
-                <div th:unless="${bookings == null || bookings.isEmpty()}">
-                    <div class="table-filter">
-                        <input type="text" class="table-search" placeholder="Search bookings..." data-table-id="bookings-table">
-                    </div>
-                    <table class="bookings-table" id="bookings-table">
-                        <thead>
-                        <tr>
-                            <th class="sortable">Booking ID</th>
-                            <th class="sortable">Client</th>
-                            <th class="sortable">Route</th>
-                            <th class="sortable">Date</th>
-                            <th class="sortable">Status</th>
-                            <th class="sortable">Amount</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:each="booking : ${bookings}">
-                            <td th:text="${'#' + booking.id}">#123</td>
-                            <td th:text="${booking.materialType}">Client</td>
-                            <td th:text="${booking.pickUpLocation}">Route</td>
-                            <td th:text="${#temporals.format(booking.createdDate, 'yyyy-MM-dd')}">Date</td>
-                            <td>
-                                <span class="badge badge-success" th:if="${booking.status == 'COMPLETED'}">Completed</span>
-                                <span class="badge badge-warning" th:unless="${booking.status == 'COMPLETED'}" th:text="${booking.status}">Pending</span>
-                            </td>
-                            <td th:text="'₦' + ${booking.otherRequests}">₦0</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <table class="bookings-table" id="bookings-table">
+                    <thead>
+                    <tr>
+                        <th class="sortable">Booking ID</th>
+                        <th class="sortable">Provider</th>
+                        <th class="sortable">Route</th>
+                        <th class="sortable">Date</th>
+                        <th class="sortable">Status</th>
+                        <th class="sortable">Amount</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="booking : ${bookings}">
+                        <td th:text="${'#' + booking.id}">#123</td>
+                        <td th:text="${booking.providerName}">Provider</td>
+                        <td th:text="${booking.route}">Route</td>
+                        <td th:text="${#temporals.format(booking.createdDate, 'yyyy-MM-dd')}">Date</td>
+                        <td>
+                            <span class="badge badge-success" th:if="${booking.status == 'COMPLETED'}">Completed</span>
+                            <span class="badge badge-warning" th:unless="${booking.status == 'COMPLETED'}" th:text="${booking.status}">Pending</span>
+                        </td>
+                        <td th:text="'₦' + ${booking.amount}">₦0</td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </main>
 
 <script>
-    function switchTab(tabName) {
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-        event.target.classList.add('active');
-        document.getElementById(tabName + '-tab').classList.add('active');
+    function editClient() {
+        window.location.href = '/admin/clients/' + [[${client.id}]] + '/edit';
     }
 
-    function editProvider() {
-        window.location.href = '/admin/providers/' + [[${provider.id}]] + '/edit';
-    }
-
-    function deleteProvider() {
-        if (confirm('Are you sure you want to delete this provider? This will also delete all associated vehicles and data. This action cannot be undone.')) {
-            fetch('/admin/providers/' + [[${provider.id}]] + '/delete', {
+    function deleteClient() {
+        if (confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
+            fetch('/admin/clients/' + [[${client.id}]] + '/delete', {
                 method: 'POST'
             })
                 .then(response => {
                     if (response.ok) {
-                        alert('Provider deleted successfully');
-                        window.location.href = '/admin/providers';
+                        alert('Client deleted successfully');
+                        window.location.href = '/admin/clients';
                     } else {
-                        alert('Failed to delete provider');
+                        alert('Failed to delete client');
                     }
                 });
         }

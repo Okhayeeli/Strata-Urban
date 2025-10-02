@@ -18,6 +18,7 @@ public interface BookingRepository extends JpaRepository<BookingRequest, Long> {
 
     // Find all bookings for a specific client
     Page<BookingRequest> findByClientId(Long clientId, Pageable pageable);
+    List<BookingRequest> findByClientId(Long clientId);
 
     // Find all bookings for a specific provider
     List<BookingRequest> findByProviderId(Long providerId);
