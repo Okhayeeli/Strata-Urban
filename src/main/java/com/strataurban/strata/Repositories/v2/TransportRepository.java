@@ -26,6 +26,7 @@ public interface TransportRepository extends JpaRepository<Transport, Long> {
             "AND (:capacity IS NULL OR t.capacity >= :capacity)")
     List<Transport> findAvailableTransports(Long providerId, String transportCategory, Integer capacity);
 
+
     // Find all transports for a specific provider
     Integer countByProviderId(Long providerId);
 

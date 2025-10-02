@@ -1,18 +1,7 @@
 package com.strataurban.strata.RestControllers.v2.admin;
 
-import com.strataurban.strata.DTOs.v2.LoginResponse;
-import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-
-import java.text.DecimalFormat;
-import java.util.Map;
-
+import com.strataurban.strata.Enums.EnumRoles;
+import com.strataurban.strata.Repositories.v2.UserRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -31,6 +20,8 @@ public class AdminDashboardController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private UserRepository userRepository;
 
     /**
      * Check if user is authenticated and is an admin
@@ -66,7 +57,7 @@ public class AdminDashboardController {
 
             // Total Clients
             Long totalClients = getTotalClients();
-            model.addAttribute("totalClients", formatNumber(totalClients));
+            model.addAttribute("totalClients", userRepository.findByRoles(EnumRoles.CLIENT).size());
 
             // Monthly Revenue (placeholder - implement based on your payment system)
             String monthlyRevenue = "₦0.00";

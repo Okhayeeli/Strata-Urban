@@ -1,7 +1,12 @@
 package com.strataurban.strata.RestControllers.v2.admin;
 
 import com.strataurban.strata.Entities.Providers.Provider;
+import com.strataurban.strata.Enums.BookingStatus;
+import com.strataurban.strata.Enums.EnumRoles;
+import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.ProviderRepository;
+import com.strataurban.strata.Repositories.v2.TransportRepository;
+import com.strataurban.strata.Repositories.v2.UserRepository;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +40,13 @@ public class AdminProviderController {
 
     @Autowired
     private ProviderRepository providerRepository;
+    @Autowired
+    private TransportRepository transportRepository;
+    @Autowired
+    private BookingRepository bookingRepository;
 
+    @Autowired
+    private UserRepository userRepository;
     private static final String API_BASE_URL = "http://localhost:8080/api/v2/providers";
 
     /**
@@ -225,12 +236,15 @@ public class AdminProviderController {
             }
 
             model.addAttribute("provider", provider);
-            model.addAttribute("vehicleCount", provider.getTransportCount() != null ? provider.getTransportCount() : 0);
-
+            model.addAttribute("availableVehicleCount", transportRepository.findAvailableTransports(id, null, null).size());
+            model.addAttribute("totalVehicles", transportRepository.countByProviderId(id) != null ? transportRepository.countByProviderId(id) : 0);
+            model.addAttribute("totalBookings", bookingRepository.findByProviderId(id).size());
+            model.addAttribute("completedBookings", bookingRepository.findByProviderIdAndStatus(id, BookingStatus.COMPLETED).size());
             // If you have drivers linked via relationship, fetch them from JPA instead of raw SQL
             // Example: provider.getDrivers().size()
             // For now, we’ll leave driverCount as 0 or TODO
-            model.addAttribute("driverCount", 0);
+            model.addAttribute("driverCount", userRepository.countByRolesAndProviderId(EnumRoles.DRIVER, String.valueOf(id)));
+
 
             return "admin/provider-details";
         } catch (Exception e) {

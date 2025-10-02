@@ -42,4 +42,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 //    Optional<User> findByCurrentRefreshTokenJti(String jti);
     List<User> findByRolesAndProviderId(EnumRoles role, String providerId);
+    Integer countByRolesAndProviderId(EnumRoles role, String providerId);
 }
