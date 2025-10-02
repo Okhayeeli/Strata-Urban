@@ -6,6 +6,7 @@ import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
+import com.strataurban.strata.Services.EmailVerificationTokenService;
 import com.strataurban.strata.Services.PasswordResetTokenService;
 import com.strataurban.strata.Services.v2.NotificationService;
 import com.strataurban.strata.Services.v2.UserService;
@@ -44,6 +45,8 @@ public class AuthController {
 
     @Autowired
     private NotificationService notificationService;
+    @Autowired
+    private EmailVerificationTokenService emailVerificationTokenService;
 
 
     @PostMapping("/signup/client")
@@ -140,5 +143,11 @@ public class AuthController {
     @Operation(summary = "Get all notifications", description = "Fetches all notifications")
     public Page<Notification> getAllNotifications(Pageable pageable) {
         return notificationService.getAllUserNotifications(pageable);
+    }
+
+    @PutMapping("/validate-user")
+    public ResponseEntity<String> validateUser(@RequestBody UserDTO userDTO) {
+        emailVerificationTokenService.validateToken(userDTO.getToken());
+        return ResponseEntity.ok("Email/Username validated successfully");
     }
 }

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 1000px;
+            width: 100%;
+            display: flex;
+            min-height: 600px;
+        }
+
+        .login-left {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-left::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            top: -100px;
+            right: -100px;
+        }
+
+        .login-left::after {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            bottom: -50px;
+            left: -50px;
+        }
+
+        .logo-section {
+            text-align: center;
+            z-index: 1;
+        }
+
+        .logo-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .logo-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 40px;
+            z-index: 1;
+        }
+
+        .feature-list li {
+            padding: 12px 0;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li:before {
+            content: '✓';
+            margin-right: 15px;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .login-right {
+            flex: 1;
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-header {
+            margin-bottom: 40px;
+        }
+
+        .login-header h2 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 45px 14px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input-wrapper input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 1.2rem;
+        }
+
+        .password-toggle {
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: #667eea;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .forgot-password {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .alert-error {
+            background-color: #fee;
+            color: #c33;
+            border-left: 4px solid #c33;
+        }
+
+        .alert-success {
+            background-color: #efe;
+            color: #3c3;
+            border-left: 4px solid #3c3;
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+            }
+
+            .login-left {
+                padding: 40px 30px;
+                min-height: 300px;
+            }
+
+            .login-right {
+                padding: 40px 30px;
+            }
+
+            .logo-section h1 {
+                font-size: 2rem;
+            }
+
+            .feature-list {
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <div class="login-left">
+        <div class="logo-section">
+            <h1>🚐 StrataUrban</h1>
+            <p>Admin Portal</p>
+        </div>
+        <ul class="feature-list">
+            <li>Monitor all providers and clients</li>
+            <li>Track booking requests in real-time</li>
+            <li>Manage fleet and driver operations</li>
+            <li>Analyze performance metrics</li>
+            <li>Generate comprehensive reports</li>
+        </ul>
+    </div>
+
+    <div class="login-right">
+        <div class="login-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to access the admin dashboard</p>
+        </div>
+
+        <!-- Error/Success Messages -->
+        <div th:if="${error}" class="alert alert-error">
+            <span th:text="${error}">Invalid credentials</span>
+        </div>
+        <div th:if="${message}" class="alert alert-success">
+            <span th:text="${message}">Success message</span>
+        </div>
+
+        <form th:action="@{/admin/login}" method="post">
+            <div class="form-group">
+                <label for="usernameOrEmail">Username or Email</label>
+                <div class="input-wrapper">
+                    <input
+                            type="text"
+                            id="usernameOrEmail"
+                            name="usernameOrEmail"
+                            placeholder="Enter your username or email"
+                            required
+                            autofocus
+                    />
+                    <span class="input-icon">👤</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            required
+                    />
+                    <span class="input-icon password-toggle" onclick="togglePassword()">👁️</span>
+                </div>
+            </div>
+
+            <div class="form-options">
+                <label class="remember-me">
+                    <input type="checkbox" name="remember" />
+                    <span>Remember me</span>
+                </label>
+                <a href="/admin/forgot-password" class="forgot-password">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="login-button">Sign In</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.querySelector('.password-toggle');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.textContent = '🙈';
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.textContent = '👁️';
+        }
+    }
+</script>
+</body>
+</html>

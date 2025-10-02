@@ -14,4 +14,9 @@ public class LoginResponse {
 
     @Schema(description = "Refresh token", example = "eyJhbGciOiJIUzI1NiIsIn...")
     private String refreshToken;
+
+    @Schema(description = "User Role")
+    private String role;
+
+    private String firstName; // Add if missing
 }

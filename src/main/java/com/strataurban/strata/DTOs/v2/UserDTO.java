@@ -62,4 +62,6 @@ public class UserDTO {
 
     @Schema(description = "URL of the user's image", example = "https://example.com/images/user.jpg")
     private String imageUrl;
+
+    private String token;
 }

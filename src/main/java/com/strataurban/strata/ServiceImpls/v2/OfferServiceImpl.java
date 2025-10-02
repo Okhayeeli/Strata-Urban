@@ -5,7 +5,10 @@ import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
+import com.strataurban.strata.Services.EmailService;
 import com.strataurban.strata.Services.v2.OfferService;
+import com.strataurban.strata.Services.v2.ProviderService;
+import com.strataurban.strata.Services.v2.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +33,17 @@ public class OfferServiceImpl implements OfferService {
 
     private final OfferRepository offerRepository;
     private final BookingRepository bookingRepository;
+    private final EmailService emailService;
+    private final UserService userService;
+    private final ProviderService providerService;
 
     @Autowired
-    public OfferServiceImpl(OfferRepository offerRepository, BookingRepository bookingRepository) {
+    public OfferServiceImpl(OfferRepository offerRepository, BookingRepository bookingRepository, EmailService emailService, UserService userService, ProviderService providerService) {
         this.offerRepository = offerRepository;
         this.bookingRepository = bookingRepository;
+        this.emailService = emailService;
+        this.userService = userService;
+        this.providerService = providerService;
     }
 
     @Override
@@ -92,6 +101,9 @@ public class OfferServiceImpl implements OfferService {
         }
         bookingRepository.save(booking);
         logger.info("Updated BookingRequest.offerIds: {}", booking.getOfferIds());
+
+
+        emailService.sendOfferEmail(userService.getUserById(booking.getClientId()).getFirstName(),offer, providerService.getProviderById(providerId).getCompanyName());
 
         return savedOffer;
     }

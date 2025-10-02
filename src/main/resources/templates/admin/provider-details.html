@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Provider Details - StrataUrban Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 260px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .logo-section {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            min-width: 40px;
+        }
+
+        .logo-text h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .logo-text p {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        .sidebar.collapsed .logo-text {
+            display: none;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin: 5px 10px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            gap: 12px;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            font-size: 1.3rem;
+            min-width: 25px;
+            text-align: center;
+        }
+
+        .sidebar.collapsed .nav-text {
+            display: none;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .main-content.expanded {
+            margin-left: 80px;
+        }
+
+        .top-header {
+            background: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #667eea;
+            padding: 8px;
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            color: #333;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px 15px;
+            border-radius: 25px;
+            transition: background 0.3s ease;
+        }
+
+        .user-profile:hover {
+            background: #f5f7fa;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            margin-top: 10px;
+            padding: 10px 0;
+            min-width: 200px;
+            display: none;
+        }
+
+        .dropdown.active .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 12px 20px;
+            color: #333;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background: #f5f7fa;
+        }
+
+        .dropdown-item.logout {
+            color: #ef4444;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .page-content {
+            padding: 30px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .provider-details {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+        }
+
+        .provider-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+
+        .provider-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .provider-info h2 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .provider-info p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .detail-section {
+            padding: 15px;
+        }
+
+        .detail-section h3 {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+
+        .detail-item {
+            margin-bottom: 12px;
+        }
+
+        .detail-item label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #666;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .detail-item span {
+            font-size: 0.95rem;
+            color: #333;
+        }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f7fa;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+
+        .banner-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+    <div class="logo-section">
+        <div class="logo-icon">🚐</div>
+        <div class="logo-text">
+            <h2>StrataUrban</h2>
+            <p>Admin Portal</p>
+        </div>
+    </div>
+
+    <ul class="nav-menu">
+        <li class="nav-item">
+            <a href="/admin/dashboard" class="nav-link">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Dashboard</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/bookings" class="nav-link">
+                <span class="nav-icon">📅</span>
+                <span class="nav-text">Bookings</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/providers" class="nav-link active">
+                <span class="nav-icon">🏢</span>
+                <span class="nav-text">Providers</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/clients" class="nav-link">
+                <span class="nav-icon">👥</span>
+                <span class="nav-text">Clients</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/drivers" class="nav-link">
+                <span class="nav-icon">🚗</span>
+                <span class="nav-text">Drivers</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/vehicles" class="nav-link">
+                <span class="nav-icon">🚙</span>
+                <span class="nav-text">Vehicles</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/areas" class="nav-link">
+                <span class="nav-icon">🗺️</span>
+                <span class="nav-text">Service Areas</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/revenue" class="nav-link">
+                <span class="nav-icon">💰</span>
+                <span class="nav-text">Revenue</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/analytics" class="nav-link">
+                <span class="nav-icon">📈</span>
+                <span class="nav-text">Analytics</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/settings" class="nav-link">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-text">Settings</span>
+            </a>
+        </li>
+    </ul>
+</aside>
+
+<main class="main-content" id="mainContent">
+    <header class="top-header">
+        <div class="header-left">
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <div class="header-title">
+                <h1>Provider Details</h1>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="dropdown">
+                <div class="user-profile" onclick="toggleDropdown()">
+                    <div class="user-avatar">
+                        <span th:text="${#strings.substring(adminUser.firstName ?: 'A', 0, 1)}">A</span>
+                    </div>
+                </div>
+
+                <div class="dropdown-menu">
+                    <a href="/admin/profile" class="dropdown-item">
+                        <span>👤</span> Profile
+                    </a>
+                    <a href="/admin/settings" class="dropdown-item">
+                        <span>⚙️</span> Settings
+                    </a>
+                    <a href="/admin/logout" class="dropdown-item logout">
+                        <span>🚪</span> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-content">
+        <div class="provider-details">
+            <div class="provider-header">
+                <div class="provider-logo">
+                    <span th:text="${#strings.substring(provider.companyName ?: 'P', 0, 1)}">P</span>
+                </div>
+                <div class="provider-info">
+                    <h2 th:text="${provider.companyName} ?: 'Unknown Company'">Company Name</h2>
+                    <p th:text="${provider.email} ?: 'No Email'">email@example.com</p>
+                    <div class="rating">
+                        ⭐ <span th:text="${provider.rating != null ? #numbers.formatDecimal(provider.rating, 1, 1) : '0.0'}">0.0</span>
+                        (<span th:text="${provider.numberOfRatings} ?: '0'">0</span> reviews)
+                    </div>
+                </div>
+            </div>
+
+            <img th:if="${provider.companyBannerUrl != null}" th:src="${provider.companyBannerUrl}" class="banner-image" alt="Company Banner">
+
+            <div class="details-grid">
+                <div class="detail-section">
+                    <h3>Personal Information</h3>
+                    <div class="detail-item">
+                        <label>Title</label>
+                        <span th:text="${provider.title} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>First Name</label>
+                        <span th:text="${provider.firstName} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Middle Name</label>
+                        <span th:text="${provider.middleName} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Last Name</label>
+                        <span th:text="${provider.lastName} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Email</label>
+                        <span th:text="${provider.email} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Phone</label>
+                        <span th:text="${provider.phone} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Secondary Phone</label>
+                        <span th:text="${provider.phone2} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Preferred Language</label>
+                        <span th:text="${provider.preferredLanguage} ?: 'N/A'">N/A</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Company Information</h3>
+                    <div class="detail-item">
+                        <label>Company Name</label>
+                        <span th:text="${provider.companyName} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Supplier Code</label>
+                        <span th:text="${provider.supplierCode} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Registration Number</label>
+                        <span th:text="${provider.companyRegistrationNumber} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Business Type</label>
+                        <span th:text="${provider.companyBusinessType} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Business Phone</label>
+                        <span th:text="${provider.companyBusinessPhone} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Business Email</label>
+                        <span th:text="${provider.companyBusinessEmail} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Website</label>
+                        <span th:if="${provider.companyBusinessWebsite != null}">
+                            <a th:href="${provider.companyBusinessWebsite}" th:text="${provider.companyBusinessWebsite}">Website</a>
+                        </span>
+                        <span th:unless="${provider.companyBusinessWebsite != null}">N/A</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Location & Services</h3>
+                    <div class="detail-item">
+                        <label>Address</label>
+                        <span th:text="${provider.companyAddress} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>City</label>
+                        <span th:text="${provider.city} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>State</label>
+                        <span th:text="${provider.state} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Country</label>
+                        <span th:text="${provider.country} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Zip Code</label>
+                        <span th:text="${provider.zipCode} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Service Types</label>
+                        <span th:if="${provider.serviceTypes != null && !provider.serviceTypes.isEmpty()}"
+                              th:text="${#strings.join(provider.serviceTypes, ', ')}">N/A</span>
+                        <span th:unless="${provider.serviceTypes != null && !provider.serviceTypes.isEmpty()}">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Service Areas</label>
+                        <span th:text="${provider.serviceAreas} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Total Vehicles</label>
+                        <span th:text="${provider.transportCount} ?: '0'">0</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Account Information</h3>
+                    <div class="detail-item">
+                        <label>Status</label>
+                        <span class="badge badge-success" th:if="${provider.emailVerified}">Active</span>
+                        <span class="badge badge-warning" th:unless="${provider.emailVerified}">Pending</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Role</label>
+                        <span th:text="${provider.providerRole} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Username</label>
+                        <span th:text="${provider.username} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Last Activity</label>
+                        <span th:text="${provider.lastActivity} ? ${#temporals.format(provider.lastActivity, 'dd MMM yyyy HH:mm')} : 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Last Password Change</label>
+                        <span th:text="${provider.lastPasswordChange} ? ${#temporals.format(provider.lastPasswordChange, 'dd MMM yyyy HH:mm')} : 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Failed Login Attempts</label>
+                        <span th:text="${provider.failedLoginAttempts} ?: '0'">0</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Account Locked Until</label>
+                        <span th:text="${provider.accountLockedUntil} ? ${#temporals.format(provider.accountLockedUntil, 'dd MMM yyyy HH:mm')} : 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Self Created</label>
+                        <span th:text="${provider.selfCreated} ? 'Yes' : 'No'">No</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Additional Information</h3>
+                    <div class="detail-item">
+                        <label>Primary Contact Position</label>
+                        <span th:text="${provider.primaryContactPosition} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Primary Contact Department</label>
+                        <span th:text="${provider.primaryContactDepartment} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Description</label>
+                        <span th:text="${provider.description} ?: 'N/A'">N/A</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Company Logo</label>
+                        <span th:if="${provider.companyLogoUrl != null}">
+                            <a th:href="${provider.companyLogoUrl}" th:text="${provider.companyLogoUrl}">Logo</a>
+                        </span>
+                        <span th:unless="${provider.companyLogoUrl != null}">N/A</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <a th:href="'/admin/providers/' + ${provider.id} + '/edit'" class="btn btn-primary">Edit Provider</a>
+                <button class="btn btn-secondary" onclick="window.history.back()">Back</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+
+        if (window.innerWidth > 768) {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        } else {
+            sidebar.classList.toggle('mobile-open');
+        }
+    }
+
+    function toggleDropdown() {
+        const dropdown = document.querySelector('.dropdown');
+        dropdown.classList.toggle('active');
+    }
+
+    document.addEventListener('click', function(event) {
+        const dropdown = document.querySelector('.dropdown');
+        if (!dropdown.contains(event.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+</script>
+</body>
+</html>

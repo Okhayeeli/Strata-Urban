@@ -27,6 +27,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -73,16 +74,43 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
+                .securityMatcher(new AntPathRequestMatcher("/api/**")) // Apply JWT only to API routes
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Explicitly allow all OPTIONS requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v2/auth/signup/**", "/api/v2/auth/login", "/api/v2/auth/refresh", "/api/v2/auth/**","/api/v2/auth/get-all").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() // Permit Swagger UI and API docs
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v2/service-areas/report", "/api/v2/notifications/get-all", "/api/v2/auth/get-all/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(corsLoggingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    /**
+     * Separate security filter chain for admin portal with session management
+     */
+    @Bean
+    public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
+        logger.debug("Configuring Admin SecurityFilterChain");
+        http
+                .securityMatcher(new AntPathRequestMatcher("/admin/**")) // Apply to admin routes only
+                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for now (enable in production with proper token handling)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Enable sessions for admin
+                        .maximumSessions(1) // Only one session per admin user
+                        .maxSessionsPreventsLogin(false) // Allow new login to invalidate old session
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/admin/login", "/admin/forgot-password", "/admin/reset-password").permitAll()
+                        .requestMatchers("/admin/**").permitAll() // Temporarily permit all admin routes for testing
+                        // After testing, change to: .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .anyRequest().authenticated()
+                )
+                .formLogin(AbstractHttpConfigurer::disable) // Disable default form login
+                .httpBasic(AbstractHttpConfigurer::disable); // Disable basic auth
 
         return http.build();
     }
@@ -103,13 +131,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         logger.info("Configuring CORS");
         CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5500"));
         configuration.setAllowedOriginPatterns(List.of("*", "http://localhost:3000", "http://localhost:5500", "https://localhost"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization")); // Include if your API returns specific headers
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L); // Cache preflight for 1 hour
+        configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         logger.info("CORS configured with origins: {}", configuration.getAllowedOrigins());
@@ -133,5 +160,4 @@ public class SecurityConfig {
             logger.info("Response: Status={}, Headers={}", response.getStatus(), response.getHeaderNames());
         }
     }
-
 }

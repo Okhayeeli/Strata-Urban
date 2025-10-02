@@ -13,6 +13,8 @@ import com.strataurban.strata.Repositories.v2.ServiceAreaRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
+import com.strataurban.strata.Services.EmailService;
+import com.strataurban.strata.Services.EmailVerificationTokenService;
 import com.strataurban.strata.Services.v2.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -47,7 +49,6 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
-
     private static final int MAX_PASSWORD_HISTORY = 5;
     private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
     private static final int LOCK_DURATION_MINUTES = 30;
@@ -57,6 +58,7 @@ public class UserServiceImpl implements UserService {
     private static final Pattern PASSWORD_PATTERN = Pattern.compile(
             "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{" + MIN_PASSWORD_LENGTH + ",}$"
     );
+    private final EmailService emailService;
 
     @Autowired
     public UserServiceImpl(
@@ -65,13 +67,14 @@ public class UserServiceImpl implements UserService {
             BlacklistedTokenRepository blacklistedTokenRepository,
             PasswordEncoder passwordEncoder,
             @Lazy AuthenticationManager authenticationManager,
-            JwtUtil jwtUtil) {
+            JwtUtil jwtUtil, EmailService emailService) {
         this.userRepository = userRepository;
         this.serviceAreaRepository = serviceAreaRepository;
         this.blacklistedTokenRepository = blacklistedTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
+        this.emailService = emailService;
     }
 
     @Override
@@ -101,7 +104,9 @@ public class UserServiceImpl implements UserService {
         client.setRoles(EnumRoles.CLIENT);
         client.setEmailVerified(false);
 
-        return (Client) userRepository.save(client);
+        userRepository.save(client);
+        emailService.sendVerificationEmail(client.getEmail(), client.getId());
+        return client;
     }
 
     @Override
@@ -146,6 +151,7 @@ public class UserServiceImpl implements UserService {
         provider.setRoles(EnumRoles.PROVIDER);
         provider.setEmailVerified(false);
 
+
         if (request.getServiceAreaIds() != null && !request.getServiceAreaIds().isEmpty()) {
             List<ServiceArea> serviceAreas = serviceAreaRepository.findAllById(request.getServiceAreaIds());
             if (serviceAreas.size() != request.getServiceAreaIds().size()) {
@@ -156,8 +162,9 @@ public class UserServiceImpl implements UserService {
                     .collect(Collectors.joining(","));
             provider.setServiceAreas(serviceAreasString);
         }
-
-        return (Provider) userRepository.save(provider);
+        userRepository.save(provider);
+        emailService.sendVerificationEmail(provider.getCompanyBusinessEmail(), provider.getId());
+        return provider;
     }
 
     @Override
@@ -228,6 +235,7 @@ public class UserServiceImpl implements UserService {
             LoginResponse response = new LoginResponse();
             response.setAccessToken(accessToken);
             response.setRefreshToken(refreshToken);
+            response.setRole(user.getRoles().toString());
             response.setId(userId);
             log.debug("Login response: accessToken={}, refreshToken={}", accessToken, refreshToken);
             return response;

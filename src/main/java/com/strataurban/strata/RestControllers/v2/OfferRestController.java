@@ -9,6 +9,7 @@ import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Security.LoggedUser;
 import com.strataurban.strata.Security.SecurityUserDetails;
+import com.strataurban.strata.Services.EmailService;
 import com.strataurban.strata.Services.v2.BookingService;
 import com.strataurban.strata.Services.v2.OfferService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,12 +40,14 @@ public class OfferRestController {
     private final BookingService bookingService;
     private final OfferService offerService;
     private final OfferRepository offerRepository;
+    private final EmailService emailService;
 
     @Autowired
-    public OfferRestController(BookingService bookingService, OfferService offerService, OfferRepository offerRepository) {
+    public OfferRestController(BookingService bookingService, OfferService offerService, OfferRepository offerRepository, EmailService emailService) {
         this.bookingService = bookingService;
         this.offerService = offerService;
         this.offerRepository = offerRepository;
+        this.emailService = emailService;
     }
 
     @PostMapping("/{bookingId}")

@@ -72,10 +72,11 @@ public class BookingRestController {
             @ApiResponse(responseCode = "404", description = "Client not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT (if principal.id == #clientId), ADMIN, or DEVELOPER can access this endpoint. PROVIDER and others are restricted.")
     })
-    @PreAuthorize("(hasRole('CLIENT') and principal.id == #clientId) or hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public ResponseEntity<Page<BookingRequest>> getClientBookings(@PathVariable Long clientId, Pageable pageable) {
+    @PreAuthorize("hasRole('CLIENT')  or hasRole('ADMIN') or hasRole('DEVELOPER')")
+    public ResponseEntity<Page<BookingRequest>> getClientBookings(@PathVariable Long clientId, @LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
         try {
-            return ResponseEntity.ok(bookingService.getClientBookings(clientId, pageable));
+
+            return ResponseEntity.ok(bookingService.getClientBookings(userDetails.getId(), pageable));
         } catch (SecurityException e) {
             throw new AccessDeniedException("Access denied: Only CLIENT (if principal.id == #clientId), ADMIN, or DEVELOPER can access this endpoint. PROVIDER and others are restricted.");
         }
