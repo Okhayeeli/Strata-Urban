@@ -238,6 +238,7 @@ public class AdminProviderController {
             model.addAttribute("provider", provider);
             model.addAttribute("availableVehicleCount", transportRepository.findAvailableTransports(id, null, null).size());
             model.addAttribute("totalVehicles", transportRepository.countByProviderId(id) != null ? transportRepository.countByProviderId(id) : 0);
+            model.addAttribute("vehicles", transportRepository.findByProviderId(id));
             model.addAttribute("totalBookings", bookingRepository.findByProviderId(id).size());
             model.addAttribute("completedBookings", bookingRepository.findByProviderIdAndStatus(id, BookingStatus.COMPLETED).size());
             // If you have drivers linked via relationship, fetch them from JPA instead of raw SQL

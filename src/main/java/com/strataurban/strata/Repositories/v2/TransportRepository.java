@@ -57,4 +57,6 @@ public interface TransportRepository extends JpaRepository<Transport, Long> {
             @Param("routeId") Long routeId,
             @Param("status") String status,
             Pageable pageable);
+
+
 }

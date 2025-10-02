@@ -216,11 +216,6 @@
             color: #991b1b;
         }
 
-        .btn-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -314,13 +309,13 @@
             grid-column: 1 / -1;
         }
 
-        .vehicles-table, .drivers-table {
+        .vehicles-table, .drivers-table, .bookings-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
         }
 
-        .vehicles-table th, .drivers-table th {
+        .vehicles-table th, .drivers-table th, .bookings-table th {
             background: #f5f7fa;
             padding: 12px;
             text-align: left;
@@ -329,12 +324,12 @@
             font-size: 0.9rem;
         }
 
-        .vehicles-table td, .drivers-table td {
+        .vehicles-table td, .drivers-table td, .bookings-table td {
             padding: 12px;
             border-top: 1px solid #f0f0f0;
         }
 
-        .vehicles-table tbody tr:hover, .drivers-table tbody tr:hover {
+        .vehicles-table tbody tr:hover, .drivers-table tbody tr:hover, .bookings-table tbody tr:hover {
             background: #f9fafb;
         }
 
@@ -541,7 +536,7 @@
             </div>
             <div class="stat-card">
                 <h4>Total Revenue</h4>
-                <p th:text="'₦' + ${totalRevenue} ?: '0'">₦0</p>
+                <p th:text="'₦' + ${totalRevenue} ?: '₦0'">₦0</p>
             </div>
         </div>
 
@@ -618,39 +613,53 @@
                 <button class="tab" onclick="switchTab('bookings')">Booking History</button>
             </div>
 
+            <!-- Vehicles Tab -->
             <div id="vehicles-tab" class="tab-content active">
-                <div th:if="${vehicles != null && !vehicles.isEmpty()}">
+                <div th:if="${vehicles == null || vehicles.isEmpty()}" class="empty-state">
+                    <div class="empty-state-icon">🚙</div>
+                    <h3>No Vehicles Found</h3>
+                    <p>This provider hasn't added any vehicles yet.</p>
+                </div>
+
+                <div th:unless="${vehicles == null || vehicles.isEmpty()}">
                     <table class="vehicles-table">
                         <thead>
                         <tr>
-                            <th>Plate Number</th>
                             <th>Type</th>
-                            <th>Brand/Model</th>
+                            <th>Vehicle</th>
+                            <th>Plate Number</th>
                             <th>Capacity</th>
                             <th>Color</th>
+                            <th>State</th>
                             <th>Status</th>
+                            <th>Description</th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr th:each="vehicle : ${vehicles}">
-                            <td th:text="${vehicle.plateNumber}">ABC-123</td>
-                            <td th:text="${vehicle.type}">Taxi</td>
-                            <td th:text="${vehicle.brand + ' ' + vehicle.model}">Brand Model</td>
-                            <td th:text="${vehicle.capacity}">4</td>
-                            <td th:text="${vehicle.color}">Black</td>
+                            <td>
+                                <span th:if="${vehicle.type == 'Bus'}">🚌</span>
+                                <span th:if="${vehicle.type == 'Taxi'}">🚕</span>
+                                <span th:if="${vehicle.type != 'Bus' && vehicle.type != 'Taxi'}">🚙</span>
+                                <span th:text="${vehicle.type}">Type</span>
+                            </td>
+                            <td th:text="${vehicle.brand + ' ' + vehicle.model}">Vehicle Name</td>
+                            <td th:text="${vehicle.plateNumber}">Plate Number</td>
+                            <td th:text="${vehicle.capacity + ' seats'}">Capacity</td>
+                            <td th:text="${vehicle.color}">Color</td>
+                            <td th:text="${vehicle.state}">State</td>
                             <td>
                                 <span class="vehicle-badge vehicle-available" th:if="${vehicle.status == 'Available'}">Available</span>
-                                <span class="vehicle-badge vehicle-booked" th:unless="${vehicle.status == 'Available'}" th:text="${vehicle.status}">Booked</span>
+                                <span class="vehicle-badge vehicle-booked" th:if="${vehicle.status != 'Available'}" th:text="${vehicle.status}">Status</span>
                             </td>
+                            <td th:text="${vehicle.description != null && !vehicle.description.isEmpty()} ? ${vehicle.description} : 'N/A'">N/A</td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
-                <div th:if="${vehicles == null || vehicles.isEmpty()}" class="empty-state">
-                    <p>No vehicles registered for this provider</p>
-                </div>
             </div>
 
+            <!-- Drivers Tab -->
             <div id="drivers-tab" class="tab-content">
                 <div th:if="${drivers != null && !drivers.isEmpty()}">
                     <table class="drivers-table">
@@ -679,9 +688,10 @@
                 </div>
             </div>
 
+            <!-- Bookings Tab -->
             <div id="bookings-tab" class="tab-content">
                 <div th:if="${bookings != null && !bookings.isEmpty()}">
-                    <table class="drivers-table">
+                    <table class="bookings-table">
                         <thead>
                         <tr>
                             <th>Booking ID</th>
