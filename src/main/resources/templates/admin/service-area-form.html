@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Edit Service Area' : 'Create Service Area'} + ' - StrataUrban Admin'">Service Area Form</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 260px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            z-index: 1000;
+        }
+
+        .logo-section {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .logo-section h2 {
+            font-size: 1.4rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin: 5px 10px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            gap: 12px;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            font-weight: 600;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+
+        .top-header {
+            background: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            padding: 10px 15px;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .back-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            color: #333;
+        }
+
+        .header-title p {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .content-area {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-close {
+            margin-left: auto;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .form-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+        }
+
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-card h2 {
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .required {
+            color: #ef4444;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .help-text {
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 6px;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f3f4f6;
+        }
+
+        .info-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            height: fit-content;
+        }
+
+        .info-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .info-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .info-item h4 {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-item p {
+            font-size: 1rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .tip-box {
+            background: #e0e7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .tip-box h4 {
+            font-size: 0.95rem;
+            color: #4f46e5;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tip-box ul {
+            margin-left: 20px;
+            color: #4f46e5;
+        }
+
+        .tip-box li {
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .providers-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .providers-section h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .provider-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .provider-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .provider-item:hover {
+            background: #e9ecef;
+        }
+
+        .provider-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .provider-info {
+            flex: 1;
+        }
+
+        .provider-info p {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .provider-info span {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .empty-providers {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+
+        .empty-providers-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        /* Validation */
+        .form-control.error {
+            border-color: #ef4444;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Loading state */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 968px) {
+            .form-container {
+                grid-template-columns: 1fr;
+            }
+
+            .info-card {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Sidebar -->
+<aside class="sidebar">
+    <div class="logo-section">
+        <h2>🚐 StrataUrban</h2>
+    </div>
+    <ul class="nav-menu">
+        <li class="nav-item">
+            <a href="/admin/dashboard" class="nav-link">
+                <span>📊</span> Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/bookings" class="nav-link">
+                <span>📅</span> Bookings
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/providers" class="nav-link">
+                <span>🏢</span> Providers
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/clients" class="nav-link">
+                <span>👥</span> Clients
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/drivers" class="nav-link">
+                <span>🚗</span> Drivers
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/vehicles" class="nav-link">
+                <span>🚙</span> Vehicles
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/admin/areas" class="nav-link active">
+                <span>🗺️</span> Service Areas
+            </a>
+        </li>
+    </ul>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content">
+    <!-- Top Header -->
+    <header class="top-header">
+        <div class="header-left">
+            <a href="/admin/areas" class="back-btn">← Back</a>
+            <div class="header-title">
+                <h1 th:text="${isEdit ? 'Edit Service Area' : 'Create Service Area'}">Service Area Form</h1>
+                <p th:text="${isEdit ? 'Update service area information' : 'Add a new service area to the system'}">Form description</p>
+            </div>
+        </div>
+        <div class="user-profile">
+            <div class="user-avatar">
+                <span th:text="${#strings.substring(adminUser.firstName ?: 'A', 0, 1)}">A</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="content-area">
+        <!-- Error Messages -->
+        <div th:if="${error}" class="alert alert-error">
+            <span>⚠</span>
+            <span th:text="${error}">Error message</span>
+            <span class="alert-close" onclick="this.parentElement.remove()">×</span>
+        </div>
+
+        <!-- Form Container -->
+        <form th:action="${isEdit ? '/admin/areas/edit/' + serviceArea.id : '/admin/areas/create'}"
+              method="post"
+              id="serviceAreaForm"
+              onsubmit="return validateForm()">
+
+            <div class="form-container">
+                <!-- Main Form -->
+                <div class="form-card">
+                    <h2>
+                        <span>🗺️</span>
+                        <span>Service Area Information</span>
+                    </h2>
+
+                    <div class="form-group">
+                        <label for="name">
+                            Area Name <span class="required">*</span>
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               id="name"
+                               name="name"
+                               th:value="${serviceArea.name}"
+                               placeholder="e.g., Downtown Lagos, Victoria Island, Ikeja"
+                               maxlength="100"
+                               required
+                               oninput="updateCharCount('name', 100); clearError('name')">
+                        <div class="char-count">
+                            <span id="nameCount">0</span>/100 characters
+                        </div>
+                        <div class="error-message" id="nameError">Area name is required</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">
+                            Description
+                        </label>
+                        <textarea class="form-control"
+                                  id="description"
+                                  name="description"
+                                  th:text="${serviceArea.description}"
+                                  placeholder="Provide a brief description of this service area, including key landmarks or boundaries..."
+                                  maxlength="500"
+                                  oninput="updateCharCount('description', 500)"></textarea>
+                        <div class="char-count">
+                            <span id="descriptionCount">0</span>/500 characters
+                        </div>
+                        <p class="help-text">Optional: Add details about the coverage area, major landmarks, or any important notes</p>
+                    </div>
+
+                    <!-- Providers Section (only shown in edit mode) -->
+                    <div th:if="${isEdit}" class="providers-section">
+                        <h3>
+                            <span>🏢</span>
+                            <span>Providers Operating in This Area</span>
+                            <span th:if="${providersInArea}" style="color: #667eea; font-size: 0.9rem; margin-left: 10px;">
+                                (<span th:text="${providersInArea.size()}">0</span>)
+                            </span>
+                        </h3>
+
+                        <div th:if="${providersInArea != null and !providersInArea.empty}" class="provider-list">
+                            <div th:each="provider : ${providersInArea}" class="provider-item">
+                                <div class="provider-icon">🏢</div>
+                                <div class="provider-info">
+                                    <p th:text="${provider.companyName}">Provider Name</p>
+                                    <span th:text="${provider.email}">provider@email.com</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div th:if="${providersInArea == null or providersInArea.empty}" class="empty-providers">
+                            <div class="empty-providers-icon">🏢</div>
+                            <p>No providers are currently operating in this area</p>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <span th:text="${isEdit ? '💾 Update Area' : '➕ Create Area'}">Submit</span>
+                        </button>
+                        <a href="/admin/areas" class="btn btn-secondary">
+                            ❌ Cancel
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Info Sidebar -->
+                <div class="info-card">
+                    <h3>📋 Quick Info</h3>
+
+                    <div th:if="${isEdit}">
+                        <div class="info-item">
+                            <h4>Area ID</h4>
+                            <p th:text="${serviceArea.id}">-</p>
+                        </div>
+
+                        <div class="info-item">
+                            <h4>Active Providers</h4>
+                            <p th:text="${providersInArea != null ? providersInArea.size() : 0}">0</p>
+                        </div>
+                    </div>
+
+                    <div class="tip-box">
+                        <h4>
+                            <span>💡</span>
+                            <span>Tips for Service Areas</span>
+                        </h4>
+                        <ul>
+                            <li>Use clear, recognizable area names</li>
+                            <li>Include major landmarks in description</li>
+                            <li>Keep names consistent across the platform</li>
+                            <li>Consider using official district names</li>
+                            <li th:if="${isEdit}">Cannot delete areas with active providers</li>
+                        </ul>
+                    </div>
+
+                    <div th:unless="${isEdit}" class="tip-box" style="margin-top: 15px; background: #d1fae5; border-color: #10b981;">
+                        <h4 style="color: #065f46;">
+                            <span>✓</span>
+                            <span>Next Steps</span>
+                        </h4>
+                        <ul style="color: #065f46;">
+                            <li>After creating, assign providers to this area</li>
+                            <li>Set up coverage boundaries</li>
+                            <li>Configure pricing rules (if applicable)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+    // Initialize character counts on page load
+    window.addEventListener('DOMContentLoaded', function() {
+        updateCharCount('name', 100);
+        updateCharCount('description', 500);
+    });
+
+    // Update character count
+    function updateCharCount(fieldId, maxLength) {
+        const field = document.getElementById(fieldId);
+        const counter = document.getElementById(fieldId + 'Count');
+        if (field && counter) {
+            const length = field.value.length;
+            counter.textContent = length;
+
+            if (length > maxLength * 0.9) {
+                counter.style.color = '#ef4444';
+            } else if (length > maxLength * 0.7) {
+                counter.style.color = '#f59e0b';
+            } else {
+                counter.style.color = '#999';
+            }
+        }
+    }
+
+    // Clear error styling
+    function clearError(fieldId) {
+        const field = document.getElementById(fieldId);
+        const error = document.getElementById(fieldId + 'Error');
+        if (field) field.classList.remove('error');
+        if (error) error.classList.remove('show');
+    }
+
+    // Validate form before submission
+    function validateForm() {
+        let isValid = true;
+
+        // Validate area name
+        const nameField = document.getElementById('name');
+        const nameError = document.getElementById('nameError');
+
+        if (!nameField.value.trim()) {
+            nameField.classList.add('error');
+            nameError.textContent = 'Area name is required';
+            nameError.classList.add('show');
+            isValid = false;
+        } else if (nameField.value.trim().length < 2) {
+            nameField.classList.add('error');
+            nameError.textContent = 'Area name must be at least 2 characters';
+            nameError.classList.add('show');
+            isValid = false;
+        } else {
+            nameField.classList.remove('error');
+            nameError.classList.remove('show');
+        }
+
+        // Show loading state on submit button
+        if (isValid) {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> <span>Processing...</span>';
+        }
+
+        return isValid;
+    }
+
+    // Auto-save draft to localStorage (optional feature)
+    const form = document.getElementById('serviceAreaForm');
+    const isEdit = /*[[${isEdit}]]*/ false;
+
+    if (!isEdit) {
+        // Save draft every 30 seconds for new forms
+        setInterval(function() {
+            const nameValue = document.getElementById('name').value;
+            const descValue = document.getElementById('description').value;
+
+            if (nameValue.trim()) {
+                localStorage.setItem('serviceAreaDraft', JSON.stringify({
+                    name: nameValue,
+                    description: descValue,
+                    timestamp: new Date().toISOString()
+                }));
+            }
+        }, 30000);
+
+        // Load draft on page load
+        const draft = localStorage.getItem('serviceAreaDraft');
+        if (draft) {
+            const draftData = JSON.parse(draft);
+            if (confirm('You have an unsaved draft from ' + new Date(draftData.timestamp).toLocaleString() + '. Would you like to restore it?')) {
+                document.getElementById('name').value = draftData.name;
+                document.getElementById('description').value = draftData.description;
+                updateCharCount('name', 100);
+                updateCharCount('description', 500);
+            } else {
+                localStorage.removeItem('serviceAreaDraft');
+            }
+        }
+
+        // Clear draft on successful submission
+        form.addEventListener('submit', function() {
+            localStorage.removeItem('serviceAreaDraft');
+        });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + S to save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            if (validateForm()) {
+                form.submit();
+            }
+        }
+
+        // Escape to cancel
+        if (e.key === 'Escape') {
+            if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                window.location.href = '/admin/areas';
+            }
+        }
+    });
+</script>
+</body>
+</html>

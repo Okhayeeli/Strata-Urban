@@ -462,7 +462,7 @@
                 </div>
 
                 <div class="client-main-info">
-                    <h1 th:text="${client.title != null ? client.title + ' ' : ''}${client.firstName} ${client.middleName != null ? client.middleName + ' ' : ''}${client.lastName}">Client Name</h1>
+                    <h1 th:text="${client.getFirstName()}">Client Name</h1>
                     <h2 th:text="${client.email}">Email</h2>
 
                     <div class="client-meta">
@@ -510,7 +510,7 @@
                 <h3>Personal Information</h3>
                 <div class="detail-row">
                     <span class="detail-label">Full Name:</span>
-                    <span class="detail-value" th:text="${client.title != null ? client.title + ' ' : ''}${client.firstName} ${client.middleName != null ? client.middleName + ' ' : ''}${client.lastName}">N/A</span>
+                    <span class="detail-value" th:text="${client.getFirstName()}">N/A</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Username:</span>

@@ -105,8 +105,8 @@ public class UserServiceImpl implements UserService {
         client.setEmailVerified(false);
 
         userRepository.save(client);
-        emailService.standbyEmail(client.getEmail());
-//        emailService.sendVerificationEmail(client.getEmail(), client.getId());
+//        emailService.standbyEmail(client.getEmail());
+        emailService.sendVerificationEmail(client.getEmail(), client.getId());
         return client;
     }
 
@@ -164,8 +164,8 @@ public class UserServiceImpl implements UserService {
             provider.setServiceAreas(serviceAreasString);
         }
         userRepository.save(provider);
-        emailService.standbyEmail(provider.getEmail());
-//        emailService.sendVerificationEmail(provider.getCompanyBusinessEmail(), provider.getId());
+//        emailService.standbyEmail(provider.getEmail());
+        emailService.sendVerificationEmail(provider.getCompanyBusinessEmail(), provider.getId());
         return provider;
     }
 
@@ -517,5 +517,17 @@ public class UserServiceImpl implements UserService {
 
     public User findUserByUsername(String username) {
       return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+
+    public String findFullNameById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        String middleName = user.getMiddleName();
+
+        if (!StringUtils.hasText(middleName)) {
+            return user.getFirstName() + " " + user.getLastName();
+        }
+        return user.getFirstName() + " " + middleName + " " + user.getLastName();
     }
 }

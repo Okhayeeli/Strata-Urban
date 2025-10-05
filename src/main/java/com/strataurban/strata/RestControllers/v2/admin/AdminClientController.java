@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/admin/clients")
+@RequestMapping("/admin/clients/v1")
 public class AdminClientController {
 
     @Autowired
@@ -210,7 +210,7 @@ public class AdminClientController {
 //            double totalSpent = bookings.stream().mapToDouble(b -> b.getAmount() != null ? b.getAmount() : 0).sum();
             model.addAttribute("totalSpent", String.format("%.2f", 879.90));
 
-            return "admin/client-details";
+            return "client-detail";
         } catch (Exception e) {
             System.err.println("Error fetching client details: " + e.getMessage());
             return "redirect:/admin/clients";

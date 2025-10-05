@@ -9,12 +9,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 @Repository
-public interface BookingRepository extends JpaRepository<BookingRequest, Long> {
+public interface BookingRepository extends JpaRepository<BookingRequest, Long>, JpaSpecificationExecutor<BookingRequest> {
 
     // Find all bookings for a specific client
     Page<BookingRequest> findByClientId(Long clientId, Pageable pageable);

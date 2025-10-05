@@ -195,7 +195,8 @@ public class ServiceAreaServiceImpl implements ServiceAreaService {
                     sa.getId(),
                     sa.getName(),
                     providers.size(),
-                    providers
+                    providers,
+                    sa.getDescription()
             );
         }).collect(Collectors.toList());
     }

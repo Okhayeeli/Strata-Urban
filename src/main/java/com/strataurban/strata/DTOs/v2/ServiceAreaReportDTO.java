@@ -26,4 +26,6 @@ public class ServiceAreaReportDTO {
 
     @Schema(description = "List of providers in the service area")
     private List<Provider> providers;
+
+    private String serviceAreaDescription;
 }
