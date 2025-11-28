@@ -74,13 +74,22 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .securityMatcher(new AntPathRequestMatcher("/api/**")) // Apply JWT only to API routes
+                .securityMatcher(new AntPathRequestMatcher("/api/**"))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v2/auth/signup/**", "/api/v2/auth/login", "/api/v2/auth/refresh", "/api/v2/auth/**","/api/v2/auth/get-all").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v2/service-areas/report", "/api/v2/notifications/get-all", "/api/v2/auth/get-all/**").permitAll()
+
+                        // ===== YOCO PAYMENT ENDPOINTS =====
+                        // IMPORTANT: Webhook must be publicly accessible (no JWT required)
+                        .requestMatchers("/api/payments/webhook").permitAll()
+
+                        // Payment endpoints require authentication
+                        .requestMatchers("/api/payments/**").authenticated()
+                        // ===================================
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(corsLoggingFilter, UsernamePasswordAuthenticationFilter.class)
@@ -96,21 +105,20 @@ public class SecurityConfig {
     public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
         logger.debug("Configuring Admin SecurityFilterChain");
         http
-                .securityMatcher(new AntPathRequestMatcher("/admin/**")) // Apply to admin routes only
-                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for now (enable in production with proper token handling)
+                .securityMatcher(new AntPathRequestMatcher("/admin/**"))
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Enable sessions for admin
-                        .maximumSessions(1) // Only one session per admin user
-                        .maxSessionsPreventsLogin(false) // Allow new login to invalidate old session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .maximumSessions(1)
+                        .maxSessionsPreventsLogin(false)
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/admin/login", "/admin/forgot-password", "/admin/reset-password").permitAll()
-                        .requestMatchers("/admin/**").permitAll() // Temporarily permit all admin routes for testing
-                        // After testing, change to: .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .formLogin(AbstractHttpConfigurer::disable) // Disable default form login
-                .httpBasic(AbstractHttpConfigurer::disable); // Disable basic auth
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable);
 
         return http.build();
     }

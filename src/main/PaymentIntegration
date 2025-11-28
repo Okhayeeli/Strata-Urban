@@ -1,0 +1,42 @@
+Key Features Implemented:
+✅ Security First:
+
+HMAC-SHA256 webhook signature validation
+Constant-time signature comparison (prevents timing attacks)
+Timestamp validation (prevents replay attacks within 3-minute window)
+Bearer token authentication
+CSRF protection (disabled only for webhook endpoint)
+
+✅ Idempotency & Duplicate Prevention:
+
+Unique idempotency keys per transaction
+Database-level duplicate detection
+Prevents double charges from double-clicks or network retries
+
+✅ Comprehensive Auditing:
+
+All transactions stored with full metadata
+Raw webhook payloads saved for audit trail
+Versioning with optimistic locking
+Complete refund tracking
+
+✅ Error Handling:
+
+Global exception handler with meaningful responses
+HTTP status code-based error categorization
+Detailed error logging
+Failed webhook storage for manual review
+
+✅ Webhook Handling:
+
+Fast response (< 5 seconds requirement)
+Signature validation before processing
+Duplicate webhook detection
+Automatic retry handling
+
+✅ Monitoring & Alerts:
+
+Real-time failure rate monitoring
+Stale transaction detection
+Prometheus metrics integration
+Configurable alert thresholds

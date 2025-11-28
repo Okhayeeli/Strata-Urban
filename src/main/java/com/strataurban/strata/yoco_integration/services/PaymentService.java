@@ -1,0 +1,237 @@
+package com.strataurban.strata.yoco_integration.services;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.strataurban.strata.yoco_integration.config.YocoProperties;
+import com.strataurban.strata.yoco_integration.dtos.CheckoutResponse;
+import com.strataurban.strata.yoco_integration.dtos.CreateCheckoutRequest;
+import com.strataurban.strata.yoco_integration.dtos.InitiatePaymentRequest;
+import com.strataurban.strata.yoco_integration.dtos.PaymentResponse;
+import com.strataurban.strata.yoco_integration.entities.PaymentTransaction;
+import com.strataurban.strata.yoco_integration.exceptions.PaymentException;
+import com.strataurban.strata.yoco_integration.repositories.PaymentTransactionRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class PaymentService {
+
+    private final RestTemplate yocoRestTemplate;
+    private final PaymentTransactionRepository transactionRepository;
+    private final IdempotencyService idempotencyService;
+    private final YocoProperties yocoProperties;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * Initiates a payment with YOCO
+     * Implements idempotency to prevent duplicate charges
+     */
+    @Transactional
+    public PaymentResponse initiatePayment(InitiatePaymentRequest request) {
+
+        // Generate idempotency key for this payment
+        String idempotencyKey = generateIdempotencyKey(request.getExternalReference());
+
+        // Check if payment already exists with this idempotency key
+        Optional<PaymentTransaction> existingPayment =
+                idempotencyService.findByIdempotencyKey(idempotencyKey);
+
+        if (existingPayment.isPresent()) {
+            log.info("Payment already exists for idempotency key: {}", idempotencyKey);
+            return mapToPaymentResponse(existingPayment.get());
+        }
+
+        // Validate request
+        validatePaymentRequest(request);
+
+        // Create checkout with YOCO
+        CreateCheckoutRequest checkoutRequest = buildCheckoutRequest(request);
+        CheckoutResponse checkoutResponse = createCheckoutWithYoco(checkoutRequest, idempotencyKey);
+
+        // Store transaction in database
+        PaymentTransaction transaction = saveTransaction(request, checkoutResponse, idempotencyKey);
+
+        log.info("Payment initiated successfully. CheckoutId: {}, ExternalRef: {}",
+                checkoutResponse.getId(), request.getExternalReference());
+
+        return mapToPaymentResponse(transaction);
+    }
+
+    /**
+     * Creates checkout with YOCO API with idempotency support
+     */
+    private CheckoutResponse createCheckoutWithYoco(
+            CreateCheckoutRequest request,
+            String idempotencyKey) {
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(yocoProperties.getApi().getSecretKey());
+            headers.set("Idempotency-Key", idempotencyKey);
+
+            HttpEntity<CreateCheckoutRequest> entity = new HttpEntity<>(request, headers);
+
+            ResponseEntity<CheckoutResponse> response = yocoRestTemplate.exchange(
+                    "/checkouts",
+                    HttpMethod.POST,
+                    entity,
+                    CheckoutResponse.class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                log.debug("Checkout created successfully: {}", response.getBody().getId());
+                return response.getBody();
+            }
+
+            throw new PaymentException("Failed to create checkout with YOCO");
+
+        } catch (HttpClientErrorException e) {
+            log.error("YOCO API error: Status={}, Body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new PaymentException("Payment provider error: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error creating checkout", e);
+            throw new PaymentException("Failed to initiate payment", e);
+        }
+    }
+
+    /**
+     * Retrieves payment status from database
+     */
+    @Transactional(readOnly = true)
+    public PaymentTransaction getPaymentByCheckoutId(String checkoutId) {
+        return transactionRepository.findByCheckoutId(checkoutId)
+                .orElseThrow(() -> new PaymentException("Payment not found: " + checkoutId));
+    }
+
+    /**
+     * Retrieves payment by external reference (your order ID)
+     */
+    @Transactional(readOnly = true)
+    public PaymentTransaction getPaymentByExternalReference(String externalReference) {
+        return transactionRepository.findByExternalReference(externalReference)
+                .orElseThrow(() -> new PaymentException("Payment not found for reference: " + externalReference));
+    }
+
+    /**
+     * Updates payment status (called by webhook handler)
+     */
+    @Transactional
+    public void updatePaymentStatus(String checkoutId, PaymentTransaction.PaymentStatus status,
+                                    String paymentId, String errorMessage) {
+
+        PaymentTransaction transaction = getPaymentByCheckoutId(checkoutId);
+
+        transaction.setStatus(status);
+        transaction.setPaymentId(paymentId);
+
+        if (errorMessage != null) {
+            transaction.setErrorMessage(errorMessage);
+        }
+
+        if (status == PaymentTransaction.PaymentStatus.SUCCEEDED ||
+                status == PaymentTransaction.PaymentStatus.FAILED) {
+            transaction.setCompletedAt(LocalDateTime.now());
+        }
+
+        transactionRepository.save(transaction);
+
+        log.info("Payment status updated: CheckoutId={}, Status={}", checkoutId, status);
+    }
+
+    // Helper methods
+
+    private void validatePaymentRequest(InitiatePaymentRequest request) {
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new PaymentException("Invalid amount");
+        }
+
+        if (request.getAmount().compareTo(new BigDecimal("0.02")) < 0) {
+            throw new PaymentException("Minimum payment amount is R2.00");
+        }
+
+        if (request.getExternalReference() == null || request.getExternalReference().isBlank()) {
+            throw new PaymentException("External reference is required");
+        }
+
+        if (request.getCustomerId() == null || request.getCustomerId().isBlank()) {
+            throw new PaymentException("Customer ID is required");
+        }
+    }
+
+    private CreateCheckoutRequest buildCheckoutRequest(InitiatePaymentRequest request) {
+        // Convert amount to cents (YOCO expects amount in cents)
+        long amountInCents = request.getAmount().multiply(new BigDecimal("100")).longValue();
+
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("externalReference", request.getExternalReference());
+        metadata.put("customerId", request.getCustomerId());
+        metadata.put("timestamp", LocalDateTime.now().toString());
+
+        return CreateCheckoutRequest.builder()
+                .amount(amountInCents)
+                .currency(request.getCurrency() != null ? request.getCurrency() : "ZAR")
+                .cancelUrl(request.getCancelUrl())
+                .successUrl(request.getSuccessUrl())
+                .failureUrl(request.getFailureUrl())
+                .metadata(metadata)
+                .build();
+    }
+
+    private PaymentTransaction saveTransaction(
+            InitiatePaymentRequest request,
+            CheckoutResponse response,
+            String idempotencyKey) {
+
+        try {
+            PaymentTransaction transaction = PaymentTransaction.builder()
+                    .checkoutId(response.getId())
+                    .idempotencyKey(idempotencyKey)
+                    .externalReference(request.getExternalReference())
+                    .customerId(request.getCustomerId())
+                    .amount(request.getAmount())
+                    .currency(response.getCurrency())
+                    .status(PaymentTransaction.PaymentStatus.CREATED)
+                    .processingMode(response.getProcessingMode())
+                    .redirectUrl(response.getRedirectUrl())
+                    .description(request.getDescription())
+                    .metadata(objectMapper.writeValueAsString(response.getMetadata()))
+                    .build();
+
+            return transactionRepository.save(transaction);
+
+        } catch (JsonProcessingException e) {
+            log.error("Error serializing metadata", e);
+            throw new PaymentException("Failed to save transaction", e);
+        }
+    }
+
+    private String generateIdempotencyKey(String externalReference) {
+        // Combine external reference with timestamp to create unique key
+        return String.format("%s-%s", externalReference, UUID.randomUUID().toString());
+    }
+
+    private PaymentResponse mapToPaymentResponse(PaymentTransaction transaction) {
+        return PaymentResponse.builder()
+                .checkoutId(transaction.getCheckoutId())
+                .redirectUrl(transaction.getRedirectUrl())
+                .status(transaction.getStatus().name())
+                .externalReference(transaction.getExternalReference())
+                .message("Payment initiated successfully")
+                .build();
+    }
+}

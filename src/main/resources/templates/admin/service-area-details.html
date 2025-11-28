@@ -670,6 +670,9 @@
             </div>
         </div>
         <div class="header-actions">
+            <a th:href="@{/admin/areas/{id}/assign-providers(id=${serviceArea.id})}" class="btn btn-primary">
+                ➕ Assign Providers
+            </a>
             <a th:href="@{/admin/areas/edit/{id}(id=${serviceArea.id})}" class="btn btn-primary">
                 ✏️ Edit Area
             </a>
