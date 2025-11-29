@@ -1,9 +1,14 @@
 package com.strataurban.strata.yoco_integration.restControllers;
 
+import com.strataurban.strata.Security.LoggedUser;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.yoco_integration.dtos.InitiatePaymentRequest;
 import com.strataurban.strata.yoco_integration.dtos.PaymentResponse;
+import com.strataurban.strata.yoco_integration.dtos.RefundRequest;
+import com.strataurban.strata.yoco_integration.dtos.RefundResponse;
 import com.strataurban.strata.yoco_integration.entities.PaymentTransaction;
 import com.strataurban.strata.yoco_integration.services.PaymentService;
+import com.strataurban.strata.yoco_integration.services.RefundService;
 import com.strataurban.strata.yoco_integration.services.WebhookService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -27,6 +32,7 @@ public class PaymentController {
 
     private final PaymentService paymentService;
     private final WebhookService webhookService;
+    private final RefundService refundService;
 
     /**
      * Initiates a new payment with YOCO
@@ -36,8 +42,10 @@ public class PaymentController {
      */
     @PostMapping("/initiate")
     public ResponseEntity<PaymentResponse> initiatePayment(
-            @Valid @RequestBody InitiatePaymentRequest request) {
+            @Valid @RequestBody InitiatePaymentRequest request,
+            @LoggedUser SecurityUserDetails userDetails) {
 
+        request.setCustomerId(userDetails.getId());
         log.info("Initiating payment for externalRef: {}, customerId: {}, amount: {}",
                 request.getExternalReference(),
                 request.getCustomerId(),
@@ -121,6 +129,34 @@ public class PaymentController {
             return ResponseEntity.ok().build();
         }
     }
+
+
+    /**
+     * Processes a refund for a payment
+     *
+     * @param request Refund request containing checkout ID and amount
+     * @return Refund response with refund ID
+     */
+    @PostMapping("/refund")
+    public ResponseEntity<RefundResponse> processRefund(
+            @Valid @RequestBody RefundRequest request,
+            @LoggedUser SecurityUserDetails userDetails) {
+
+        log.info("Processing refund for checkoutId: {}, amount: {}, reason: {}",
+                request.getCheckoutId(),
+                request.getAmount(),
+                request.getReason());
+
+        RefundResponse response = refundService.processRefund(
+                request.getCheckoutId(),
+                request.getAmount(),
+                request.getReason(),
+                userDetails.getFullName()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
 
     /**
      * Health check endpoint

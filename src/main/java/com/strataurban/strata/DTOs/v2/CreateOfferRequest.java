@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -22,7 +23,7 @@ public class CreateOfferRequest {
     private Long providerId;
 
     @Schema(description = "Price offered by the provider", example = "150.00")
-    private Double price;
+    private BigDecimal price;
 
     @Schema(description = "Additional notes or terms from the provider", example = "Available after 2 PM")
     private String notes;

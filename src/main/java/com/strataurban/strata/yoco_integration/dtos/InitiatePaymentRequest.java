@@ -15,18 +15,10 @@ import java.math.BigDecimal;
 public class InitiatePaymentRequest {
 
     private String externalReference; // Your order/invoice ID
-
-    private String customerId;
-
+    private Long customerId;
     private BigDecimal amount;
-
+    private Long offerId;
     private String currency;
-
     private String description;
-
-    private String cancelUrl;
-
-    private String successUrl;
-
-    private String failureUrl;
+    private MetaData metaData;
 }

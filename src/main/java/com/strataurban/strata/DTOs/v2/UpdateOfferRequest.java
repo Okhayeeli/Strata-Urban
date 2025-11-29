@@ -4,6 +4,7 @@ import com.strataurban.strata.Enums.OfferStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -13,7 +14,7 @@ public class UpdateOfferRequest {
     private Long providerId;
 
     @Schema(description = "Price offered by the provider", example = "150.00")
-    private Double price;
+    private BigDecimal price;
 
     @Schema(description = "Additional notes or terms from the provider", example = "Available after 2 PM")
     private String notes;

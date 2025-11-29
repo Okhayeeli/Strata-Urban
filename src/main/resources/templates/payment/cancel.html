@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Cancelled - StrataUrban</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 50px 40px;
+            text-align: center;
+        }
+
+        .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            background: #f59e0b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .warning-icon {
+            width: 40px;
+            height: 40px;
+            position: relative;
+        }
+
+        .warning-icon::before {
+            content: '!';
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            line-height: 40px;
+        }
+
+        h1 {
+            color: #1f2937;
+            font-size: 32px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 16px;
+            margin-bottom: 35px;
+            line-height: 1.5;
+        }
+
+        .details {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .info-text {
+            color: #92400e;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-top: 1px solid #fde68a;
+            margin-top: 15px;
+        }
+
+        .detail-row:first-of-type {
+            margin-top: 0;
+        }
+
+        .detail-label {
+            color: #92400e;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: #78350f;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f3f4f6;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 40px 25px;
+            }
+
+            h1 {
+                font-size: 26px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="icon-wrapper">
+        <div class="warning-icon"></div>
+    </div>
+
+    <h1>Payment Cancelled</h1>
+    <p class="subtitle">You have cancelled the payment process. No charges have been made to your account.</p>
+
+    <div class="details">
+        <p class="info-text">Your booking is still pending. You can retry the payment at any time to complete your booking.</p>
+
+        <div class="detail-row" th:if="${transactionRef}">
+            <span class="detail-label">Transaction Reference</span>
+            <span class="detail-value" th:text="${transactionRef}">TXN123456789</span>
+        </div>
+        <div class="detail-row" th:if="${bookingId}">
+            <span class="detail-label">Booking ID</span>
+            <span class="detail-value" th:text="${bookingId}">BK0001</span>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <a href="/bookings" class="btn btn-primary">Retry Payment</a>
+        <a href="/dashboard" class="btn btn-secondary">Go to Dashboard</a>
+    </div>
+</div>
+</body>
+</html>

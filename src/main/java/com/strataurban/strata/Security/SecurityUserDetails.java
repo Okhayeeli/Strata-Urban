@@ -21,5 +21,6 @@ public class SecurityUserDetails {
     private String city;
     private String state;
     private String country;
+    private String fullName = firstName + " " + middleName + " " + lastName;
 
 }

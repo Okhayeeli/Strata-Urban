@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -48,7 +49,7 @@ public class OfferServiceImpl implements OfferService {
 
     @Override
     @Transactional
-    public Offer createOffer(Long bookingRequestId, Long providerId, Double price, String notes,
+    public Offer createOffer(Long bookingRequestId, Long providerId, BigDecimal price, String notes,
                              LocalDateTime validUntil, Double discountPercentage, String websiteLink,
                              String estimatedDuration, String specialConditions) {
         logger.info("Creating offer for bookingRequestId: {}, providerId: {}", bookingRequestId, providerId);
@@ -87,7 +88,6 @@ public class OfferServiceImpl implements OfferService {
         offer.setWebsiteLink(websiteLink);
         offer.setEstimatedDuration(estimatedDuration);
         offer.setSpecialConditions(specialConditions);
-
         Offer savedOffer = offerRepository.save(offer);
         logger.info("Created offer: {}", savedOffer);
 
@@ -149,7 +149,7 @@ public class OfferServiceImpl implements OfferService {
 
     @Override
     @Transactional
-    public Offer updateOffer(Long offerId, Long providerId, Double price, String notes, LocalDateTime validUntil,
+    public Offer updateOffer(Long offerId, Long providerId, BigDecimal price, String notes, LocalDateTime validUntil,
                              Double discountPercentage, String websiteLink, String estimatedDuration,
                              String specialConditions) {
         logger.info("Updating offer with ID: {} by provider ID: {}", offerId, providerId);

@@ -35,7 +35,7 @@ public class PaymentIntegrationTest {
         // Arrange
         InitiatePaymentRequest request = InitiatePaymentRequest.builder()
                 .externalReference("TEST-ORDER-001")
-                .customerId("CUST-123")
+                .customerId(1L)
                 .amount(new BigDecimal("100.00"))
                 .currency("ZAR")
                 .description("Test payment")
@@ -68,7 +68,7 @@ public class PaymentIntegrationTest {
         // Arrange
         InitiatePaymentRequest request = InitiatePaymentRequest.builder()
                 .externalReference("TEST-ORDER-002")
-                .customerId("CUST-456")
+                .customerId(1L)
                 .amount(new BigDecimal("50.00"))
                 .currency("ZAR")
                 .build();

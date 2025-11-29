@@ -17,5 +17,9 @@ public interface OfferRepository extends JpaRepository<Offer, Long> {
     Long countByBookingRequestIdAndProviderId(Long bookingRequestId, Long providerId);
 
     Page<Offer> findByProviderId(Long providerId, Pageable pageable);
+
+    Offer findByTransactionReference(String transactionReference);
+
+    Boolean existsByTransactionReference(String transactionReference);
 }
 

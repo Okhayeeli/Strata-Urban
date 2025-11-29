@@ -1,6 +1,7 @@
 package com.strataurban.strata.yoco_integration.services;
 
 import com.strataurban.strata.yoco_integration.config.YocoProperties;
+import com.strataurban.strata.yoco_integration.dtos.RefundRequest;
 import com.strataurban.strata.yoco_integration.dtos.RefundResponse;
 import com.strataurban.strata.yoco_integration.entities.PaymentTransaction;
 import com.strataurban.strata.yoco_integration.entities.RefundTransaction;
@@ -42,7 +43,7 @@ public class RefundService {
         validateRefund(payment, refundAmount);
 
         // Call YOCO API to process refund
-        RefundResponse apiResponse = initiateRefundWithYoco(checkoutId);
+        RefundResponse apiResponse = initiateRefundWithYoco(checkoutId, refundAmount, reason, initiatedBy);
 
         // Store refund transaction
         RefundTransaction refund = RefundTransaction.builder()
@@ -94,13 +95,22 @@ public class RefundService {
                 refundId, refund.getStatus());
     }
 
-    private RefundResponse initiateRefundWithYoco(String checkoutId) {
+    private RefundResponse initiateRefundWithYoco(String checkoutId, BigDecimal refundAmount, String reason, String initiatedBy) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(yocoProperties.getApi().getSecretKey());
 
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            RefundRequest refundRequest = new RefundRequest(
+                    checkoutId,
+                    refundAmount.multiply(BigDecimal.valueOf(100)), // convert to cents
+                    reason,
+                    initiatedBy
+            );
+
+            HttpEntity<RefundRequest> entity = new HttpEntity<>(refundRequest, headers);
+
+
 
             ResponseEntity<RefundResponse> response = yocoRestTemplate.exchange(
                     "/checkouts/" + checkoutId + "/refund",

@@ -2,8 +2,7 @@ package com.strataurban.strata.Repositories.v2;
 
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.EnumRoles;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import lombok.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -50,4 +49,6 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.roles = :role")
     Optional<User> findByIdAndRoles(@Param("id") Long id, @Param("role") EnumRoles role);
+
+    boolean existsById(@NonNull Long id);
 }

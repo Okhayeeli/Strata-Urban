@@ -4,6 +4,7 @@ import com.strataurban.strata.Entities.Providers.Offer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public interface OfferService {
@@ -22,7 +23,7 @@ public interface OfferService {
      * @param specialConditions Any special conditions for the offer.
      * @return The created Offer entity.
      */
-    Offer createOffer(Long bookingRequestId, Long providerId, Double price, String notes,
+    Offer createOffer(Long bookingRequestId, Long providerId, BigDecimal price, String notes,
                       LocalDateTime validUntil, Double discountPercentage, String websiteLink,
                       String estimatedDuration, String specialConditions);
 
@@ -57,7 +58,7 @@ public interface OfferService {
      * @param specialConditions The updated special conditions.
      * @return The updated Offer entity.
      */
-    Offer updateOffer(Long offerId, Long providerId, Double price, String notes, LocalDateTime validUntil,
+    Offer updateOffer(Long offerId, Long providerId, BigDecimal price, String notes, LocalDateTime validUntil,
                       Double discountPercentage, String websiteLink, String estimatedDuration,
                       String specialConditions);
 

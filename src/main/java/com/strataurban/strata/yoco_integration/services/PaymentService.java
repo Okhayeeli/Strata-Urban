@@ -12,6 +12,7 @@ import com.strataurban.strata.yoco_integration.exceptions.PaymentException;
 import com.strataurban.strata.yoco_integration.repositories.PaymentTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +38,17 @@ public class PaymentService {
     private final IdempotencyService idempotencyService;
     private final YocoProperties yocoProperties;
     private final ObjectMapper objectMapper;
+    private final TransactionValidationService transactionValidationService;
+
+
+    @Value("${yoco.payment.success.url}")
+    private String successUrl;
+
+    @Value("${yoco.payment.cancel.url}")
+    private String cancelUrl;
+
+    @Value("${yoco.payment.failure.url}")
+    private String failureUrl;
 
     /**
      * Initiates a payment with YOCO
@@ -43,16 +57,18 @@ public class PaymentService {
     @Transactional
     public PaymentResponse initiatePayment(InitiatePaymentRequest request) {
 
-        // Generate idempotency key for this payment
+        // Generate idempotency key for this payment (same for 2 minutes for the same externalReference)
         String idempotencyKey = generateIdempotencyKey(request.getExternalReference());
 
-        // Check if payment already exists with this idempotency key
-        Optional<PaymentTransaction> existingPayment =
-                idempotencyService.findByIdempotencyKey(idempotencyKey);
+        // Check if a payment already exists with this idempotency key
+        Optional<PaymentTransaction> existingPayment = idempotencyService.findByIdempotencyKey(idempotencyKey);
 
         if (existingPayment.isPresent()) {
-            log.info("Payment already exists for idempotency key: {}", idempotencyKey);
-            return mapToPaymentResponse(existingPayment.get());
+            log.warn("Duplicate payment attempt detected for idempotency key: {}", idempotencyKey);
+            throw new PaymentException(
+                    "A payment with this reference was already initiated. " +
+                            "Please wait 2 minutes before retrying to avoid duplicate transactions."
+            );
         }
 
         // Validate request
@@ -69,6 +85,7 @@ public class PaymentService {
                 checkoutResponse.getId(), request.getExternalReference());
 
         return mapToPaymentResponse(transaction);
+
     }
 
     /**
@@ -168,9 +185,22 @@ public class PaymentService {
             throw new PaymentException("External reference is required");
         }
 
-        if (request.getCustomerId() == null || request.getCustomerId().isBlank()) {
-            throw new PaymentException("Customer ID is required");
+        if (!transactionValidationService.transactionExists(request.getExternalReference())){
+            throw new PaymentException("Transaction not found");
         }
+
+        if (request.getCustomerId() == null || request.getCustomerId() <= 0) {
+            throw new PaymentException("Customer ID is required and must be a positive number");
+        }
+
+        if (!transactionValidationService.customerExists(request.getCustomerId())){
+            throw new PaymentException("Invalid Customer Id: " + request.getCustomerId());
+        }
+
+        if (!transactionValidationService.isCorrectOfferAmount(request.getAmount(), request.getExternalReference())){
+            throw new PaymentException("Invalid transaction amount");
+        }
+
     }
 
     private CreateCheckoutRequest buildCheckoutRequest(InitiatePaymentRequest request) {
@@ -181,13 +211,14 @@ public class PaymentService {
         metadata.put("externalReference", request.getExternalReference());
         metadata.put("customerId", request.getCustomerId());
         metadata.put("timestamp", LocalDateTime.now().toString());
+        metadata.put("test_refundable", request.getMetaData().getTestRefundable()== null ? true : request.getMetaData().getTestRefundable() );
 
         return CreateCheckoutRequest.builder()
                 .amount(amountInCents)
                 .currency(request.getCurrency() != null ? request.getCurrency() : "ZAR")
-                .cancelUrl(request.getCancelUrl())
-                .successUrl(request.getSuccessUrl())
-                .failureUrl(request.getFailureUrl())
+                .cancelUrl(cancelUrl)
+                .successUrl(successUrl)
+                .failureUrl(failureUrl)
                 .metadata(metadata)
                 .build();
     }
@@ -221,9 +252,11 @@ public class PaymentService {
     }
 
     private String generateIdempotencyKey(String externalReference) {
-        // Combine external reference with timestamp to create unique key
-        return String.format("%s-%s", externalReference, UUID.randomUUID().toString());
+    // Round current time down to nearest 2 minutes for idempotency
+        long twoMinuteWindow = Instant.now().truncatedTo(ChronoUnit.MINUTES).getEpochSecond() / 120;
+        return externalReference + "-" + twoMinuteWindow;
     }
+
 
     private PaymentResponse mapToPaymentResponse(PaymentTransaction transaction) {
         return PaymentResponse.builder()

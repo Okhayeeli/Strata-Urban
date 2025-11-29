@@ -18,7 +18,7 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 
     Optional<PaymentTransaction> findByIdempotencyKey(String idempotencyKey);
 
-    List<PaymentTransaction> findByCustomerId(String customerId);
+    List<PaymentTransaction> findByCustomerId(Long customerId);
 
     List<PaymentTransaction> findByStatus(PaymentTransaction.PaymentStatus status);
 

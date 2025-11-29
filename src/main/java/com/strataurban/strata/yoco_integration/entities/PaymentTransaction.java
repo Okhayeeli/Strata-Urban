@@ -42,7 +42,7 @@ public class PaymentTransaction {
     private String externalReference; // Your internal order/invoice ID
 
     @Column(nullable = false, length = 100)
-    private String customerId;
+    private Long customerId;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;

@@ -8,7 +8,9 @@ import lombok.NoArgsConstructor;
 
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "offers")
@@ -28,7 +30,7 @@ public class Offer implements Serializable {
     private Long providerId;
 
     @Column(nullable = false)
-    private Double price;
+    private BigDecimal price;
 
     @Column(length = 500)
     private String notes;
@@ -53,6 +55,9 @@ public class Offer implements Serializable {
 
     @Column(length = 500)
     private String specialConditions; // Optional special terms or conditions
+
+    @Column(length = 500, nullable = false, updatable = false)
+    private String transactionReference = UUID.randomUUID().toString();
 
     @PrePersist
     protected void onCreate() {
