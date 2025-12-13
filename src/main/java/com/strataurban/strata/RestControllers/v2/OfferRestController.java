@@ -6,6 +6,7 @@ import com.strataurban.strata.DTOs.v2.CreateOfferRequest;
 import com.strataurban.strata.DTOs.v2.UpdateOfferRequest;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
+import com.strataurban.strata.Enums.OfferStatus;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Security.LoggedUser;
 import com.strataurban.strata.Security.SecurityUserDetails;
@@ -26,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -216,23 +218,40 @@ public class OfferRestController {
             throw new AccessDeniedException("Access denied: Only CLIENT (if authorized), PROVIDER, DRIVER, ADMIN, or DEVELOPER can access this endpoint. Others are restricted.");
         }
     }
-
     @GetMapping("/provider")
-    @Operation(summary = "Get offers by authenticated provider", description = "Fetches all offers submitted by the authenticated provider")
+    @Operation(
+            summary = "Get offers by authenticated provider",
+            description = "Fetches all offers submitted by the authenticated provider with optional filters"
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Offer(s) retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "No offers found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (self), DRIVER, ADMIN, or DEVELOPER can access this endpoint. CLIENT and others are restricted.")
+            @ApiResponse(responseCode = "403", description = "Access denied")
     })
     @PreAuthorize("hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public ResponseEntity<Page<Offer>> getOffersByProvider(@LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
-        try {
-            logger.info("Fetching offers for provider ID: {}", userDetails.getId());
-            Page<Offer> offers = offerService.getOfferByProviderId(userDetails.getId(), pageable);
-            logger.info("Retrieved {} offers for provider ID: {}", offers.getTotalElements(), userDetails.getId());
-            return ResponseEntity.ok(offers);
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only PROVIDER (self), DRIVER, ADMIN, or DEVELOPER can access this endpoint. CLIENT and others are restricted.");
-        }
+    public ResponseEntity<Page<Offer>> getOffersByProvider(
+            @LoggedUser SecurityUserDetails userDetails,
+            @RequestParam(required = false) OfferStatus status,
+            @RequestParam(required = false) LocalDateTime fromDate,
+            @RequestParam(required = false) LocalDateTime toDate,
+            @RequestParam(required = false) Long providerId,
+            Pageable pageable
+    ) {
+
+        logger.info(
+                "Fetching offers for provider ID: {}, status={}, fromDate={}, toDate={}",
+                userDetails.getId(), status, fromDate, toDate
+        );
+
+        Page<Offer> offers = offerService.getOfferByProviderId(
+                userDetails,
+                status,
+                fromDate,
+                toDate,
+                providerId,
+                pageable
+        );
+
+        return ResponseEntity.ok(offers);
     }
 }

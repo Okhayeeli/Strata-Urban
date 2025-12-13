@@ -66,7 +66,7 @@ public class TransportRestController {
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER owning the transport, ADMIN, or CUSTOMER_SERVICE allowed"),
             @ApiResponse(responseCode = "404", description = "Transport not found")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
+    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isTransportProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
     public ResponseEntity<TransportDTO> getTransportById(@PathVariable Long id) {
         Transport transport = transportService.getTransportById(id);
         return ResponseEntity.ok(mapToDTO(transport));
@@ -80,7 +80,7 @@ public class TransportRestController {
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER owning the transport, ADMIN, or CUSTOMER_SERVICE allowed"),
             @ApiResponse(responseCode = "404", description = "Transport not found")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
+    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isTransportProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
     public ResponseEntity<TransportDTO> updateTransport(@PathVariable Long id, @RequestBody Transport transport, @LoggedUser SecurityUserDetails userDetails) throws IllegalAccessException {
         Transport updatedTransport = transportService.updateTransport(id, transport, userDetails);
         return ResponseEntity.ok(mapToDTO(updatedTransport));
@@ -93,7 +93,7 @@ public class TransportRestController {
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER owning the transport, ADMIN, or CUSTOMER_SERVICE allowed"),
             @ApiResponse(responseCode = "404", description = "Transport not found")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
     public ResponseEntity<Void> deleteTransport(@RequestBody RequestBodyIdDto requestBodyIdDto) {
         transportService.deleteTransport(requestBodyIdDto.getId());
         return ResponseEntity.ok().build();
@@ -126,7 +126,7 @@ public class TransportRestController {
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER owning the transport, ADMIN, or CUSTOMER_SERVICE allowed"),
             @ApiResponse(responseCode = "404", description = "Transport not found")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
+    @PreAuthorize("(hasRole('PROVIDER') and @methodSecurity.isTransportProviderOwner(#id, principal.id)) or hasAnyRole('ADMIN', 'CUSTOMER_SERVICE')")
     public ResponseEntity<TransportDTO> updateTransportStatus(
             @PathVariable Long id,
             @RequestBody TransportStatusRequest statusRequest) {

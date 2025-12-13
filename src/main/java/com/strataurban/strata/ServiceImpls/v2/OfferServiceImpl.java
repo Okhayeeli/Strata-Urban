@@ -3,8 +3,11 @@ package com.strataurban.strata.ServiceImpls.v2;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
+import com.strataurban.strata.Enums.EnumRoles;
+import com.strataurban.strata.Enums.OfferStatus;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Services.EmailService;
 import com.strataurban.strata.Services.v2.OfferService;
 import com.strataurban.strata.Services.v2.ProviderService;
@@ -276,10 +279,26 @@ public class OfferServiceImpl implements OfferService {
     }
 
     @Override
-    public Page<Offer> getOfferByProviderId(Long providerId, Pageable pageable) {
-        logger.info("Fetching offers for provider ID: {}", providerId);
-        return offerRepository.findByProviderId(providerId, pageable);
+    public Page<Offer> getOfferByProviderId(
+            SecurityUserDetails userDetails,
+            OfferStatus status,
+            LocalDateTime fromDate,
+            LocalDateTime toDate,
+            Long providerId,
+            Pageable pageable
+    ) {
+
+        if(userDetails.getRole()== EnumRoles.PROVIDER){
+            logger.info("Fetching offers for provider ID: {} with filters", userDetails.getId());
+            return offerRepository.findOffersByFilters(userDetails.getId(), status, fromDate, toDate, pageable);
+        }
+            logger.info("Fetching offers for provider ID: {} with filters", userDetails.getId());
+            if (providerId==null){
+                throw new IllegalArgumentException("Provider ID is null, Provider Id must be specified for Admin Calls");
+            }
+            return offerRepository.findOffersByFilters(providerId, status, fromDate, toDate, pageable);
     }
+
 
     @Override
     public boolean isAuthorizedProviderOffer(Long offerId, Long providerId) {

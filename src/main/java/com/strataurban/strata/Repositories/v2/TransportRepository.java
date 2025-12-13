@@ -58,5 +58,6 @@ public interface TransportRepository extends JpaRepository<Transport, Long> {
             @Param("status") String status,
             Pageable pageable);
 
+    Boolean existsByIdAndProviderId(Long entityId, Long providerId);
 
 }
