@@ -11,5 +11,7 @@ public enum NotificationType {
     PAYMENT_SUCCESSFUL,     // Payment processed successfully
     PAYMENT_FAILED,         // Payment failed
     ACCOUNT_SUSPENDED,      // Account suspended (Admin action)
-    RATING_REQUEST          // Request to rate a Provider after a trip
+    RATING_REQUEST,         // Request to rate a Provider after a trip
+    PAYMENT_RECEIVED,
+    TRIP_COMPLETED,
 }

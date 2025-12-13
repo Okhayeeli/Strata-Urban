@@ -47,9 +47,6 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private NotificationService notificationService;
     @Autowired
     private EmailVerificationTokenService emailVerificationTokenService;

@@ -41,7 +41,7 @@ public class BookingRequest {
     @Enumerated(EnumType.STRING)
     private EnumPriority priority;
 
-    @Column
+    @Column(nullable = false)
     private Long routeId;
 
     @Column

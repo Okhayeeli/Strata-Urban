@@ -3,6 +3,7 @@ package com.strataurban.strata.RestControllers.v2;
 import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.EnumRoles;
+import com.strataurban.strata.Notifications.UserContactService;
 import com.strataurban.strata.Services.v2.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,9 @@ public class UserRestController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private UserContactService userContactService;
+
     @GetMapping("/{id}")
     @Operation(summary = "Get user by ID", description = "Retrieve details of a specific user")
     @ApiResponses(value = {
@@ -30,9 +34,9 @@ public class UserRestController {
             @ApiResponse(responseCode = "403", description = "Access denied: Only CUSTOMER_SERVICE, ADMIN, DEVELOPER, or the user themselves (principal.id == #id) can access this endpoint. CLIENT, PROVIDER, and others are restricted.")
     })
     @PreAuthorize("hasRole('CUSTOMER_SERVICE') or hasRole('ADMIN') or hasRole('DEVELOPER') or principal.id == #id")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserProfileResponse> getUserById(@PathVariable Long id) {
         try {
-            return ResponseEntity.ok(userService.getUserById(id));
+            return ResponseEntity.ok(userService.getUserProfile(id));
         } catch (SecurityException e) {
             throw new AccessDeniedException("Access denied: Only CUSTOMER_SERVICE, ADMIN, DEVELOPER, or the user themselves (principal.id == #id) can access this endpoint. CLIENT, PROVIDER, and others are restricted.");
         }
@@ -147,5 +151,23 @@ public class UserRestController {
         } catch (SecurityException e) {
             throw new AccessDeniedException("Access denied: Only the user themselves (principal.id == #id) can update their session timeout. ADMIN, DEVELOPER, CUSTOMER_SERVICE, PROVIDER, CLIENT, and others are restricted.");
         }
+    }
+
+    /**
+     * Get user profile with notification readiness
+     */
+    @GetMapping("/{userId}/profile")
+    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable Long userId) {
+        // Your existing profile logic...
+
+        UserProfileResponse response = new UserProfileResponse();
+        // ... set user data
+
+        // Add notification readiness info
+        response.setCanReceiveEmail(userContactService.hasEmail(userId));
+        response.setCanReceiveSms(userContactService.hasPhoneNumber(userId));
+        response.setCanReceivePush(userContactService.hasDeviceToken(userId));
+
+        return ResponseEntity.ok(response);
     }
 }

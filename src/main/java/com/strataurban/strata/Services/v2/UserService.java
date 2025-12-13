@@ -32,6 +32,7 @@ public interface UserService extends UserDetailsService {
     // Get user profile by ID
     User getUserById(Long id);
 
+    UserProfileResponse getUserProfile(Long id);
     // Update user profile
     User updateUser(Long id, User user);
 

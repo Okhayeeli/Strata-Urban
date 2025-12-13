@@ -10,14 +10,19 @@ import com.strataurban.strata.Repositories.SupplierRepository;
 import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Security.SecurityUserDetailsService;
 import com.strataurban.strata.Services.RouteService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class RouteServiceImpl implements RouteService {
 
@@ -208,5 +213,118 @@ public class RouteServiceImpl implements RouteService {
         dto.setProviders(providers);
 
         return dto;
+    }
+
+
+
+    /**
+     * Get all route IDs that a provider is assigned to
+     *
+     * @param providerId The provider's ID
+     * @return List of route IDs (empty list if none found)
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "providerRoutes", key = "#providerId")
+    public List<Long> getRouteIdsForProvider(String providerId) {
+        if (providerId == null || providerId.trim().isEmpty()) {
+            log.warn("Attempted to get routes for null/empty provider ID");
+            return Collections.emptyList();
+        }
+
+        log.debug("Fetching route IDs for provider: {}", providerId);
+
+        List<Long> routeIds = routeRepository.findRouteIdsByProviderId(providerId.trim());
+
+        log.info("Found {} route(s) for provider {}", routeIds.size(), providerId);
+        return routeIds;
+    }
+
+    /**
+     * Get all route IDs for a provider (using Long provider ID)
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "providerRoutes", key = "#providerId")
+    public List<Long> getRouteIdsForProvider(Long providerId) {
+        if (providerId == null) {
+            log.warn("Attempted to get routes for null provider ID");
+            return Collections.emptyList();
+        }
+
+        return getRouteIdsForProvider(String.valueOf(providerId));
+    }
+
+    /**
+     * Get full Route objects for a provider
+     */
+    @Transactional(readOnly = true)
+    public List<Routes> getRoutesForProvider(String providerId) {
+        if (providerId == null || providerId.trim().isEmpty()) {
+            log.warn("Attempted to get routes for null/empty provider ID");
+            return Collections.emptyList();
+        }
+
+        log.debug("Fetching full route objects for provider: {}", providerId);
+
+        List<Routes> routes = routeRepository.findRoutesByProviderId(providerId.trim());
+
+        log.info("Found {} route(s) for provider {}", routes.size(), providerId);
+        return routes;
+    }
+
+    /**
+     * Get routes for a provider filtered by location
+     */
+    @Transactional(readOnly = true)
+    public List<Routes> getRoutesForProviderByLocation(
+            String providerId,
+            String country,
+            String state,
+            String city) {
+
+        if (providerId == null || providerId.trim().isEmpty()) {
+            log.warn("Attempted to get routes for null/empty provider ID");
+            return Collections.emptyList();
+        }
+
+        log.debug("Fetching routes for provider {} in location: country={}, state={}, city={}",
+                providerId, country, state, city);
+
+        List<Routes> routes = routeRepository.findRoutesByProviderIdAndLocation(
+                providerId.trim(), country, state, city);
+
+        log.info("Found {} route(s) for provider {} in specified location", routes.size(), providerId);
+        return routes;
+    }
+
+    /**
+     * Check if a provider is assigned to a specific route
+     */
+    @Transactional(readOnly = true)
+    public boolean isProviderAssignedToRoute(Long routeId, String providerId) {
+        if (routeId == null || providerId == null || providerId.trim().isEmpty()) {
+            return false;
+        }
+
+        Routes route = routeRepository.findById(routeId).orElse(null);
+
+        if (route == null) {
+            return false;
+        }
+
+        List<String> providerIds = route.getProviderIdList();
+        return providerIds.contains(providerId.trim());
+    }
+
+    /**
+     * Check if a provider has any routes assigned
+     */
+    @Transactional(readOnly = true)
+    public boolean hasRoutes(String providerId) {
+        if (providerId == null || providerId.trim().isEmpty()) {
+            return false;
+        }
+
+        List<Long> routeIds = getRouteIdsForProvider(providerId);
+        return !routeIds.isEmpty();
     }
 }

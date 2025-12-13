@@ -1,153 +1,243 @@
 package com.strataurban.strata.RestControllers.v2;
 
-import com.strataurban.strata.DTOs.v2.NotificationDTO;
-import com.strataurban.strata.DTOs.v2.NotificationRequest;
 import com.strataurban.strata.Entities.Generics.Notification;
-import com.strataurban.strata.Security.LoggedUser;
-import com.strataurban.strata.Security.SecurityUserDetails;
-import com.strataurban.strata.Services.v2.NotificationService;
+import com.strataurban.strata.Notifications.NotificationChannel;
+import com.strataurban.strata.Notifications.NotificationFacade;
+import com.strataurban.strata.Notifications.NotificationPreferenceDTO;
+import com.strataurban.strata.Notifications.NotificationPreferenceService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
+/**
+ * REST Controller for notification management
+ * Simplified: Users choose CHANNELS (not channel+type combinations)
+ */
 @RestController
 @RequestMapping("/api/v2/notifications")
-@Tag(name = "Notification Management", description = "APIs for managing notifications")
+@RequiredArgsConstructor
+@Slf4j
 public class NotificationRestController {
 
-    private final NotificationService notificationService;
+    private final NotificationFacade notificationFacade;
+    private final NotificationPreferenceService preferenceService;
 
-    @Autowired
-    public NotificationRestController(NotificationService notificationService) {
-        this.notificationService = notificationService;
+    // ===== NOTIFICATION QUERIES =====
+
+    /**
+     * Get user's notifications (paginated)
+     * GET /api/v2/notifications?userId=123
+     */
+    @GetMapping
+    public ResponseEntity<Page<Notification>> getUserNotifications(
+            @RequestParam Long userId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        log.info("Fetching notifications for user {}", userId);
+        Page<Notification> notifications = notificationFacade.getUserNotifications(userId, pageable);
+        return ResponseEntity.ok(notifications);
     }
 
-    @PostMapping
-    @Operation(summary = "Send a notification", description = "Sends a notification to a user (Client, Provider, Driver, or Admin)")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Notification sent successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid notification request"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can send notifications. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.")
-    })
-    public ResponseEntity<Void> sendNotification(@RequestBody NotificationRequest notificationRequest) {
-        try {
-            notificationService.sendNotification(notificationRequest);
-            return ResponseEntity.ok().build();
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only ADMIN can send notifications. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.");
-        }
+    /**
+     * Get unread notification count
+     * GET /api/v2/notifications/unread-count?userId=123
+     */
+    @GetMapping("/unread-count")
+    public ResponseEntity<Map<String, Long>> getUnreadCount(@RequestParam Long userId) {
+        log.info("Fetching unread count for user {}", userId);
+        long count = notificationFacade.getUnreadCount(userId);
+        return ResponseEntity.ok(Map.of("unreadCount", count));
     }
 
-    @GetMapping("/user")
-    @Operation(summary = "Get all notifications for a user", description = "Fetches all notifications for a specific user")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Notifications retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "User not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only the user (CLIENT, PROVIDER, DRIVER with principal.id == #userId), ADMIN, or DEVELOPER can access this endpoint. Others are restricted.")
-    })
-    public ResponseEntity<Page<NotificationDTO>> getUserNotifications(@LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
-        try {
-            Page<Notification> notifications = notificationService.getUserNotifications(userDetails.getId(), pageable);
-            Page<NotificationDTO> notificationDTOs = notifications.map(this::mapToDTO);
-            return ResponseEntity.ok(notificationDTOs);
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only the user (CLIENT, PROVIDER, DRIVER with principal.id == #userId), ADMIN, or DEVELOPER can access this endpoint. Others are restricted.");
-        }
-    }
-
+    /**
+     * Mark notification as read
+     * PUT /api/v2/notifications/{id}/read
+     */
     @PutMapping("/{id}/read")
-    @Operation(summary = "Mark a notification as read", description = "Marks a specific notification as read")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Notification marked as read successfully"),
-            @ApiResponse(responseCode = "404", description = "Notification not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only the user (CLIENT, PROVIDER, DRIVER if authorized) or ADMIN can mark a notification as read. DEVELOPER and others are restricted.")
-    })
-//    @PreAuthorize("((hasRole('CLIENT') or hasRole('PROVIDER') or hasRole('DRIVER')) and @notificationService.isAuthorizedUserNotification(#id, principal.id)) or hasRole('ADMIN')")
-    public ResponseEntity<Void> markAsRead(@PathVariable Long id) {
-        try {
-            notificationService.markAsRead(id);
-            return ResponseEntity.ok().build();
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only the user (CLIENT, PROVIDER, DRIVER if authorized) or ADMIN can mark a notification as read. DEVELOPER and others are restricted.");
-        }
+    public ResponseEntity<Map<String, String>> markAsRead(@PathVariable Long id) {
+        log.info("Marking notification {} as read", id);
+        notificationFacade.markAsRead(id);
+        return ResponseEntity.ok(Map.of("message", "Notification marked as read"));
     }
 
+    /**
+     * Mark all notifications as read
+     * PUT /api/v2/notifications/read-all?userId=123
+     */
+    @PutMapping("/read-all")
+    public ResponseEntity<Map<String, String>> markAllAsRead(@RequestParam Long userId) {
+        log.info("Marking all notifications as read for user {}", userId);
+        notificationFacade.markAllAsRead(userId);
+        return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
+    }
+
+    /**
+     * Delete notification
+     * DELETE /api/v2/notifications/{id}
+     */
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a notification", description = "Deletes a specific notification")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Notification deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Notification not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can delete a notification. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.")
-    })
-//    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteNotification(@PathVariable Long id) {
-        try {
-            notificationService.deleteNotification(id);
-            return ResponseEntity.ok().build();
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only ADMIN can delete a notification. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.");
-        }
+    public ResponseEntity<Map<String, String>> deleteNotification(@PathVariable Long id) {
+        log.info("Deleting notification {}", id);
+        notificationFacade.deleteNotification(id);
+        return ResponseEntity.ok(Map.of("message", "Notification deleted"));
     }
 
-    @PostMapping("/booking-request/{bookingId}")
-    @Operation(summary = "Send booking request notification", description = "Sends a notification to a provider about a new booking request")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Notification sent successfully"),
-            @ApiResponse(responseCode = "404", description = "Booking not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can send booking request notifications. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.")
-    })
-//    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> sendBookingRequestNotification(@PathVariable Long bookingId) {
-        try {
-            notificationService.sendBookingRequestNotification(bookingId);
-            return ResponseEntity.ok().build();
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only ADMIN can send booking request notifications. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.");
-        }
+    // ===== PREFERENCE MANAGEMENT (SIMPLIFIED) =====
+
+    /**
+     * Get user's notification preferences
+     * Returns: [
+     *   {channel: "EMAIL", enabled: true},
+     *   {channel: "SMS", enabled: false},
+     *   {channel: "PUSH", enabled: false},
+     *   {channel: "IN_APP", enabled: true}
+     * ]
+     * GET /api/v2/notifications/preferences?userId=123
+     */
+    @GetMapping("/preferences")
+    public ResponseEntity<List<NotificationPreferenceDTO>> getUserPreferences(@RequestParam Long userId) {
+        log.info("Fetching preferences for user {}", userId);
+        List<NotificationPreferenceDTO> preferences = preferenceService.getUserPreferences(userId);
+        return ResponseEntity.ok(preferences);
     }
 
-    @PostMapping("/booking-confirmation/{bookingId}")
-    @Operation(summary = "Send booking confirmation notification", description = "Sends a notification to a client about a confirmed booking")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Notification sent successfully"),
-            @ApiResponse(responseCode = "404", description = "Booking not found"),
-            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN can send booking confirmation notifications. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.")
-    })
-//    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> sendBookingConfirmationNotification(@PathVariable Long bookingId) {
-        try {
-            notificationService.sendBookingConfirmationNotification(bookingId);
-            return ResponseEntity.ok().build();
-        } catch (SecurityException e) {
-            throw new AccessDeniedException("Access denied: Only ADMIN can send booking confirmation notifications. CLIENT, PROVIDER, DRIVER, DEVELOPER, and others are restricted.");
-        }
+    /**
+     * Get user's preferences as a simple map
+     * Returns: {EMAIL: true, SMS: false, PUSH: false, IN_APP: true}
+     * GET /api/v2/notifications/preferences/map?userId=123
+     */
+    @GetMapping("/preferences/map")
+    public ResponseEntity<Map<NotificationChannel, Boolean>> getUserPreferencesMap(@RequestParam Long userId) {
+        log.info("Fetching preferences map for user {}", userId);
+        Map<NotificationChannel, Boolean> preferences = preferenceService.getUserPreferencesMap(userId);
+        return ResponseEntity.ok(preferences);
     }
 
-    // Helper method to map Notification entity to NotificationDTO
-    private NotificationDTO mapToDTO(Notification notification) {
-        return new NotificationDTO(
-                notification.getId(),
-                notification.getRecipientId(),
-                notification.getRecipientType(),
-                notification.getType(),
-                notification.getMessage(),
-                notification.getReferenceId(),
-                notification.getReferenceType(),
-                notification.isRead(),
-                notification.getCreatedAt(),
-                notification.getReadAt(),
-                notification.getMetadata()
-        );
+    /**
+     * Get list of enabled channels only
+     * Returns: ["EMAIL", "IN_APP"]
+     * GET /api/v2/notifications/preferences/enabled?userId=123
+     */
+    @GetMapping("/preferences/enabled")
+    public ResponseEntity<List<NotificationChannel>> getEnabledChannels(@RequestParam Long userId) {
+        log.info("Fetching enabled channels for user {}", userId);
+        List<NotificationChannel> channels = preferenceService.getEnabledChannels(userId);
+        return ResponseEntity.ok(channels);
+    }
+
+    /**
+     * Update a single channel preference
+     * PUT /api/v2/notifications/preferences/channel
+     * Body: {userId: 123, channel: "EMAIL", enabled: true}
+     */
+    @PutMapping("/preferences/channel")
+    public ResponseEntity<NotificationPreferenceDTO> updateChannelPreference(
+            @RequestParam Long userId,
+            @RequestParam NotificationChannel channel,
+            @RequestParam boolean enabled) {
+
+        log.info("Updating channel preference for user {}: {} = {}", userId, channel, enabled);
+
+        NotificationPreferenceDTO updated = preferenceService.updatePreference(userId, channel, enabled);
+
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Bulk update all channel preferences
+     * PUT /api/v2/notifications/preferences/bulk
+     * Body: {EMAIL: true, SMS: false, PUSH: true, IN_APP: true}
+     */
+    @PutMapping("/preferences/bulk")
+    public ResponseEntity<List<NotificationPreferenceDTO>> bulkUpdatePreferences(
+            @RequestParam Long userId,
+            @RequestBody Map<NotificationChannel, Boolean> preferences) {
+
+        log.info("Bulk updating preferences for user {}: {}", userId, preferences);
+        List<NotificationPreferenceDTO> updated = preferenceService.updatePreferences(userId, preferences);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Enable a specific channel
+     * POST /api/v2/notifications/preferences/enable?userId=123&channel=EMAIL
+     */
+    @PostMapping("/preferences/enable")
+    public ResponseEntity<Map<String, String>> enableChannel(
+            @RequestParam Long userId,
+            @RequestParam NotificationChannel channel) {
+
+        log.info("Enabling channel {} for user {}", channel, userId);
+        preferenceService.enableChannel(userId, channel);
+        return ResponseEntity.ok(Map.of(
+                "message", channel + " notifications enabled",
+                "info", "You will now receive ALL notification types via " + channel
+        ));
+    }
+
+    /**
+     * Disable a specific channel
+     * POST /api/v2/notifications/preferences/disable?userId=123&channel=EMAIL
+     */
+    @PostMapping("/preferences/disable")
+    public ResponseEntity<Map<String, String>> disableChannel(
+            @RequestParam Long userId,
+            @RequestParam NotificationChannel channel) {
+
+        log.info("Disabling channel {} for user {}", channel, userId);
+        preferenceService.disableChannel(userId, channel);
+        return ResponseEntity.ok(Map.of(
+                "message", channel + " notifications disabled",
+                "info", "You will no longer receive notifications via " + channel
+        ));
+    }
+
+    /**
+     * Disable all notifications
+     * POST /api/v2/notifications/preferences/disable-all?userId=123
+     */
+    @PostMapping("/preferences/disable-all")
+    public ResponseEntity<Map<String, String>> disableAllNotifications(@RequestParam Long userId) {
+        log.info("Disabling all notifications for user {}", userId);
+        preferenceService.disableAllNotifications(userId);
+        return ResponseEntity.ok(Map.of(
+                "message", "All notifications disabled",
+                "warning", "You will not receive any notifications. You can re-enable them anytime."
+        ));
+    }
+
+    /**
+     * Initialize default preferences for a new user
+     * POST /api/v2/notifications/preferences/initialize?userId=123
+     */
+    @PostMapping("/preferences/initialize")
+    public ResponseEntity<Map<String, String>> initializeDefaultPreferences(@RequestParam Long userId) {
+        log.info("Initializing default preferences for user {}", userId);
+        preferenceService.initializeDefaultPreferences(userId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of(
+                        "message", "Default preferences initialized",
+                        "info", "IN_APP notifications enabled by default. Enable other channels in settings."
+                ));
+    }
+
+    /**
+     * Delete all preferences for a user
+     * DELETE /api/v2/notifications/preferences?userId=123
+     */
+    @DeleteMapping("/preferences")
+    public ResponseEntity<Map<String, String>> deleteUserPreferences(@RequestParam Long userId) {
+        log.info("Deleting all preferences for user {}", userId);
+        preferenceService.deleteUserPreferences(userId);
+        return ResponseEntity.ok(Map.of("message", "All preferences deleted"));
     }
 }

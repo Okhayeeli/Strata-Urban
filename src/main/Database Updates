@@ -1,0 +1,26 @@
+-- Notification preferences table
+CREATE TABLE notification_preferences (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    notification_type VARCHAR(50) NOT NULL,
+    channel VARCHAR(20) NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP,
+    UNIQUE KEY uk_user_type_channel (user_id, notification_type, channel)
+);
+
+-- Add indexes for performance
+CREATE INDEX idx_user_id ON notification_preferences(user_id);
+CREATE INDEX idx_notification_type ON notification_preferences(notification_type);
+
+-- Update notifications table (add new fields)
+ALTER TABLE notifications
+ADD COLUMN channel VARCHAR(20) NOT NULL DEFAULT 'IN_APP',
+ADD COLUMN delivery_status VARCHAR(20),
+ADD COLUMN error_message VARCHAR(500);
+
+-- Add indexes for better query performance
+CREATE INDEX idx_recipient_id ON notifications(recipient_id);
+CREATE INDEX idx_created_at ON notifications(created_at);
+CREATE INDEX idx_is_read ON notifications(is_read);

@@ -35,6 +35,9 @@ public class BookingRequestResponseDTO {
 
         @Schema(description = "Category-specific details")
         private CategorySpecificDetails categorySpecificDetails;
+
+        @Schema(description = "Route")
+        private String route;
     }
 
     @Data

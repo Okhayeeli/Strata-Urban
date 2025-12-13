@@ -105,4 +105,7 @@ public class User {
 
     @Column
     private Boolean selfCreated = true;
+
+    @Column
+    private String deviceToken;
 }

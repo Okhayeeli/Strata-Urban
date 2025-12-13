@@ -9,6 +9,8 @@ import com.strataurban.strata.Entities.Providers.ServiceArea;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Enums.ProviderRole;
+import com.strataurban.strata.Notifications.NotificationPreferenceService;
+import com.strataurban.strata.Notifications.UserContactService;
 import com.strataurban.strata.Repositories.v2.ServiceAreaRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Security.SecurityUserDetails;
@@ -45,6 +47,7 @@ import java.time.LocalDateTime;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final UserContactService userContactService;
     private final ServiceAreaRepository serviceAreaRepository;
     private final BlacklistedTokenRepository blacklistedTokenRepository;
     private final PasswordEncoder passwordEncoder;
@@ -63,21 +66,26 @@ public class UserServiceImpl implements UserService {
     @Value("${environment.awareness}")
     private String environmentAwareness;
 
+    private NotificationPreferenceService preferenceService;
+
+
     @Autowired
     public UserServiceImpl(
-            UserRepository userRepository,
+            UserRepository userRepository, UserContactService userContactService,
             ServiceAreaRepository serviceAreaRepository,
             BlacklistedTokenRepository blacklistedTokenRepository,
             PasswordEncoder passwordEncoder,
             @Lazy AuthenticationManager authenticationManager,
-            JwtUtil jwtUtil, EmailService emailService) {
+            JwtUtil jwtUtil, EmailService emailService, NotificationPreferenceService preferenceService) {
         this.userRepository = userRepository;
+        this.userContactService = userContactService;
         this.serviceAreaRepository = serviceAreaRepository;
         this.blacklistedTokenRepository = blacklistedTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.emailService = emailService;
+        this.preferenceService = preferenceService;
     }
 
     @Override
@@ -116,6 +124,7 @@ public class UserServiceImpl implements UserService {
             emailService.sendVerificationEmail(client.getEmail(), client.getId());
         }
 
+        preferenceService.initializeDefaultPreferences(client.getId());
         return client;
     }
 
@@ -178,6 +187,7 @@ public class UserServiceImpl implements UserService {
             provider.setTestToken(emailService.testSendVerificationEmail(provider.getEmail(), provider.getId()));
         }
         emailService.sendVerificationEmail(provider.getCompanyBusinessEmail(), provider.getId());
+        preferenceService.initializeDefaultPreferences(provider.getId());
         return provider;
     }
 
@@ -251,6 +261,12 @@ public class UserServiceImpl implements UserService {
             response.setRefreshToken(refreshToken);
             response.setRole(user.getRoles().toString());
             response.setId(userId);
+
+            if (loginRequest.getDeviceToken() != null && !loginRequest.getDeviceToken().isEmpty()) {
+                userContactService.updateDeviceToken(user.getId(), loginRequest.getDeviceToken());
+                log.info("Device token updated for user {} on login", user.getId());
+            }
+
             log.debug("Login response: accessToken={}, refreshToken={}", accessToken, refreshToken);
             return response;
         } catch (BadCredentialsException e) {
@@ -282,6 +298,41 @@ public class UserServiceImpl implements UserService {
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+    }
+
+    @Override
+    public UserProfileResponse getUserProfile(Long id) {
+
+        User user = getUserById(id);
+        UserProfileResponse response = new UserProfileResponse();
+
+        response.setId(user.getId());
+        response.setTitle(user.getTitle());
+        response.setFirstName(user.getFirstName());
+        response.setMiddleName(user.getMiddleName());
+        response.setLastName(user.getLastName());
+        response.setEmail(user.getEmail());
+        response.setEmailVerified(user.isEmailVerified());
+        response.setUsername(user.getUsername());
+        response.setPhone(user.getPhone());
+        response.setPhone2(user.getPhone2());
+        response.setAddress(user.getAddress());
+        response.setPreferredLanguage(user.getPreferredLanguage());
+        response.setCity(user.getCity());
+        response.setState(user.getState());
+        response.setCountry(user.getCountry());
+        response.setRoles(user.getRoles());
+        response.setProviderId(user.getProviderId());
+        response.setImageUrl(user.getImageUrl());
+        response.setProviderRole(user.getProviderRole());
+        response.setSelfCreated(user.getSelfCreated());
+        response.setLastActivity(user.getLastActivity());
+
+        response.setCanReceiveEmail(userContactService.hasEmail(id));
+        response.setCanReceiveSms(userContactService.hasPhoneNumber(id));
+        response.setCanReceivePush(userContactService.hasDeviceToken(id));
+
+        return response;
     }
 
     @Override

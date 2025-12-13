@@ -18,4 +18,6 @@ public class LoginRequest {
 
     @Schema(description = "Password of the user", example = "password123")
     private String password;
+
+    private String deviceToken;
 }
