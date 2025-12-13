@@ -8,12 +8,11 @@ import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.ServiceImpls.v2.UserServiceImpl;
 import com.strataurban.strata.Services.v2.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Service
@@ -25,6 +24,8 @@ public class PasswordResetTokenService {
     private final UserServiceImpl userServiceImpl;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    @Value("${environment.awareness}")
+    private String environmentAwareness;
 
 //    public PasswordResetToken createToken(Long userId) {
 //        String token = UUID.randomUUID().toString();
@@ -61,6 +62,9 @@ public class PasswordResetTokenService {
         // Save the token
         passwordResetTokenRepository.save(resetToken);
 
+        if(!environmentAwareness.equalsIgnoreCase("prod")){
+           return emailService.testSendPasswordResetEmail(user.getEmail(), token);
+        }
         // Send email with the token
         return emailService.sendPasswordResetEmail(user.getEmail(), token);
     }

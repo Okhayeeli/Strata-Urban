@@ -2,13 +2,16 @@ package com.strataurban.strata.Entities.Providers;
 
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Enums.LogisticsServiceType;
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.List;
-@Data
+
+
+@Getter
+@Setter
 @Table(name = "provider")
 @Entity
 public class Provider extends User {
@@ -52,4 +55,6 @@ public class Provider extends User {
     private String serviceAreas;
     @Column
     private Integer transportCount;
+    @Transient
+    private transient String testToken;
 }

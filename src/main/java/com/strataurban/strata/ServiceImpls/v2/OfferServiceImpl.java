@@ -51,7 +51,7 @@ public class OfferServiceImpl implements OfferService {
     @Transactional
     public Offer createOffer(Long bookingRequestId, Long providerId, BigDecimal price, String notes,
                              LocalDateTime validUntil, Double discountPercentage, String websiteLink,
-                             String estimatedDuration, String specialConditions) {
+                             String estimatedDuration, String specialConditions, String currencyCode) {
         logger.info("Creating offer for bookingRequestId: {}, providerId: {}", bookingRequestId, providerId);
         BookingRequest booking = bookingRepository.findById(bookingRequestId)
                 .orElseThrow(() -> new RuntimeException("Booking request not found with ID: " + bookingRequestId));
@@ -88,6 +88,7 @@ public class OfferServiceImpl implements OfferService {
         offer.setWebsiteLink(websiteLink);
         offer.setEstimatedDuration(estimatedDuration);
         offer.setSpecialConditions(specialConditions);
+        offer.setCurrencyCode(currencyCode);
         Offer savedOffer = offerRepository.save(offer);
         logger.info("Created offer: {}", savedOffer);
 

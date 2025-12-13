@@ -6,7 +6,6 @@ import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumPriority;
 import com.strataurban.strata.Security.LoggedUser;
 import com.strataurban.strata.Security.SecurityUserDetails;
-import com.strataurban.strata.ServiceImpls.v2.BookingServiceImpl;
 import com.strataurban.strata.Services.v2.BookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,7 +21,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,12 +33,10 @@ import org.springframework.security.access.AccessDeniedException;
 public class BookingRestController {
 
     private final BookingService bookingService;
-    private final BookingServiceImpl bookingServiceImpl;
 
     @Autowired
-    public BookingRestController(BookingService bookingService, BookingServiceImpl bookingServiceImpl) {
+    public BookingRestController(BookingService bookingService) {
         this.bookingService = bookingService;
-        this.bookingServiceImpl = bookingServiceImpl;
     }
 
 
@@ -278,7 +274,7 @@ public class BookingRestController {
                     content = @Content(schema = @Schema(implementation = Page.class))),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER or ADMIN can access this endpoint. CLIENT, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN') or hasRole('CLIENT')")
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Page<BookingRequestResponseDTO>> getPendingBookingsWithFilters(
             @Parameter(description = "Pick-up location", example = "Lagos", required = false) @RequestParam(required = false) String pickUpLocation,
             @Parameter(description = "Destination", example = "Abuja", required = false) @RequestParam(required = false) String destination,

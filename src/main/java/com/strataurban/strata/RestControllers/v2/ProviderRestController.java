@@ -70,7 +70,7 @@ public class ProviderRestController {
         return ResponseEntity.ok(mapToDTO(provider));
     }
 
-    @PutMapping(value = {"", "/{id}"})
+    @PutMapping(value = { "/{id}"})
     @Operation(summary = "Update provider profile", description = "Updates a provider's profile. For PROVIDER role, ID is optional and defaults to the authenticated user's ID. For ADMIN, ID is required in the path.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Provider updated successfully"),

@@ -1,6 +1,7 @@
 package com.strataurban.strata.RestControllers.v2;
 
 import com.strataurban.strata.DTOs.RoutesRequestDTO;
+import com.strataurban.strata.DTOs.v2.RouteWithProvidersDTO;
 import com.strataurban.strata.Entities.Providers.Routes;
 import com.strataurban.strata.Services.RouteService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -170,5 +171,42 @@ public class RouteRestController {
         } catch (SecurityException e) {
             throw new AccessDeniedException("Access denied: Only PROVIDER (if principal.id matches providerId), DRIVER, ADMIN, or DEVELOPER can access routes by provider. CLIENT and others are restricted.");
         }
+    }
+
+    @PostMapping("/{routeId}/add-provider")
+    @Operation(summary = "Add a provider to a route", description = "Appends a provider to the list of providers for a specific route")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Provider added successfully",
+                    content = @Content(schema = @Schema(implementation = Routes.class))),
+            @ApiResponse(responseCode = "404", description = "Route or Provider not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied: Only ADMIN, CUSTOMER_SERVICE, or the PROVIDER themselves can add providers to routes")
+    })
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CUSTOMER_SERVICE') or (hasRole('PROVIDER') and principal.id == #providerId)")
+    public ResponseEntity<Routes> addProviderToRoute(
+            @Parameter(description = "ID of the route") @PathVariable Long routeId,
+            @Parameter(description = "ID of the provider to add") @RequestParam String providerId) {
+
+        Routes updatedRoute = routeService.addProviderToRoute(routeId, providerId);
+        return ResponseEntity.ok(updatedRoute);
+    }
+
+    @GetMapping("/get-route-providers")
+    @Operation(summary = "Get route by ID with provider details")
+    public ResponseEntity<RouteWithProvidersDTO> getRouteProviders(@RequestParam Long routeId) {
+        RouteWithProvidersDTO dto = routeService.getRouteWithProviders(routeId);
+        return ResponseEntity.ok(dto);
+    }
+
+    @PutMapping("/toggle")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CUSTOMER_SERVICE')")
+    public ResponseEntity<Routes> toggleRoute(@RequestParam Long routeId) {
+        return ResponseEntity.ok(routeService.toggleRoute(routeId));
+    }
+
+    @PutMapping("/{routeId}/remove-provider")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CUSTOMER_SERVICE')")
+    public ResponseEntity<Routes> removeProviderFromRoute(@PathVariable Long routeId, @RequestParam String providerId) {
+        Routes updatedRoute = routeService.removeProviderToRoute(routeId, providerId);
+        return ResponseEntity.ok(updatedRoute);
     }
 }

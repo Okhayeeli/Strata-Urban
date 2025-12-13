@@ -3,6 +3,7 @@ package com.strataurban.strata.yoco_integration.services;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,5 +29,10 @@ public class TransactionValidationService {
 
     public Boolean transactionExists(String transactionReference) {
         return offerRepository.existsByTransactionReference(transactionReference);
+    }
+
+    public Boolean isCorrectCurrency(String currencyCode, String transactionReference) {
+        Offer offer = offerRepository.findByTransactionReference(transactionReference);
+        return StringUtils.equalsIgnoreCase(currencyCode, offer.getCurrencyCode());
     }
 }

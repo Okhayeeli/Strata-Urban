@@ -17,6 +17,7 @@ import com.strataurban.strata.Services.EmailService;
 import com.strataurban.strata.Services.EmailVerificationTokenService;
 import com.strataurban.strata.Services.v2.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -59,6 +60,8 @@ public class UserServiceImpl implements UserService {
             "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{" + MIN_PASSWORD_LENGTH + ",}$"
     );
     private final EmailService emailService;
+    @Value("${environment.awareness}")
+    private String environmentAwareness;
 
     @Autowired
     public UserServiceImpl(
@@ -105,8 +108,14 @@ public class UserServiceImpl implements UserService {
         client.setEmailVerified(false);
 
         userRepository.save(client);
-//        emailService.standbyEmail(client.getEmail());
-        emailService.sendVerificationEmail(client.getEmail(), client.getId());
+//      emailService.standbyEmail(client.getEmail());
+        if(!environmentAwareness.equalsIgnoreCase("prod")){
+           client.setTestToken(emailService.testSendVerificationEmail(client.getEmail(), client.getId()));
+        }
+        else {
+            emailService.sendVerificationEmail(client.getEmail(), client.getId());
+        }
+
         return client;
     }
 
@@ -165,6 +174,9 @@ public class UserServiceImpl implements UserService {
         }
         userRepository.save(provider);
 //        emailService.standbyEmail(provider.getEmail());
+        if(!environmentAwareness.equalsIgnoreCase("prod")){
+            provider.setTestToken(emailService.testSendVerificationEmail(provider.getEmail(), provider.getId()));
+        }
         emailService.sendVerificationEmail(provider.getCompanyBusinessEmail(), provider.getId());
         return provider;
     }

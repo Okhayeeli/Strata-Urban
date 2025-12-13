@@ -258,7 +258,6 @@ public class BookingServiceImpl implements BookingService {
         if (userDetails.getRole() == EnumRoles.PROVIDER) {
             country = userDetails.getCountry();
         }
-
         return bookingRepository.findByStatusAndFilters(
                 BookingStatus.PENDING, pickUpLocation, destination, additionalStops,
                 serviceStartDate, serviceEndDate, pickupStartDateTime, pickupEndDateTime,

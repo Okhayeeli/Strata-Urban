@@ -1,5 +1,6 @@
 package com.strataurban.strata.DTOs.v2;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Schema(description = "Request to register a Client")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ClientRegistrationRequest {
 
     @Schema(description = "Title of the client", example = "Mr.")
@@ -36,7 +38,7 @@ public class ClientRegistrationRequest {
     @Schema(description = "Primary phone number of the client", example = "+1234567890")
     private String phone;
 
-    @Schema(description = "Secondary phone number of the client", example = "+0987654321", required = false)
+    @Schema(description = "Secondary phone number of the client", example = "+0987654321")
     private String phone2;
 
     @Schema(description = "Address of the client", example = "456 Client Rd")
@@ -54,6 +56,8 @@ public class ClientRegistrationRequest {
     @Schema(description = "Country of the client", example = "USA")
     private String country;
 
-    @Schema(description = "URL of the client's image", example = "https://example.com/images/client.jpg", required = false)
+    @Schema(description = "URL of the client's image", example = "https://example.com/images/client.jpg")
     private String imageUrl;
+
+    private String topSecretPasswordForTest;
 }

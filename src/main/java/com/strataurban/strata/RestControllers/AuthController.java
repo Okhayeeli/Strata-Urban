@@ -6,6 +6,7 @@ import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
+import com.strataurban.strata.ServiceImpls.v2.UserServiceImpl;
 import com.strataurban.strata.Services.EmailVerificationTokenService;
 import com.strataurban.strata.Services.PasswordResetTokenService;
 import com.strataurban.strata.Services.v2.NotificationService;
@@ -15,14 +16,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-
+@Slf4j
 @RestController
 @RequestMapping("/api/v2/auth/")
 @Tag(name = "Auth Management", description = "APIs for managing authentication and authorization")
@@ -30,6 +33,9 @@ public class AuthController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private UserServiceImpl userServiceImpl;
 
     @Autowired
     private PasswordResetTokenService passwordResetTokenService;
@@ -102,25 +108,37 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    @Operation(summary = "Refresh access token", description = "Generate a new access token using a refresh token")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Token refreshed"),
-            @ApiResponse(responseCode = "401", description = "Invalid refresh token")
-    })
-    public ResponseEntity<LoginResponse> refreshToken(@Valid @RequestBody RefreshTokenRequestDTO request) {
+    public ResponseEntity<LoginResponse> refreshToken(@RequestBody RefreshTokenRequestDTO request) {
         String refreshToken = request.getRefreshToken();
-        if (jwtUtil.validateToken(refreshToken) && blacklistedTokenRepository.findByJti(jwtUtil.getJtiFromToken(refreshToken)).isEmpty()) {
-            String username = jwtUtil.getUsernameFromToken(refreshToken);
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-            String newAccessToken = jwtUtil.generateAccessToken(user);
-            LoginResponse response = new LoginResponse();
-            response.setAccessToken(newAccessToken);
-            response.setRefreshToken(refreshToken);
-            response.setId(user.getId());
-            return ResponseEntity.ok(response);
+
+        // Validate refresh token
+        if (!jwtUtil.validateRefreshToken(refreshToken)) {
+            log.error("Invalid or expired refresh token");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(null);
         }
-        return ResponseEntity.status(401).build();
+
+        try {
+            // Get username from token
+            String username = jwtUtil.getUsernameFromToken(refreshToken);
+            // Load user
+            User user = userServiceImpl.findUserByUsername(username);
+            // Generate new access token
+            String newAccessToken = jwtUtil.generateAccessToken(user);
+            // Optionally generate new refresh token (refresh token rotation)
+            String newRefreshToken = jwtUtil.generateRefreshToken(username);
+            return ResponseEntity.ok(new LoginResponse(
+                    user.getId(),
+                    newAccessToken,
+                    newRefreshToken,
+                    user.getRoles().toString(),
+                    user.getUsername()
+            ));
+        } catch (Exception e) {
+            log.error("Error refreshing token: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(null);
+        }
     }
 
     @PostMapping("/password-reset/request")

@@ -34,6 +34,30 @@ public class EmailService {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Password Reset Request");
+            message.setText("To reset your password, use the token below:\n\n" + token);
+
+            mailSender.send(message);
+            log.info("Password reset email sent successfully to: {}", toEmail);
+        } catch (MailException e) {
+            log.error("Failed to send password reset email to: {}", toEmail, e);
+            throw new RuntimeException("Failed to send password reset email", e);
+        }
+
+        RequestResetPasswordResponse response = new RequestResetPasswordResponse();
+            response.setSubject("Password Reset Request");
+            response.setSuccess(true);
+            response.setMessage("A token has been sent to your email");
+            log.info("Sending email to {}: Subject: {}, Body: {}", toEmail, response.getSubject(), response.getMessage());
+            return response;
+    }
+
+
+    public RequestResetPasswordResponse testSendPasswordResetEmail(String toEmail, String token) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
             message.setTo(recipientEmail);
             message.setSubject("Password Reset Request");
             message.setText("To reset your password, use the token below:\n\n" + token);
@@ -49,7 +73,7 @@ public class EmailService {
             response.setSubject("Password Reset Request");
             response.setSuccess(true);
             response.setMessage("A token has been sent to your email");
-//            response.setToken(token);
+            response.setTestToken(token);
             log.info("Sending email to {}: Subject: {}, Body: {}", toEmail, response.getSubject(), response.getMessage());
             return response;
     }
@@ -106,7 +130,21 @@ public class EmailService {
                 "<p>Click the link below to verify your email:</p>" +
                 "<a href=\"" + verificationUrl + "\">Verify Now</a>";
 
+        sendHtmlEmail(to, subject, htmlBody);
+    }
+
+    // Email Verification
+    public String testSendVerificationEmail(String to, Long userId) {
+        String token = emailVerificationTokenService.generateToken(userId);
+        String subject = "Verify Your Email";
+        String verificationUrl = "http://your-frontend-url/verify-email?token=" + token;
+
+        String htmlBody = "<h2>Verify Your Email</h2>" +
+                "<p>Click the link below to verify your email:</p>" +
+                "<a href=\"" + verificationUrl + "\">Verify Now</a>";
+
         sendHtmlEmail(recipientEmail, subject, htmlBody);
+        return token;
     }
 
     // Submission Notification

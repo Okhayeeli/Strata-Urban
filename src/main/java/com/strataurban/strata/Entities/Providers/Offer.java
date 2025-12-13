@@ -2,9 +2,7 @@ package com.strataurban.strata.Entities.Providers;
 
 import com.strataurban.strata.Enums.OfferStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 
 import java.io.Serializable;
@@ -14,7 +12,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "offers")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Offer implements Serializable {
@@ -31,6 +30,9 @@ public class Offer implements Serializable {
 
     @Column(nullable = false)
     private BigDecimal price;
+
+    @Column(nullable = false, length = 3)
+    private String currencyCode;
 
     @Column(length = 500)
     private String notes;

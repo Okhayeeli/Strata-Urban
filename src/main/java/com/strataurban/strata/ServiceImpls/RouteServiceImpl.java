@@ -1,6 +1,8 @@
 package com.strataurban.strata.ServiceImpls;
 
 import com.strataurban.strata.DTOs.RoutesRequestDTO;
+import com.strataurban.strata.DTOs.v2.ProviderSummaryDTO;
+import com.strataurban.strata.DTOs.v2.RouteWithProvidersDTO;
 import com.strataurban.strata.Entities.Providers.Routes;
 import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Repositories.v2.RouteRepository;
@@ -13,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class RouteServiceImpl implements RouteService {
@@ -35,8 +39,6 @@ public class RouteServiceImpl implements RouteService {
         if (userDetails.getRole() == EnumRoles.PROVIDER){
             route.setProviderId(String.valueOf(userDetails.getId()));
             route.setCountry(userDetails.getCountry());
-            route.setCity(userDetails.getCity());
-            route.setState(userDetails.getState());
         }
 
         if (route.getStart() == null || route.getEnd() == null) {
@@ -86,14 +88,14 @@ public class RouteServiceImpl implements RouteService {
         }
 
         if (state.isEmpty() || state.isBlank()) {
-            return routeRepository.findAllByCountry(country);
+            return routeRepository.findAllByCountryAndIsEnabledTrue(country);
         }
 
         if (city.isEmpty() || city.isBlank()) {
-            return routeRepository.findAllByCountryAndState(country, state);
+            return routeRepository.findAllByCountryAndStateAndIsEnabledTrue(country, state);
         }
 
-        return routeRepository.findAllByCountryAndStateAndCity(country, state, city);
+        return routeRepository.findAllByCountryAndStateAndCityAndIsEnabledTrue(country, state, city);
     }
 
     @Override
@@ -130,16 +132,81 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public List<Routes> getRoutesByProvider(String providerId) {
-        return routeRepository.findAllByProviderId(providerId);
+        return routeRepository.findAllByProviderIdAndIsEnabledTrue(providerId);
     }
 
 
     public List<Routes> getRoutesByLocations(String start, String end) {
-        return routeRepository.findByStartContainingAndEndContaining(start, end);
+        return routeRepository.findByStartContainingAndEndContainingAndIsEnabledTrue(start, end);
     }
 
     public Routes addRoute(Routes route) {
         return routeRepository.save(route);
     }
 
+    @Override
+    public Routes addProviderToRoute(Long routeId, String providerIdToAdd) {
+        Routes route = routeRepository.findById(routeId)
+                .orElseThrow(() -> new RuntimeException("Route not found with id: " + routeId));
+
+        // Verify provider exists
+        boolean providerExists = supplierRepository.existsById(Long.parseLong(providerIdToAdd));
+        if (!providerExists) {
+            throw new RuntimeException("Provider not found with id: " + providerIdToAdd);
+        }
+
+        route.addProviderId(providerIdToAdd);
+        return routeRepository.save(route);
+    }
+
+    @Override
+    public Routes removeProviderToRoute(Long routeId, String providerToRemove){
+        Routes route = routeRepository.findById(routeId)
+                .orElseThrow(() -> new RuntimeException("Route not found with id: " + routeId));
+
+        boolean providerExists = supplierRepository.existsById(Long.parseLong(providerToRemove));
+        if (!providerExists) {
+            throw new RuntimeException("Provider not found with id: " + providerToRemove);
+        }
+        route.removeProviderId(providerToRemove);
+        return routeRepository.save(route);
+    }
+
+    @Override
+    public Routes toggleRoute(Long routeId){
+        Routes route = routeRepository.findById(routeId).orElseThrow(() -> new RuntimeException("Route not found"));
+        route.setIsEnabled(!route.getIsEnabled());
+        return routeRepository.save(route);
+    }
+
+    @Override
+    public RouteWithProvidersDTO getRouteWithProviders(Long routeId) {
+        Routes route = getRoute(routeId);
+
+        List<ProviderSummaryDTO> providers = route.getProviderIdList().stream()
+                .map(id -> supplierRepository.findById(Long.parseLong(id))
+                        .map(p -> new ProviderSummaryDTO(
+                                String.valueOf(p.getId()),
+                                p.getCompanyName(),
+                                p.getCompanyLogoUrl(),
+                                p.getCompanyBusinessPhone(),
+                                p.getCompanyBusinessEmail(),
+                                p.getRating()
+                        ))
+                        .orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        RouteWithProvidersDTO dto = new RouteWithProvidersDTO();
+        dto.setId(route.getId());
+        dto.setStart(route.getStart());
+        dto.setEnd(route.getEnd());
+        dto.setPrice(route.getPrice());
+        dto.setState(route.getState());
+        dto.setCountry(route.getCountry());
+        dto.setCity(route.getCity());
+        dto.setProviders(providers);
+
+        return dto;
+    }
 }

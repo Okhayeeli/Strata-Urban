@@ -9,9 +9,9 @@ import java.util.List;
 @Repository
 public interface RouteRepository extends JpaRepository<Routes, Long> {
 
-    List<Routes> findAllByCountry(String country);
-    List<Routes> findAllByCountryAndState(String country, String state);
-    List<Routes> findAllByCountryAndStateAndCity(String country, String state, String city);
-    List<Routes> findByStartContainingAndEndContaining(String startLocation, String endLocation);
-    List<Routes> findAllByProviderId(String supplierId);
+    List<Routes> findAllByCountryAndIsEnabledTrue(String country);
+    List<Routes> findAllByCountryAndStateAndIsEnabledTrue(String country, String state);
+    List<Routes> findAllByCountryAndStateAndCityAndIsEnabledTrue(String country, String state, String city);
+    List<Routes> findByStartContainingAndEndContainingAndIsEnabledTrue(String startLocation, String endLocation);
+    List<Routes> findAllByProviderIdAndIsEnabledTrue(String supplierId);
 }

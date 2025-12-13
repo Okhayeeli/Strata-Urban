@@ -67,7 +67,7 @@ public class OfferRestController {
             logger.info("Creating offer for booking ID: {} by provider ID: {}", bookingId, userDetails.getId());
             Offer offer = offerService.createOffer(bookingId, userDetails.getId(), request.getPrice(),
                     request.getNotes(), request.getValidUntil(), request.getDiscountPercentage(), request.getWebsiteLink(),
-                    request.getEstimatedDuration(), request.getSpecialConditions());
+                    request.getEstimatedDuration(), request.getSpecialConditions(), request.getCurrencyCode());
             logger.info("Created offer: {}", offer);
             return ResponseEntity.ok(offer);
         } catch (SecurityException e) {
@@ -103,7 +103,7 @@ public class OfferRestController {
             @ApiResponse(responseCode = "404", description = "Offer not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT (if authorized for the associated booking), PROVIDER (if authorized), DRIVER, ADMIN, or DEVELOPER can access this endpoint. Others are restricted.")
     })
-    @PreAuthorize("(hasRole('CLIENT') and @offerService.isAuthorizedClientOffer(#offerId, principal.id)) or (hasRole('PROVIDER') and @offerService.isAuthorizedProviderOffer(#offerId, principal.id)) or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENT', 'CUSTOMER_SERVICE', 'DEVELOPER')")
     public ResponseEntity<Offer> getOfferById(@PathVariable Long offerId) {
         try {
             logger.info("Fetching offer with ID: {}", offerId);
@@ -123,7 +123,7 @@ public class OfferRestController {
             @ApiResponse(responseCode = "404", description = "Offer not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized) or ADMIN can update an offer. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @offerService.isAuthorizedProviderOffer(#offerId, principal.id)) or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Offer> updateOffer(
             @PathVariable Long offerId,
             @RequestBody UpdateOfferRequest request,
@@ -190,7 +190,7 @@ public class OfferRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT (if authorized), PROVIDER, DRIVER, ADMIN, or DEVELOPER can access this endpoint. Others are restricted.")
     })
-    @PreAuthorize("(hasRole('CLIENT') and @bookingService.isAuthorizedClientBooking(#bookingId, principal.id)) or hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN') or hasRole('CLIENT') or hasRole('CUSTOMER_SERVICE')")
     public ResponseEntity<BookingWithOffersResponse> getBookingWithOffers(@PathVariable Long bookingId) {
         try {
             logger.info("Fetching booking with offers for booking ID: {}", bookingId);

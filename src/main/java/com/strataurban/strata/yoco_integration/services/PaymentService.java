@@ -26,7 +26,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -199,6 +198,10 @@ public class PaymentService {
 
         if (!transactionValidationService.isCorrectOfferAmount(request.getAmount(), request.getExternalReference())){
             throw new PaymentException("Invalid transaction amount");
+        }
+
+        if(!transactionValidationService.isCorrectCurrency(request.getCurrency(), request.getExternalReference())){
+            throw new PaymentException("Invalid currency");
         }
 
     }

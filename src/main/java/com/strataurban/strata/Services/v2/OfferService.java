@@ -25,7 +25,7 @@ public interface OfferService {
      */
     Offer createOffer(Long bookingRequestId, Long providerId, BigDecimal price, String notes,
                       LocalDateTime validUntil, Double discountPercentage, String websiteLink,
-                      String estimatedDuration, String specialConditions);
+                      String estimatedDuration, String specialConditions, String currencyCode);
 
     /**
      * Retrieves all offers for a specific booking request, paginated.

@@ -33,6 +33,10 @@ public class BookingRequestRequestDTO {
 
         @Schema(description = "Category-specific details")
         private CategorySpecificDetails categorySpecificDetails;
+
+        @Schema(description = "Category-specific details")
+        private Long routeId;
+
     }
 
     @Data
