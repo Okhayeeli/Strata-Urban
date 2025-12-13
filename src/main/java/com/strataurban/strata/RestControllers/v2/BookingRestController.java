@@ -152,7 +152,7 @@ public class BookingRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER or ADMIN can confirm a booking. CLIENT, DEVELOPER, and others are not allowed.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') and @bookingService.isAuthorizedProviderBooking(#id, principal.id)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROVIDER')) or hasRole('ADMIN')")
     public ResponseEntity<BookingRequest> confirmBooking(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(bookingService.confirmBooking(id));
