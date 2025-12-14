@@ -42,6 +42,5 @@ public interface OfferRepository extends JpaRepository<Offer, Long> {
             @Param("toDate") LocalDateTime toDate,
             Pageable pageable
     );
-
 }
 

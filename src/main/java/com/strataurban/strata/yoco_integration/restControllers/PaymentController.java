@@ -1,5 +1,6 @@
 package com.strataurban.strata.yoco_integration.restControllers;
 
+import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Security.LoggedUser;
 import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.yoco_integration.dtos.InitiatePaymentRequest;
@@ -33,6 +34,7 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final WebhookService webhookService;
     private final RefundService refundService;
+    private final OfferRepository offerRepository;
 
     /**
      * Initiates a new payment with YOCO
@@ -44,14 +46,7 @@ public class PaymentController {
     public ResponseEntity<PaymentResponse> initiatePayment(
             @Valid @RequestBody InitiatePaymentRequest request,
             @LoggedUser SecurityUserDetails userDetails) {
-
-        request.setCustomerId(userDetails.getId());
-        log.info("Initiating payment for externalRef: {}, customerId: {}, amount: {}",
-                request.getExternalReference(),
-                request.getCustomerId(),
-                request.getAmount());
-
-        PaymentResponse response = paymentService.initiatePayment(request);
+        PaymentResponse response = paymentService.initiatePayment(request, userDetails);
         return ResponseEntity.ok(response);
     }
 

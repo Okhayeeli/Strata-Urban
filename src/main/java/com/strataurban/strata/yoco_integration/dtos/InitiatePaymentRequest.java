@@ -14,11 +14,13 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class InitiatePaymentRequest {
 
-    private String externalReference; // Your order/invoice ID
+    private String externalReference;
     private Long customerId;
     private BigDecimal amount;
     private Long offerId;
     private String currency;
     private String description;
     private MetaData metaData;
+    private Long recipientId;
+    private Long bookingId;
 }

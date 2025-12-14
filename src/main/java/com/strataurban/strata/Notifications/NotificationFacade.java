@@ -1,28 +1,26 @@
 package com.strataurban.strata.Notifications;
 
 import com.strataurban.strata.Entities.Generics.Notification;
-import com.strataurban.strata.Entities.Providers.Provider;
 import com.strataurban.strata.Entities.Providers.Routes;
+import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.NotificationType;
 import com.strataurban.strata.Enums.RecipientType;
 import com.strataurban.strata.Enums.ReferenceType;
+import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.NotificationRepository;
-import com.strataurban.strata.Repositories.v2.ProviderRepository;
 import com.strataurban.strata.Repositories.v2.RouteRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-/**
- * Main notification facade service that other services should use
- * This provides simple, clean methods to send notifications
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -31,344 +29,291 @@ public class NotificationFacade {
     private final NotificationDispatcher notificationDispatcher;
     private final NotificationRepository notificationRepository;
     private final RouteRepository routeRepository;
-    private final ProviderRepository providerRepository;
+    private final BookingRepository bookingRepository;
+    private final NotificationMessageBuilder messageBuilder;
 
-    /**
-     * Simple method to send notification - just provide message and basic info
-     * The dispatcher handles everything else (checking preferences, sending to channels, etc.)
-     */
-    public void sendNotification(
-            Long recipientId,
-            RecipientType recipientType,
-            NotificationType notificationType,
-            String message) {
-
-        log.info("Sending {} notification to {} {}", notificationType, recipientType, recipientId);
-
-        notificationDispatcher.sendNotification(
-                recipientId,
-                recipientType,
-                notificationType,
-                message,
-                null,
-                null,
-                null
-        );
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> sendNotification(Long recipientId, RecipientType recipientType,
+                                                    NotificationType notificationType, String message) {
+        try {
+            log.info("Sending {} notification to {} {}", notificationType, recipientType, recipientId);
+            notificationDispatcher.sendNotification(recipientId, recipientType, notificationType,
+                    message, null, null, null);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error in sendNotification: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
-    /**
-     * Send notification with reference to related entity
-     */
-    public void sendNotificationWithReference(
-            Long recipientId,
-            RecipientType recipientType,
-            NotificationType notificationType,
-            String message,
-            Long referenceId,
-            ReferenceType referenceType) {
-
-        log.info("Sending {} notification to {} {} with reference {} {}",
-                notificationType, recipientType, recipientId, referenceType, referenceId);
-
-        notificationDispatcher.sendNotification(
-                recipientId,
-                recipientType,
-                notificationType,
-                message,
-                referenceId,
-                referenceType,
-                null
-        );
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> sendNotificationWithReference(Long recipientId, RecipientType recipientType,
+                                                                 NotificationType notificationType, String message, Long referenceId, ReferenceType referenceType) {
+        try {
+            log.info("Sending {} notification to {} {} with reference {} {}",
+                    notificationType, recipientType, recipientId, referenceType, referenceId);
+            notificationDispatcher.sendNotification(recipientId, recipientType, notificationType,
+                    message, referenceId, referenceType, null);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error in sendNotificationWithReference: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
-    /**
-     * Send notification with all optional parameters
-     */
-    public void sendNotificationFull(
-            Long recipientId,
-            RecipientType recipientType,
-            NotificationType notificationType,
-            String message,
-            Long referenceId,
-            ReferenceType referenceType,
-            String metadata) {
-
-        log.info("Sending full {} notification to {} {}", notificationType, recipientType, recipientId);
-
-        notificationDispatcher.sendNotification(
-                recipientId,
-                recipientType,
-                notificationType,
-                message,
-                referenceId,
-                referenceType,
-                metadata
-        );
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> sendNotificationFull(Long recipientId, RecipientType recipientType,
+                                                        NotificationType notificationType, String message, Long referenceId,
+                                                        ReferenceType referenceType, String metadata) {
+        try {
+            log.info("Sending full {} notification to {} {}", notificationType, recipientType, recipientId);
+            notificationDispatcher.sendNotification(recipientId, recipientType, notificationType,
+                    message, referenceId, referenceType, metadata);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error in sendNotificationFull: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
-    // ===== CONVENIENCE METHODS FOR COMMON SCENARIOS =====
-
-    /**
-     * Send booking request notification to provider
-     */
-    public void notifyBookingRequest(Long providerId, Long bookingId, String pickupLocation, String destination) {
-        String message = String.format("New booking request from %s to %s", pickupLocation, destination);
-        sendNotificationWithReference(
-                providerId,
-                RecipientType.PROVIDER,
-                NotificationType.BOOKING_REQUEST,
-                message,
-                bookingId,
-                ReferenceType.BOOKING
-        );
-    }
-
-
+    @Async("notificationExecutor")
     public void notifyBookingSuccessful(Long clientId, Long bookingId, String pickupLocation, String destination) {
-        String message = String.format("Your booking from %s to %s has been successfully initiated", pickupLocation, destination);
-        sendNotificationWithReference(
-                clientId,
-                RecipientType.CLIENT,
-                NotificationType.BOOKING_REQUEST,
-                message,
-                bookingId,
-                ReferenceType.BOOKING
-        );
+        try {
+            sendNotificationWithReference(clientId, RecipientType.CLIENT, NotificationType.BOOKING_REQUEST,
+                    messageBuilder.bookingSuccessful(pickupLocation, destination), bookingId, ReferenceType.BOOKING);
+        } catch (Exception e) {
+            log.error("Error in notifyBookingSuccessful: {}", e.getMessage(), e);
+        }
     }
 
-    /**
-     * Send booking confirmation to client
-     */
-    public void notifyBookingConfirmed(Long clientId, Long bookingId, String pickupLocation, String destination) {
-        String message = String.format("Your booking from %s to %s has been confirmed", pickupLocation, destination);
-        sendNotificationWithReference(
-                clientId,
-                RecipientType.CLIENT,
-                NotificationType.BOOKING_CONFIRMED,
-                message,
-                bookingId,
-                ReferenceType.BOOKING
-        );
+    @Async("notificationExecutor")
+    public void notifyOfferReceived(Long providerId, Long bookingId, String offerId) {
+        try {
+            BookingRequest booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+
+            sendNotificationWithReference(booking.getClientId(), RecipientType.CLIENT,
+                    NotificationType.OFFER_RECEIVED,
+                    messageBuilder.offerReceived(booking, providerId, Long.valueOf(offerId)),
+                    bookingId, ReferenceType.BOOKING);
+        } catch (Exception e) {
+            log.error("Error in notifyOfferReceived for booking {}: {}", bookingId, e.getMessage(), e);
+        }
     }
 
-    /**
-     * Send booking cancellation notification
-     */
-    public void notifyBookingCancelled(Long userId, RecipientType recipientType, Long bookingId, String reason) {
-        String message = String.format("Booking has been cancelled. Reason: %s", reason);
-        sendNotificationWithReference(
-                userId,
-                recipientType,
-                NotificationType.BOOKING_CANCELLED,
-                message,
-                bookingId,
-                ReferenceType.BOOKING
-        );
+    @Async("notificationExecutor")
+    public void notifyOfferRejection(Long providerId, Long bookingId, String offerId, String reason) {
+        try {
+            BookingRequest booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+
+            sendNotification(providerId, RecipientType.PROVIDER, NotificationType.OFFER_REJECTED,
+                    messageBuilder.offerRejected(booking, providerId, reason));
+        } catch (Exception e) {
+            log.error("Error in notifyOfferRejection for booking {}: {}", bookingId, e.getMessage(), e);
+        }
     }
 
-    /**
-     * Send trip started notification
-     */
-    public void notifyTripStarted(Long clientId, Long tripId, String driverName) {
-        String message = String.format("Your trip with driver %s has started", driverName);
-        sendNotificationWithReference(
-                clientId,
-                RecipientType.CLIENT,
-                NotificationType.TRIP_STARTED,
-                message,
-                tripId,
-                ReferenceType.TRIP
-        );
+    @Async("notificationExecutor")
+    public void notifyOfferAcceptance(Long providerId, Long bookingId, String offerId, String note) {
+        try {
+            BookingRequest booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+
+            sendNotification(providerId, RecipientType.PROVIDER, NotificationType.OFFER_ACCEPTED,
+                    messageBuilder.offerAccepted(booking, providerId, Long.valueOf(offerId), note));
+        } catch (Exception e) {
+            log.error("Error in notifyOfferAcceptance for booking {}: {}", bookingId, e.getMessage(), e);
+        }
     }
 
-    /**
-     * Send trip completed notification
-     */
-    public void notifyTripCompleted(Long clientId, Long tripId, String duration, String fare) {
-        String message = String.format("Your trip has been completed. Duration: %s, Fare: %s", duration, fare);
-        sendNotificationWithReference(
-                clientId,
-                RecipientType.CLIENT,
-                NotificationType.TRIP_COMPLETED,
-                message,
-                tripId,
-                ReferenceType.TRIP
-        );
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> notifyBookingConfirmed(Long clientId, Long bookingId,
+                                                          String pickupLocation, String destination) {
+        try {
+            sendNotificationWithReference(clientId, RecipientType.CLIENT, NotificationType.BOOKING_CONFIRMED,
+                    messageBuilder.bookingConfirmed(pickupLocation, destination), bookingId, ReferenceType.BOOKING);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error in notifyBookingConfirmed: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
-    /**
-     * Send payment received notification
-     */
-    public void notifyPaymentReceived(Long providerId, Long paymentId, String amount) {
-        String message = String.format("Payment of %s has been received", amount);
-        sendNotificationWithReference(
-                providerId,
-                RecipientType.PROVIDER,
-                NotificationType.PAYMENT_RECEIVED,
-                message,
-                paymentId,
-                ReferenceType.PAYMENT
-        );
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> notifyBookingCancelled(Long userId, RecipientType recipientType,
+                                                          Long bookingId, String reason) {
+        try {
+            sendNotificationWithReference(userId, recipientType, NotificationType.BOOKING_CANCELLED,
+                    messageBuilder.bookingCancelled(reason), bookingId, ReferenceType.BOOKING);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error in notifyBookingCancelled: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
-    /**
-     * Send driver assigned notification
-     */
-    public void notifyDriverAssigned(Long clientId, Long bookingId, String driverName, String vehicleInfo) {
-        String message = String.format("Driver %s has been assigned to your booking. Vehicle: %s",
-                driverName, vehicleInfo);
-        sendNotificationWithReference(
-                clientId,
-                RecipientType.CLIENT,
-                NotificationType.DRIVER_ASSIGNED,
-                message,
-                bookingId,
-                ReferenceType.BOOKING
-        );
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> notifyTripStarted(Long clientId, Long tripId, String driverName) {
+        try {
+            sendNotificationWithReference(clientId, RecipientType.CLIENT, NotificationType.TRIP_STARTED,
+                    messageBuilder.tripStarted(driverName), tripId, ReferenceType.TRIP);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error in notifyTripStarted: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
-    // ===== QUERY METHODS FOR IN-APP NOTIFICATIONS =====
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> notifyTripCompleted(Long clientId, Long tripId, String duration, String fare) {
+        try {
+            sendNotificationWithReference(clientId, RecipientType.CLIENT, NotificationType.TRIP_COMPLETED,
+                    messageBuilder.tripCompleted(duration, fare), tripId, ReferenceType.TRIP);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error in notifyTripCompleted: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
+    }
 
-    /**
-     * Get user's in-app notifications (paginated)
-     */
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> notifyPaymentReceived(Long providerId, Long paymentId, String amount) {
+        try {
+            sendNotificationWithReference(providerId, RecipientType.PROVIDER, NotificationType.PAYMENT_RECEIVED,
+                    messageBuilder.paymentReceived(amount), paymentId, ReferenceType.PAYMENT);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error in notifyPaymentReceived: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> notifyDriverAssigned(Long clientId, Long bookingId,
+                                                        String driverName, String vehicleInfo) {
+        try {
+            sendNotificationWithReference(clientId, RecipientType.CLIENT, NotificationType.DRIVER_ASSIGNED,
+                    messageBuilder.driverAssigned(driverName, vehicleInfo), bookingId, ReferenceType.BOOKING);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error in notifyDriverAssigned: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    @Async("notificationExecutor")
+    public void notifyPaymentSuccessful(Long clientId, Long providerId, Long bookingId,
+                                        String amount, String bookingReference) {
+        try {
+            log.info("Notifying payment success for booking {} - Client: {}, Provider: {}",
+                    bookingId, clientId, providerId);
+
+            sendNotificationWithReference(clientId, RecipientType.CLIENT,
+                    NotificationType.PAYMENT_SUCCESSFUL,
+                    messageBuilder.paymentSuccessfulClient(amount, bookingReference),
+                    bookingId, ReferenceType.BOOKING);
+
+            sendNotificationWithReference(providerId, RecipientType.PROVIDER,
+                    NotificationType.PAYMENT_SUCCESSFUL,
+                    messageBuilder.paymentSuccessfulProvider(amount, bookingReference),
+                    bookingId, ReferenceType.BOOKING);
+
+            log.info("Payment success notifications sent for booking {}", bookingId);
+        } catch (Exception e) {
+            log.error("Error in notifyPaymentSuccessful for booking {}: {}", bookingId, e.getMessage(), e);
+        }
+    }
+
+    @Async("notificationExecutor")
+    public CompletableFuture<Void> notifyProvidersOnRoute(Long routeId, Long bookingId,
+                                                          String pickupLocation, String destination) {
+        if (routeId == null) {
+            log.warn("Cannot notify providers - routeId is null for booking {}", bookingId);
+            return CompletableFuture.completedFuture(null);
+        }
+
+        log.info("Notifying providers on route {} about booking {}", routeId, bookingId);
+
+        try {
+            Routes route = routeRepository.findById(routeId).orElse(null);
+            if (route == null) {
+                log.warn("Route {} not found for booking {}", routeId, bookingId);
+                return CompletableFuture.completedFuture(null);
+            }
+
+            List<String> providerIds = route.getProviderIdList();
+            if (providerIds.isEmpty()) {
+                log.warn("No providers on route {} for booking {}", routeId, bookingId);
+                return CompletableFuture.completedFuture(null);
+            }
+
+            log.info("Found {} provider(s) on route {}", providerIds.size(), routeId);
+
+            for (String providerId : providerIds) {
+                try {
+                    Long providerIdLong = Long.parseLong(providerId);
+                    sendNotificationWithReference(providerIdLong, RecipientType.PROVIDER,
+                            NotificationType.BOOKING_REQUEST,
+                            messageBuilder.providerBookingRequest(providerIdLong, pickupLocation, destination),
+                            bookingId, ReferenceType.BOOKING);
+                    log.debug("Notified provider {} about booking {}", providerIdLong, bookingId);
+                } catch (NumberFormatException e) {
+                    log.error("Invalid provider ID '{}' in route {}", providerId, routeId);
+                } catch (Exception e) {
+                    log.error("Error notifying provider {} on route {}: {}", providerId, routeId, e.getMessage());
+                }
+            }
+
+            log.info("Notified {} provider(s) on route {}", providerIds.size(), routeId);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Error notifying providers on route {}: {}", routeId, e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
     @Transactional(readOnly = true)
     public Page<Notification> getUserNotifications(Long userId, Pageable pageable) {
         log.debug("Fetching notifications for user {}", userId);
         return notificationRepository.findByRecipientId(userId, pageable);
     }
 
-    /**
-     * Mark notification as read
-     */
     @Transactional
     public void markAsRead(Long notificationId) {
         log.info("Marking notification {} as read", notificationId);
-
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found with ID: " + notificationId));
-
+                .orElseThrow(() -> new RuntimeException("Notification not found: " + notificationId));
         notification.setRead(true);
         notification.setReadAt(LocalDateTime.now());
         notificationRepository.save(notification);
-
-        log.info("Notification {} marked as read", notificationId);
     }
 
-    /**
-     * Mark all user notifications as read
-     */
     @Transactional
     public void markAllAsRead(Long userId) {
         log.info("Marking all notifications as read for user {}", userId);
-
-        Page<Notification> notifications = notificationRepository.findByRecipientId(
-                userId, Pageable.unpaged());
-
+        Page<Notification> notifications = notificationRepository.findByRecipientId(userId, Pageable.unpaged());
         notifications.forEach(notification -> {
             if (!notification.isRead()) {
                 notification.setRead(true);
                 notification.setReadAt(LocalDateTime.now());
             }
         });
-
         notificationRepository.saveAll(notifications);
         log.info("Marked {} notifications as read for user {}", notifications.getTotalElements(), userId);
     }
 
-    /**
-     * Delete notification
-     */
     @Transactional
     public void deleteNotification(Long notificationId) {
         log.info("Deleting notification {}", notificationId);
-
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found with ID: " + notificationId));
-
+                .orElseThrow(() -> new RuntimeException("Notification not found: " + notificationId));
         notificationRepository.delete(notification);
-        log.info("Notification {} deleted", notificationId);
     }
 
-    /**
-     * Get unread notification count for user
-     */
     @Transactional(readOnly = true)
     public long getUnreadCount(Long userId) {
-        // You'll need to add this query to NotificationRepository
         log.debug("Getting unread count for user {}", userId);
         return notificationRepository.countByRecipientIdAndIsReadFalse(userId);
     }
-
-    /**
-     * Notify ALL providers assigned to a route about a new booking
-     * This is called when a client creates a booking
-     *
-     * @param routeId The route ID of the booking
-     * @param bookingId The booking ID
-     * @param pickupLocation Pickup location
-     * @param destination Destination location
-     */
-    public void notifyProvidersOnRoute(Long routeId, Long bookingId, String pickupLocation, String destination) {
-        if (routeId == null) {
-            log.warn("Cannot notify providers - routeId is null for booking {}", bookingId);
-            return;
-        }
-
-        log.info("Notifying all providers on route {} about new booking {}", routeId, bookingId);
-
-        try {
-            // Get the route
-            Routes route = routeRepository.findById(routeId).orElse(null);
-
-            if (route == null) {
-                log.warn("Route {} not found for booking {}", routeId, bookingId);
-                return;
-            }
-
-            // Get all provider IDs assigned to this route
-            List<String> providerIds = route.getProviderIdList();
-
-            if (providerIds.isEmpty()) {
-                log.warn("No providers assigned to route {} for booking {}", routeId, bookingId);
-                return;
-            }
-
-            log.info("Found {} provider(s) on route {} - sending notifications", providerIds.size(), routeId);
-
-
-            for (String providerId : providerIds) {
-                try {
-                    Long providerIdLong = Long.parseLong(providerId);
-
-                    sendNotificationWithReference(
-                            providerIdLong,
-                            RecipientType.PROVIDER,
-                            NotificationType.BOOKING_REQUEST,
-                            message(providerIdLong, pickupLocation, destination),
-                            bookingId,
-                            ReferenceType.BOOKING
-                    );
-
-                    log.debug("Notified provider {} about booking {}", providerIdLong, bookingId);
-
-                } catch (NumberFormatException e) {
-                    log.error("Invalid provider ID '{}' in route {} - skipping", providerId, routeId, e);
-                }
-            }
-
-            log.info("Successfully notified {} provider(s) on route {} about booking {}",
-                    providerIds.size(), routeId, bookingId);
-
-        } catch (Exception e) {
-            log.error("Error notifying providers on route {} about booking {}: {}",
-                    routeId, bookingId, e.getMessage(), e);
-        }
-    }
-
-    private String message(Long providerId, String pickupLocation, String destination) {
-        Provider provider = providerRepository.findById(providerId).orElseThrow(() -> new RuntimeException("Provider not found with ID: " + providerId));
-        return String.format("Dear %s New booking request from %s to %s", provider.getCompanyName(),  pickupLocation, destination);
-    }
-
 }

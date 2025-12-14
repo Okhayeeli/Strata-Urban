@@ -61,6 +61,9 @@ public class Offer implements Serializable {
     @Column(length = 500, nullable = false, updatable = false)
     private String transactionReference = UUID.randomUUID().toString();
 
+    @Column
+    private String rejectionReason;
+
     @PrePersist
     protected void onCreate() {
         this.createdDate = LocalDateTime.now();

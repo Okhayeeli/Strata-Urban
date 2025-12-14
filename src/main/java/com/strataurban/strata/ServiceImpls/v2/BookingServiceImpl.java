@@ -376,7 +376,9 @@ public class BookingServiceImpl implements BookingService {
         booking.setProviderId(offer.getProviderId());
         booking.setStatus(BookingStatus.CLAIMED);
         BookingRequest updatedBooking = bookingRepository.save(booking);
+
         log.info("Accepted offer for booking: {}", updatedBooking);
+        notificationFacade.notifyOfferAcceptance(offer.getProviderId(), bookingId, String.valueOf(offer.getId()), null);
         return updatedBooking;
     }
 

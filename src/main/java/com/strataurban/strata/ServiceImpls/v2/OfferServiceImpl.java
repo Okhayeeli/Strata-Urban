@@ -5,6 +5,7 @@ import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Enums.OfferStatus;
+import com.strataurban.strata.Notifications.NotificationFacade;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Security.SecurityUserDetails;
@@ -40,14 +41,16 @@ public class OfferServiceImpl implements OfferService {
     private final EmailService emailService;
     private final UserService userService;
     private final ProviderService providerService;
+    private final NotificationFacade notificationFacade;
 
     @Autowired
-    public OfferServiceImpl(OfferRepository offerRepository, BookingRepository bookingRepository, EmailService emailService, UserService userService, ProviderService providerService) {
+    public OfferServiceImpl(OfferRepository offerRepository, BookingRepository bookingRepository, EmailService emailService, UserService userService, ProviderService providerService, NotificationFacade notificationFacade) {
         this.offerRepository = offerRepository;
         this.bookingRepository = bookingRepository;
         this.emailService = emailService;
         this.userService = userService;
         this.providerService = providerService;
+        this.notificationFacade = notificationFacade;
     }
 
     @Override
@@ -105,10 +108,8 @@ public class OfferServiceImpl implements OfferService {
         }
         bookingRepository.save(booking);
         logger.info("Updated BookingRequest.offerIds: {}", booking.getOfferIds());
-
-
-        emailService.sendOfferEmail(userService.getUserById(booking.getClientId()).getFirstName(),offer, providerService.getProviderById(providerId).getCompanyName());
-
+        notificationFacade.notifyOfferReceived(offer.getProviderId(), offer.getBookingRequestId(), offerId);
+//        emailService2.sendOfferEmail(userService.getUserById(booking.getClientId()).getFirstName(),offer, providerService.getProviderById(providerId).getCompanyName());
         return savedOffer;
     }
 
@@ -269,6 +270,7 @@ public class OfferServiceImpl implements OfferService {
             List<Offer> offersToReject = offerRepository.findAllById(offerIdList);
             for (Offer offer : offersToReject) {
                 offer.setStatus(REJECTED);
+                notificationFacade.notifyOfferRejection(offer.getProviderId(), offer.getBookingRequestId(), String.valueOf(offer.getId()), null);
             }
             offerRepository.saveAll(offersToReject);
 

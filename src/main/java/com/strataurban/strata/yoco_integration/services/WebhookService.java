@@ -1,6 +1,10 @@
 package com.strataurban.strata.yoco_integration.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
+import com.strataurban.strata.Enums.BookingStatus;
+import com.strataurban.strata.Notifications.NotificationFacade;
+import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.yoco_integration.config.YocoProperties;
 import com.strataurban.strata.yoco_integration.dtos.WebhookPayload;
 import com.strataurban.strata.yoco_integration.entities.PaymentTransaction;
@@ -35,6 +39,8 @@ public class WebhookService {
     private final ObjectMapper objectMapper;
 
     private static final String HMAC_SHA256 = "HmacSHA256";
+    private final BookingRepository bookingRepository;
+    private final NotificationFacade notificationFacade;
 
     /**
      * Processes incoming webhook from YOCO
@@ -219,10 +225,29 @@ public class WebhookService {
         webhookEvent.setProcessedAt(LocalDateTime.now());
         webhookEventRepository.save(webhookEvent);
     }
+//
+//    private void handlePaymentSucceeded(String checkoutId, WebhookPayload payload) {
+//        String paymentId = payload.getPayload().getPaymentId();
+//
+//
+//        paymentService.updatePaymentStatus(
+//                checkoutId,
+//                PaymentTransaction.PaymentStatus.SUCCEEDED,
+//                paymentId,
+//                null
+//        );
+//
+//        log.info("Payment succeeded: CheckoutId={}, PaymentId={}", checkoutId, paymentId);
+//
+//        // TODO: Trigger order fulfillment, send confirmation email, etc.
+//    }
+
+
 
     private void handlePaymentSucceeded(String checkoutId, WebhookPayload payload) {
         String paymentId = payload.getPayload().getPaymentId();
 
+        // Update payment status in database
         paymentService.updatePaymentStatus(
                 checkoutId,
                 PaymentTransaction.PaymentStatus.SUCCEEDED,
@@ -232,7 +257,79 @@ public class WebhookService {
 
         log.info("Payment succeeded: CheckoutId={}, PaymentId={}", checkoutId, paymentId);
 
-        // TODO: Trigger order fulfillment, send confirmation email, etc.
+        try {
+            // Retrieve payment transaction details
+            PaymentTransaction payment = paymentService.getPaymentByCheckoutId(checkoutId);
+
+            if (payment == null) {
+                log.error("Payment transaction not found for checkoutId: {}", checkoutId);
+                return;
+            }
+
+            Long bookingId = payment.getBookingId();
+            Long clientId = payment.getCustomerId();
+            Long providerId = payment.getRecipientId();
+            String amount = payment.getAmount().toString();
+            String bookingReference = payment.getExternalReference();
+
+            // Send notifications to both client and provider
+            notificationFacade.notifyPaymentSuccessful(
+                    clientId,
+                    providerId,
+                    bookingId,
+                    amount,
+                    bookingReference
+            );
+
+            // Order fulfillment: Update booking status and trigger next steps
+            fulfillBookingOrder(bookingId, providerId);
+
+            log.info("Payment processing completed for booking: {}", bookingId);
+
+        } catch (Exception e) {
+            log.error("Error processing payment success for checkoutId {}: {}",
+                    checkoutId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Order fulfillment - Complete the booking process after successful payment
+     * This includes:
+     * - Update booking status to CONFIRMED/PAID
+     * - Assign driver (if available)
+     * - Update provider's schedule
+     * - Generate receipt
+     */
+    private void fulfillBookingOrder(Long bookingId, Long providerId) {
+        try {
+            log.info("Starting order fulfillment for booking: {}", bookingId);
+
+            // 1. Update booking status to CONFIRMED
+            BookingRequest booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+
+            booking.setStatus(BookingStatus.CONFIRMED);
+            bookingRepository.save(booking);
+            log.info("Booking {} status updated to CONFIRMED", bookingId);
+
+            // 2. TODO: Assign driver if auto-assignment is enabled
+            // driverService.assignDriverToBooking(bookingId, providerId);
+
+            // 3. TODO: Update provider's schedule/availability
+            // providerScheduleService.blockSchedule(providerId, booking.getServiceDate());
+
+            // 4. TODO: Generate receipt
+            // receiptService.generateReceipt(bookingId, payment);
+
+            // 5. TODO: Send confirmation email with booking details
+            // emailService.sendBookingConfirmationEmail(booking);
+
+            log.info("Order fulfillment completed for booking: {}", bookingId);
+
+        } catch (Exception e) {
+            log.error("Error in order fulfillment for booking {}: {}", bookingId, e.getMessage(), e);
+            // Don't throw - payment already succeeded, fulfillment can be retried
+        }
     }
 
     private void handlePaymentFailed(String checkoutId, WebhookPayload payload) {

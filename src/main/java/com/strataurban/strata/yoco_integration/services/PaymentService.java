@@ -2,6 +2,9 @@ package com.strataurban.strata.yoco_integration.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.strataurban.strata.Entities.Providers.Offer;
+import com.strataurban.strata.Repositories.v2.OfferRepository;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.yoco_integration.config.YocoProperties;
 import com.strataurban.strata.yoco_integration.dtos.CheckoutResponse;
 import com.strataurban.strata.yoco_integration.dtos.CreateCheckoutRequest;
@@ -38,6 +41,7 @@ public class PaymentService {
     private final YocoProperties yocoProperties;
     private final ObjectMapper objectMapper;
     private final TransactionValidationService transactionValidationService;
+    private final OfferRepository offerRepository;
 
 
     @Value("${yoco.payment.success.url}")
@@ -54,8 +58,16 @@ public class PaymentService {
      * Implements idempotency to prevent duplicate charges
      */
     @Transactional
-    public PaymentResponse initiatePayment(InitiatePaymentRequest request) {
+    public PaymentResponse initiatePayment(InitiatePaymentRequest request, SecurityUserDetails userDetails) {
 
+        request.setCustomerId(userDetails.getId());
+        Offer offer = offerRepository.findByTransactionReference(request.getExternalReference());
+        request.setRecipientId(offer.getProviderId());
+        request.setBookingId(offer.getBookingRequestId());
+        log.info("Initiating payment for externalRef: {}, customerId: {}, amount: {}",
+                request.getExternalReference(),
+                request.getCustomerId(),
+                request.getAmount());
         // Generate idempotency key for this payment (same for 2 minutes for the same externalReference)
         String idempotencyKey = generateIdempotencyKey(request.getExternalReference());
 
@@ -243,6 +255,8 @@ public class PaymentService {
                     .processingMode(response.getProcessingMode())
                     .redirectUrl(response.getRedirectUrl())
                     .description(request.getDescription())
+                    .recipientId(request.getRecipientId())
+                    .bookingId(request.getBookingId())
                     .metadata(objectMapper.writeValueAsString(response.getMetadata()))
                     .build();
 

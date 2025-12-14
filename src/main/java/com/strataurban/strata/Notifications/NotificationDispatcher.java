@@ -9,7 +9,6 @@ import com.strataurban.strata.Notifications.Channels.PushNotificationService;
 import com.strataurban.strata.Notifications.Channels.SmsService;
 import com.strataurban.strata.Notifications.Repository.NotificationPreferenceRepository;
 import com.strataurban.strata.Repositories.v2.NotificationRepository;
-import com.strataurban.strata.Services.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -294,6 +293,9 @@ public class NotificationDispatcher {
             case BOOKING_REQUEST -> "New Booking Request";
             case BOOKING_CONFIRMED -> "Booking Confirmed";
             case BOOKING_CANCELLED -> "Booking Cancelled";
+            case OFFER_RECEIVED -> "Booking Offer Received";
+            case OFFER_REJECTED -> "Offer Rejection";
+            case OFFER_ACCEPTED -> "Offer Accepted";
             case TRIP_STARTED -> "Trip Started";
             case TRIP_ENDED, TRIP_COMPLETED -> "Trip Completed";
             case PAYMENT_RECEIVED, PAYMENT_SUCCESSFUL -> "Payment Received";

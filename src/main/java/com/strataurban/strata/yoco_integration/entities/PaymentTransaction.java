@@ -1,10 +1,8 @@
 package com.strataurban.strata.yoco_integration.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.checkerframework.checker.units.qual.C;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -19,7 +17,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_status", columnList = "status"),
         @Index(name = "idx_customer_id", columnList = "customerId")
 })
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -39,7 +38,7 @@ public class PaymentTransaction {
     private String paymentId;
 
     @Column(nullable = false, length = 50)
-    private String externalReference; // Your internal order/invoice ID
+    private String externalReference;
 
     @Column(nullable = false, length = 100)
     private Long customerId;
@@ -85,6 +84,12 @@ public class PaymentTransaction {
 
     @Version
     private Long version; // Optimistic locking
+
+    @Column
+    private Long recipientId;
+
+    @Column
+    private Long bookingId;
 
     public enum PaymentStatus {
         CREATED,           // Checkout created, awaiting payment
