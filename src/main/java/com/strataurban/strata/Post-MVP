@@ -1,0 +1,980 @@
+# E-Hailing Application - Comprehensive User Stories & Flows
+
+## TABLE OF CONTENTS
+1. [All Stakeholders in the System](#all-stakeholders)
+2. [Provider Post-Payment Flow](#provider-post-payment)
+3. [Driver Complete Flow](#driver-flow)
+4. [Trip Lifecycle Flow](#trip-lifecycle)
+5. [Security Risks & Mitigation](#security-risks)
+6. [Edge Cases & Scenarios](#edge-cases)
+
+---
+
+## 1. ALL STAKEHOLDERS IN THE SYSTEM {#all-stakeholders}
+
+### Primary Users
+1. **Client** - Books rides and pays for transportation services
+2. **Provider (Transport Company)** - Owns vehicles and manages drivers
+3. **Driver** - Operates vehicles and executes trips
+4. **Admin** - Manages routes, service areas, and system configurations
+
+### Supporting Roles
+5. **Payment Gateway** - Processes financial transactions
+6. **System/Platform** - The application itself (automated processes)
+7. **Support Staff** (if applicable) - Handles disputes and customer service
+8. **Regulatory Bodies** (consideration) - May need access to trip data for compliance
+
+---
+
+## 2. PROVIDER POST-PAYMENT FLOW {#provider-post-payment}
+
+### Story 2.1: Provider Receives Payment Notification
+**As a Provider**, when a client completes payment for my accepted offer, **I want to** receive an immediate notification **so that** I can prepare for the upcoming trip.
+
+**Flow:**
+1. System detects successful payment webhook
+2. Provider receives push notification + email + in-app alert
+3. Notification contains:
+   - Booking reference number
+   - Client name and contact
+   - Pickup location and destination
+   - Scheduled date and time
+   - Vehicle type required
+   - Special requirements (if any)
+   - Payment amount received
+4. Booking status changes from "Offer Accepted" to "Payment Confirmed"
+
+---
+
+### Story 2.2: Provider Assigns Driver to Booking
+**As a Provider**, after payment confirmation, **I want to** assign a qualified driver to the confirmed booking **so that** the trip can be fulfilled.
+
+**Flow:**
+1. Provider navigates to "Confirmed Bookings" section
+2. Views booking details and requirements
+3. System shows list of available drivers with:
+   - Driver name and rating
+   - License status and expiry
+   - Current availability status
+   - Previous trip history
+   - Distance from pickup point
+4. Provider selects appropriate driver
+5. System checks:
+   - Driver is verified and active
+   - Driver has valid license
+   - Driver is not assigned to overlapping trips
+6. If validation passes, assignment is confirmed
+7. If validation fails, system shows error with reasons
+
+**Alternative:** If vehicle was already assigned in the offer but driver wasn't:
+- System filters drivers qualified for that specific vehicle
+- Only shows drivers with appropriate license class for vehicle type
+
+---
+
+### Story 2.3: Provider Assigns Vehicle to Booking (if not done in offer)
+**As a Provider**, I **want to** confirm or change the vehicle assignment **so that** I ensure the right vehicle is used.
+
+**Flow:**
+1. Provider views confirmed booking
+2. If vehicle was specified in offer:
+   - System shows pre-selected vehicle
+   - Provider can change if needed (with client notification)
+3. If vehicle wasn't specified:
+   - Provider selects from available fleet
+   - System shows vehicles matching service type
+   - Checks vehicle availability for booking timeframe
+4. System validates:
+   - Vehicle is registered and active
+   - Vehicle has valid insurance
+   - Vehicle has passed recent inspection
+   - Vehicle is available during booking period
+5. Assignment confirmed and recorded
+
+---
+
+### Story 2.4: Provider Sends Trip Details to Driver
+**As a Provider**, after assigning driver and vehicle, **I want to** send complete trip information to the driver **so that** they can prepare adequately.
+
+**Flow:**
+1. Provider clicks "Send Trip Details to Driver"
+2. System generates comprehensive trip package:
+   - Booking reference
+   - Client information (name, phone, photo if available)
+   - Pickup location with GPS coordinates
+   - Destination with GPS coordinates
+   - Scheduled pickup date and time
+   - Vehicle assigned (make, model, plate number)
+   - Estimated trip duration
+   - Route suggestions
+   - Special instructions
+   - Client's emergency contact
+3. Driver receives notification through app + SMS
+4. Trip appears in driver's "Upcoming Trips" dashboard
+5. System logs notification delivery status
+
+---
+
+### Story 2.5: Provider Monitors Trip Status
+**As a Provider**, throughout the trip, **I want to** monitor the progress **so that** I can ensure everything runs smoothly and intervene if needed.
+
+**Flow:**
+1. Provider accesses "Active Trips" dashboard
+2. Views real-time information:
+   - Driver's current location (GPS tracking)
+   - Trip status (En route to pickup, Picked up, In transit, Completed)
+   - Estimated time of arrival
+   - Any delays or issues reported
+3. Provider can:
+   - Contact driver directly
+   - Contact client if needed
+   - View trip route on map
+   - See trip timeline and checkpoints
+
+---
+
+## 3. DRIVER COMPLETE FLOW {#driver-flow}
+
+### Story 3.1: Driver Registration by Provider
+**As a Provider**, I **want to** register drivers in the system **so that** they can be assigned to trips.
+
+**Flow:**
+1. Provider navigates to "Manage Drivers" section
+2. Clicks "Add New Driver"
+3. Enters driver information:
+   - Full legal name
+   - Date of birth
+   - Email address
+   - Phone number
+   - Residential address
+   - Emergency contact details
+4. Uploads required documents:
+   - Valid driver's license (front & back)
+   - National ID or passport
+   - Professional driving permit (if required)
+   - Medical fitness certificate
+   - Police clearance certificate
+   - Passport photograph
+5. System validates:
+   - Email not already registered
+   - Phone number not already registered
+   - License number not already in system
+   - All required documents uploaded
+6. System creates driver account with status "Pending Verification"
+7. Driver receives email with:
+   - Temporary password
+   - Link to complete profile
+   - Link to download driver app
+   - Instructions for next steps
+
+---
+
+### Story 3.2: Driver Email Verification & Profile Setup
+**As a newly registered Driver**, I **want to** verify my email and complete my profile **so that** I can start receiving trip assignments.
+
+**Flow:**
+1. Driver receives registration email
+2. Clicks verification link
+3. Email is verified, redirected to set new password
+4. Driver downloads mobile app (if not already done)
+5. Logs in with credentials
+6. Completes additional profile information:
+   - Profile photo
+   - Preferred working hours
+   - Languages spoken
+   - Years of driving experience
+   - Preferred routes/areas
+   - Vehicle type preferences
+7. Reviews and accepts:
+   - Terms and conditions
+   - Privacy policy
+   - Driver code of conduct
+   - Insurance coverage details
+8. Enables necessary permissions:
+   - Location services (mandatory)
+   - Push notifications (mandatory)
+   - Camera access (for trip photos)
+   - Phone access (for calls)
+9. Profile submitted for admin approval
+
+---
+
+### Story 3.3: Driver Account Verification by Admin
+**As an Admin**, I **want to** verify driver documents and credentials **so that** only qualified drivers operate in the system.
+
+**Flow:**
+1. Admin receives notification of new driver registration
+2. Reviews submitted documents:
+   - Verifies license authenticity (checks with issuing authority if possible)
+   - Confirms license is not expired
+   - Verifies license class matches vehicle types
+   - Checks ID document validity
+   - Reviews background check results
+3. Admin performs checks:
+   - Criminal record search
+   - Driving record check (accidents, violations)
+   - Employment history verification (if required)
+4. Decision:
+   - **Approved:** Driver status → "Active", driver can receive assignments
+   - **Rejected:** Driver notified with reasons, can reapply
+   - **Pending Info:** Driver asked to provide additional documents
+5. Driver receives email notification of decision
+
+---
+
+### Story 3.4: Driver Receives Trip Assignment
+**As a Driver**, when assigned to a trip, **I want to** receive all necessary details **so that** I can prepare and execute the trip successfully.
+
+**Flow:**
+1. Driver receives push notification: "New Trip Assigned"
+2. Notification shows:
+   - Pickup time (e.g., "Tomorrow, 8:00 AM")
+   - Pickup location name
+   - Destination name
+   - Estimated duration
+3. Driver opens app and views full trip details:
+   - Booking reference number
+   - Client name and phone number
+   - Client rating (if they've used service before)
+   - Pickup address with GPS coordinates
+   - Destination address with GPS coordinates
+   - Scheduled pickup date and time
+   - Vehicle assigned (plate number, parking location)
+   - Estimated trip distance and duration
+   - Route suggestion with traffic estimate
+   - Special requirements (e.g., "Heavy luggage", "Wheelchair accessible")
+   - Payment status (Confirmed/Prepaid)
+4. Driver has options:
+   - **Accept:** Confirms readiness for trip
+   - **View on Map:** Opens navigation preview
+   - **Contact Provider:** If issues or questions
+   - **Report Unavailability:** If unable to complete trip (triggers reassignment)
+5. Trip appears in driver's "Upcoming Trips" list
+6. Driver can set reminders and calendar alerts
+
+---
+
+### Story 3.5: Driver Prepares for Trip
+**As a Driver**, before the trip day, **I want to** ensure everything is ready **so that** the trip goes smoothly.
+
+**Flow:**
+1. Driver checks vehicle assignment in app
+2. Driver performs pre-trip inspection:
+   - Fuel/charge level sufficient
+   - Tires properly inflated
+   - Vehicle clean inside and out
+   - All lights and signals working
+   - Insurance and registration documents in vehicle
+   - Emergency kit available
+   - Fire extinguisher present
+3. Driver updates vehicle inspection checklist in app:
+   - Photos of vehicle condition (exterior)
+   - Odometer reading
+   - Fuel level
+   - Any existing damage documented
+4. Driver reviews route:
+   - Checks traffic predictions
+   - Identifies alternative routes
+   - Notes any road closures or construction
+5. System validates:
+   - Vehicle insurance is valid
+   - Vehicle inspection is up to date
+   - Driver's license is still valid
+6. If any validation fails, driver is alerted and provider is notified
+
+---
+
+### Story 3.6: Driver Starts Journey to Pickup Location
+**As a Driver**, on trip day, **I want to** navigate to the pickup location efficiently **so that** I arrive on time.
+
+**Flow:**
+1. Driver opens app on trip day (preferably 1-2 hours before scheduled pickup)
+2. Driver clicks "Start Trip" on the assigned booking
+3. System checks:
+   - Current time vs. scheduled time (warns if too early/late)
+   - Driver's current location
+   - Distance to pickup location
+4. Driver confirms they have the correct vehicle
+5. Trip status changes to "Driver En Route to Pickup"
+6. System starts tracking:
+   - Driver's real-time location (GPS)
+   - Estimated time of arrival (ETA) at pickup
+   - Route being taken
+7. System sends notification to client:
+   - "Your driver is on the way"
+   - Driver's name and photo
+   - Vehicle details (make, model, color, plate number)
+   - Live ETA countdown
+   - Option to track driver on map
+8. System sends notification to provider:
+   - Trip status update
+   - Driver's progress
+9. Driver uses in-app navigation or external GPS app
+10. If driver is running late (>15 minutes delay):
+    - System auto-sends apology notification to client
+    - Driver prompted to contact client directly
+    - Provider is notified of delay
+
+---
+
+### Story 3.7: Driver Arrives at Pickup Location
+**As a Driver**, when I reach the pickup point, **I want to** notify the client and confirm their identity **so that** I pick up the right person.
+
+**Flow:**
+1. Driver arrives at pickup location
+2. Driver parks safely and clicks "I've Arrived" in app
+3. System updates trip status to "Driver Arrived at Pickup"
+4. Client receives notification: "Your driver has arrived"
+5. System shows client:
+   - Exact location of parked vehicle on map
+   - Vehicle description and plate number
+   - Driver's photo and name
+   - Call driver button
+6. Driver looks for client based on:
+   - Client photo in app
+   - Phone contact if needed
+   - Client's description (if provided)
+7. When client is identified:
+   - Driver greets client professionally
+   - Verifies client identity: "Are you [Client Name]?"
+   - Confirms destination: "Going to [Destination]?"
+8. Driver helps with:
+   - Loading luggage or items
+   - Opening doors if needed
+   - Ensuring client comfort and safety
+9. Driver performs safety check:
+   - All passengers seated
+   - Seat belts fastened
+   - Luggage secured properly
+   - Doors closed properly
+
+---
+
+### Story 3.8: Driver Confirms Pickup and Starts Trip
+**As a Driver**, after the client is safely in the vehicle, **I want to** officially start the trip **so that** tracking and timing begin accurately.
+
+**Flow:**
+1. Driver clicks "Start Trip" button in app
+2. System may require:
+   - Photo of client (optional, for security)
+   - Confirmation of number of passengers
+   - Confirmation of luggage count
+3. System prompts driver to enter starting odometer reading (if required)
+4. Driver confirms destination with client one more time
+5. System updates trip status to "Trip In Progress"
+6. System starts:
+   - Trip timer
+   - Real-time GPS tracking
+   - Distance calculation
+   - Route recording
+7. Notifications sent:
+   - Client: "Your trip has started"
+   - Provider: Trip status update
+8. Client can now:
+   - Track trip progress in real-time
+   - See estimated time of arrival
+   - Contact driver or provider if needed
+   - Share trip details with emergency contact (safety feature)
+9. Driver begins journey following GPS navigation
+
+---
+
+### Story 3.9: Driver During Trip
+**As a Driver**, during the trip, **I want to** focus on safe driving while providing good service **so that** the client has a positive experience.
+
+**Flow:**
+1. Driver follows optimal route suggested by GPS
+2. System continuously:
+   - Tracks driver's location every 10-30 seconds
+   - Updates ETA based on traffic and speed
+   - Monitors route adherence
+3. Driver can:
+   - Accept/decline new trip assignments (if multi-trip enabled)
+   - Report issues (vehicle problem, road closure, etc.)
+   - Contact provider through in-app calling
+   - Access emergency button (for safety incidents)
+4. Client can:
+   - View live location on map
+   - See ETA updates
+   - Contact driver
+   - Share trip with trusted contacts
+5. System alerts:
+   - If driver significantly deviates from route (>2km off-route)
+   - If driver speeds excessively (based on GPS data)
+   - If trip is taking much longer than estimated
+   - If driver makes unscheduled stops >10 minutes
+6. Driver provides good service:
+   - Professional demeanor
+   - Safe driving
+   - Comfortable temperature/music
+   - Respects client's privacy
+7. Driver handles special scenarios:
+   - **Traffic jam:** Informs client, system updates ETA automatically
+   - **Road closure:** Takes alternative route, notifies system
+   - **Vehicle issue:** Stops safely, contacts provider immediately
+   - **Client requests detour:** Confirms with client, notes in app
+   - **Emergency:** Uses emergency button, calls emergency services
+
+---
+
+### Story 3.10: Driver Arrives at Destination
+**As a Driver**, when reaching the destination, **I want to** safely conclude the trip **so that** the client can exit and the booking can be completed.
+
+**Flow:**
+1. Driver approaches destination
+2. Driver confirms exact drop-off point with client:
+   - "Is this the right location?"
+   - "Would you like me to stop here or drive closer?"
+3. Driver parks safely at designated spot
+4. Driver clicks "Arrived at Destination" in app
+5. System updates trip status to "Arrived at Destination"
+6. Driver assists client:
+   - Opens doors
+   - Helps unload luggage or items
+   - Ensures nothing is left behind in vehicle
+7. Driver performs quick vehicle check:
+   - No client belongings left behind
+   - No damage to vehicle interior
+   - Takes photo of odometer reading (ending mileage)
+8. Driver bids farewell professionally
+9. Client exits vehicle safely
+
+---
+
+### Story 3.11: Driver Completes Trip
+**As a Driver**, after the client has exited, **I want to** officially complete the trip **so that** records are finalized and I can receive my next assignment.
+
+**Flow:**
+1. Driver clicks "Complete Trip" button in app
+2. System prompts driver to:
+   - Confirm ending odometer reading
+   - Upload photo proof of drop-off (optional)
+   - Note any issues or incidents during trip
+   - Report any damage or problems
+3. System calculates:
+   - Total distance traveled
+   - Total trip duration
+   - Route taken
+4. System updates:
+   - Trip status to "Completed"
+   - Vehicle availability to "Available"
+   - Driver availability to "Available"
+5. Notifications sent:
+   - Client: "Trip completed successfully"
+   - Provider: Trip completion summary with metrics
+6. System generates trip report:
+   - Start time and end time
+   - Pickup and drop-off locations
+   - Total distance
+   - Total duration
+   - Route map with GPS trail
+   - Any incidents reported
+7. Trip data is saved and archived
+8. Driver can immediately see:
+   - Trip earnings (if commission-based)
+   - Feedback from client (once client rates)
+   - Next trip assignment (if any)
+
+---
+
+### Story 3.12: Post-Trip - Client Rates Driver
+**As a Client**, after trip completion, **I want to** rate my experience **so that** feedback helps maintain service quality.
+
+**Flow:**
+1. Client receives notification: "How was your trip?"
+2. Client opens app and sees rating screen:
+   - Star rating (1-5 stars) for driver
+   - Star rating for vehicle condition
+   - Star rating for overall experience
+3. Client can provide:
+   - Written feedback/comments
+   - Specific issues (late arrival, unsafe driving, rude behavior, etc.)
+   - Compliments (great service, clean vehicle, friendly, etc.)
+4. Optional: Client can add tip amount for driver
+5. Client submits rating
+6. System:
+   - Updates driver's overall rating
+   - Flags low ratings (3 stars or below) for review
+   - Sends feedback to provider
+   - Notifies driver of new rating
+7. Driver sees:
+   - Star rating received
+   - Client's comments (if any)
+   - Updated average rating
+8. Provider can:
+   - Review all driver ratings
+   - Identify patterns (good or bad)
+   - Take action (recognition or correction)
+
+---
+
+### Story 3.13: Post-Trip - Driver Rates Client (Optional)
+**As a Driver**, after trip completion, **I want to** rate the client **so that** providers know about professional/problematic clients.
+
+**Flow:**
+1. Driver receives prompt: "Rate your client"
+2. Driver gives star rating (1-5 stars)
+3. Driver can note:
+   - Client was late to pickup
+   - Client was respectful/disrespectful
+   - Client damaged vehicle
+   - Client was great to work with
+4. Rating is submitted to system
+5. Provider can see client ratings to make informed decisions
+6. Clients with consistently low ratings may be flagged for review
+
+---
+
+### Story 3.14: Driver Views Earnings and Trip History
+**As a Driver**, I **want to** view my earnings and trip history **so that** I can track my work and income.
+
+**Flow:**
+1. Driver navigates to "Earnings" section in app
+2. Views:
+   - Today's earnings
+   - Weekly earnings
+   - Monthly earnings
+   - Total trips completed
+3. Sees breakdown:
+   - Base fare per trip
+   - Distance charges
+   - Time charges
+   - Tips received
+   - Bonuses (if any)
+   - Deductions (if any)
+4. Driver accesses "Trip History"
+5. Sees list of all completed trips with:
+   - Date and time
+   - Route (from → to)
+   - Distance and duration
+   - Amount earned
+   - Client rating
+6. Driver can:
+   - Filter by date range
+   - Search specific trips
+   - Download trip receipts
+   - Export earnings report (for taxes)
+
+---
+
+### Story 3.15: Driver Manages Availability
+**As a Driver**, I **want to** control when I'm available for trips **so that** I only receive assignments when I'm ready to work.
+
+**Flow:**
+1. Driver opens app main screen
+2. Sees availability toggle: "Available" / "Offline"
+3. **Going Online:**
+   - Driver switches to "Available"
+   - System checks: Valid license, vehicle assigned, insurance valid
+   - Driver's location is tracked
+   - Driver can now receive trip assignments
+4. **Going Offline:**
+   - Driver switches to "Offline"
+   - System stops sending new assignments
+   - Current/upcoming trips remain assigned
+5. Driver can set:
+   - Preferred working hours schedule
+   - Days off
+   - Temporary unavailability (vacation, sick leave)
+6. System respects availability:
+   - Only assigns trips when driver is available
+   - Sends reminders for upcoming scheduled trips
+   - Allows early preparation before going online
+
+---
+
+### Story 3.16: Driver Handles Emergencies
+**As a Driver**, if an emergency occurs during a trip, **I want to** quickly access help **so that** safety is ensured.
+
+**Flow:**
+1. Driver sees "Emergency" button prominently in app (always visible)
+2. **Types of emergencies:**
+   - Vehicle breakdown
+   - Accident
+   - Medical emergency (driver or client)
+   - Security threat
+   - Natural disaster/severe weather
+3. **Driver activates emergency:**
+   - Presses emergency button
+   - Selects emergency type
+   - Optionally adds quick voice note
+4. **System immediate actions:**
+   - Alerts provider instantly
+   - Sends location to provider
+   - Notifies platform support team
+   - If severe: Auto-calls local emergency services (911/local equivalent)
+   - Records audio/video (if enabled and legal)
+5. **Provider receives:**
+   - Emergency alert with type
+   - Driver's exact location (GPS)
+   - Client information
+   - Trip details
+   - Direct call connection to driver
+6. **Client receives:**
+   - Notification that emergency assistance is being provided
+   - Provider contact information
+   - Alternative transportation options (if needed)
+7. **System logs:**
+   - Emergency timestamp
+   - Response time
+   - Resolution details
+   - Follow-up actions taken
+8. **Post-emergency:**
+   - Trip is suspended/cancelled
+   - Driver and client are checked on
+   - Incident report is filed
+   - Insurance claims initiated if needed
+   - Support follow-up scheduled
+
+---
+
+## 4. TRIP LIFECYCLE FLOW {#trip-lifecycle}
+
+### Complete Trip States and Transitions
+
+#### State 1: BOOKING CREATED
+- **Who:** Client
+- **What:** Client submits booking request
+- **System Actions:**
+  - Generate unique booking reference
+  - Validate route exists
+  - Check service availability
+  - Notify relevant providers
+- **Stakeholders Notified:** Providers on the route
+
+---
+
+#### State 2: OFFERS PENDING
+- **Who:** Multiple Providers
+- **What:** Providers submit offers (up to 3 per provider)
+- **System Actions:**
+  - Collect and display offers to client
+  - Show offer details (price, vehicle, availability)
+  - Track offer expiry times
+- **Timeout:** If no offers in X hours, notify client and suggest alternatives
+
+---
+
+#### State 3: OFFER SELECTED
+- **Who:** Client
+- **What:** Client selects preferred offer
+- **System Actions:**
+  - Mark one offer as "Selected"
+  - Decline all other offers
+  - Notify all providers of outcomes
+  - Reserve vehicle and timeframe
+- **Stakeholders Notified:** All providers who submitted offers
+
+---
+
+#### State 4: PAYMENT PENDING
+- **Who:** Client
+- **What:** Client must complete payment
+- **System Actions:**
+  - Display payment summary
+  - Generate payment link
+  - Wait for payment gateway response
+- **Timeout:** If no payment in Y hours, release reservation
+- **Alternative:** Some bookings may be "Pay Later" (handled differently)
+
+---
+
+#### State 5: PAYMENT PROCESSING
+- **Who:** Payment Gateway
+- **What:** Transaction being processed
+- **System Actions:**
+  - Show loading state to client
+  - Wait for webhook from payment gateway
+  - Log transaction attempt
+- **Duration:** Usually seconds to 2 minutes
+
+---
+
+#### State 6: PAYMENT CONFIRMED
+- **Who:** System (via webhook)
+- **What:** Payment successful
+- **System Actions:**
+  - Update booking status
+  - Send receipts to client
+  - Notify selected provider
+  - Release other providers' resources
+  - Lock in reservation
+- **Stakeholders Notified:** Client, Selected Provider, Accounting System
+
+---
+
+#### State 7: AWAITING ASSIGNMENT
+- **Who:** Provider
+- **What:** Provider needs to assign driver and vehicle
+- **System Actions:**
+  - Display booking in provider's "Action Required" list
+  - Send reminders if not assigned within timeframe
+  - Show days/hours until trip
+- **Critical Window:** Must be assigned before trip date (recommend 24hrs minimum)
+
+---
+
+#### State 8: DRIVER & VEHICLE ASSIGNED
+- **Who:** Provider
+- **What:** Driver and vehicle are assigned
+- **System Actions:**
+  - Update booking with assignment details
+  - Notify driver of upcoming trip
+  - Notify client of driver/vehicle details
+  - Validate driver availability and credentials
+- **Stakeholders Notified:** Driver, Client
+
+---
+
+#### State 9: TRIP SCHEDULED / AWAITING START
+- **Who:** All parties
+- **What:** Everything confirmed, waiting for trip date/time
+- **System Actions:**
+  - Send reminders (24hrs before, 12hrs before, 2hrs before)
+  - Allow driver to prepare
+  - Monitor for any cancellations
+  - Display countdown timers
+- **Duration:** From assignment to scheduled pickup time
+
+---
+
+#### State 10: DRIVER EN ROUTE TO PICKUP
+- **Who:** Driver
+- **What:** Driver traveling to pickup location
+- **System Actions:**
+  - Start GPS tracking
+  - Calculate and update ETA
+  - Send notifications to client
+  - Monitor driver progress
+- **Stakeholders Notified:** Client (real-time updates)
+
+---
+
+#### State 11: DRIVER ARRIVED AT PICKUP
+- **Who:** Driver
+- **What:** Driver reached pickup location
+- **System Actions:**
+  - Notify client of arrival
+  - Show vehicle location on map
+  - Start waiting time counter (if applicable)
+  - Enable client-driver communication
+- **Grace Period:** Client has X minutes to arrive (e.g., 10 mins)
+- **Scenario Handling:**
+  - Client no-show: Driver can report, trigger cancellation policy
+  - Client late: Driver can wait or reschedule (provider policy)
+
+---
+
+#### State 12: CLIENT PICKED UP / TRIP IN PROGRESS
+- **Who:** Driver
+- **What:** Client in vehicle, traveling to destination
+- **System Actions:**
+  - Full GPS tracking enabled
+  - Real-time location sharing
+  - Route monitoring
+  - Safety features active
+  - ETA calculations
+  - Alert monitoring (deviations, speed, stops)
+- **Stakeholders Monitoring:** Client, Provider, System (security)
+- **Duration:** Variable based on route
+
+---
+
+#### State 13: ARRIVED AT DESTINATION
+- **Who:** Driver
+- **What:** Reached drop-off location
+- **System Actions:**
+  - Log arrival time
+  - Stop GPS tracking (or reduce frequency)
+  - Prepare trip summary
+- **Brief Duration:** Just minutes while client exits
+
+---
+
+#### State 14: TRIP COMPLETED
+- **Who:** Driver
+- **What:** Client exited, trip officially ended
+- **System Actions:**
+  - Calculate final metrics (distance, time, cost)
+  - Generate trip receipt
+  - Update vehicle/driver availability
+  - Trigger rating requests
+  - Process payments to driver/provider
+  - Archive trip data
+- **Stakeholders Notified:** Client, Provider
+
+---
+
+#### State 15: POST-TRIP / FEEDBACK
+- **Who:** Client and Driver (optional)
+- **What:** Ratings and reviews
+- **System Actions:**
+  - Collect ratings and feedback
+  - Update driver/client profiles
+  - Flag issues for review
+  - Generate analytics
+- **Duration:** Rating window open for X days (e.g., 7 days)
+
+---
+
+#### State 16: ARCHIVED
+- **Who:** System
+- **What:** Trip fully concluded and archived
+- **System Actions:**
+  - Move to historical records
+  - Maintain for legal/tax purposes
+  - Available for reporting and disputes
+- **Retention:** As per legal requirements (e.g., 7 years)
+
+---
+
+### Alternative States (Unhappy Paths)
+
+#### State: BOOKING CANCELLED (Before Payment)
+- **Who:** Client or System
+- **What:** Client cancels before paying
+- **System Actions:**
+  - Notify provider
+  - Release offers
+  - No penalties (pre-payment)
+
+---
+
+#### State: BOOKING CANCELLED (After Payment)
+- **Who:** Client, Provider, or System
+- **What:** Cancellation after payment confirmation
+- **System Actions:**
+  - Apply cancellation policy
+  - Process refund (if applicable)
+  - Notify all parties
+  - Log cancellation reason
+- **Scenarios:**
+  - **Client cancels >24hrs before:** Full/partial refund
+  - **Client cancels <24hrs before:** Cancellation fee
+  - **Provider cancels:** Full refund + compensation
+  - **System cancels (emergency):** Full refund
+
+---
+
+#### State: PAYMENT FAILED
+- **Who:** Payment Gateway
+- **What:** Transaction declined/failed
+- **System Actions:**
+  - Notify client immediately
+  - Provide failure reason
+  - Allow retry
+  - Release reservation after X failed attempts
+  - Notify provider if reservation released
+
+---
+
+#### State: DRIVER NO-SHOW
+- **Who:** Driver (by absence)
+- **What:** Driver doesn't arrive at pickup on time
+- **System Actions:**
+  - Auto-alert provider after X minutes late
+  - Attempt to contact driver
+  - Offer client alternatives (reassignment, cancellation)
+  - Apply penalties to driver
+  - Full refund to client if trip cancelled
+
+---
+
+#### State: CLIENT NO-SHOW
+- **Who:** Client (by absence)
+- **What:** Client doesn't appear at pickup
+- **System Actions:**
+  - Driver waits X minutes (e.g., 10 mins)
+  - Driver reports no-show
+  - Provider confirms
+  - Apply no-show fee to client
+  - Pay driver for wasted time
+  - Trip cancelled
+
+---
+
+#### State: TRIP INTERRUPTED / EMERGENCY
+- **Who:** Driver or System
+- **What:** Emergency during trip
+- **System Actions:**
+  - Activate emergency protocols
+  - Contact emergency services
+  - Notify all stakeholders
+  - Document incident
+  - Suspend trip temporarily
+  - Arrange alternative completion or full refund
+
+---
+
+#### State: DISPUTED
+- **Who:** Client or Provider
+- **What:** Disagreement about trip details, charges, etc.
+- **System Actions:**
+  - Freeze related funds
+  - Collect evidence (GPS data, photos, communications)
+  - Escalate to support/admin
+  - Investigate and resolve
+  - Apply resolution (refund, compensation, penalty, etc.)
+- **Duration:** As long as needed for fair resolution
+
+---
+
+## 5. SECURITY RISKS & MITIGATION STRATEGIES {#security-risks}
+
+### 5.1 Identity and Authentication Risks
+
+#### RISK: Fake Driver Accounts
+**Description:** Someone creates a driver account with false credentials or stolen identity.
+
+**Impact:**
+- Unqualified/dangerous people driving clients
+- Legal liability
+- Safety threats
+- Reputation damage
+
+**Mitigation:**
+- Multi-step verification process
+- Document validation (license, ID, certificates)
+- Background checks with official databases
+- In-person verification (if feasible)
+- Facial recognition during registration
+- Periodic re-verification (every 6-12 months)
+- Cross-reference with blacklist databases
+- Admin approval required before activation
+
+---
+
+#### RISK: Account Takeover (Client/Driver/Provider)
+**Description:** Attacker gains unauthorized access to user accounts through credential theft, phishing, or hacking.
+
+**Impact:**
+- Unauthorized bookings
+- Financial theft
+- Data breach
+- Fraudulent trips
+
+**Mitigation:**
+- Strong password requirements
+- Two-factor authentication (2FA) mandatory for financial transactions
+- Email/SMS verification for sensitive actions
+- Login attempt monitoring (lockout after X failed attempts)
+- Unusual activity detection (new device, new location)
+- Session timeouts
+- Logout on password change
+- Security questions for account recovery
+- Device fingerprinting
+- Real-time alerts for suspicious activities
+
+---
+
+#### RISK: Impersonation During Pickup
+**Description:** Wrong person picks up client (not the assigned driver) or wrong person gets in vehicle (not the booked client).
+
+**Impact:**
+- Safety threats (kidnapping, assault)
+- Fraud
+- Legal issues
+
+**Mitigation:**
+- Display driver photo, name, and vehicle details to client before pickup
+-

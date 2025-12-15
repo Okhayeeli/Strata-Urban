@@ -35,4 +35,7 @@ public interface NotificationPreferenceRepository extends JpaRepository<Notifica
 
     // Delete all preferences for a user
     void deleteByUserId(Long userId);
+
+    @Query("SELECT COUNT(np) FROM NotificationPreference np WHERE np.channel = :channel AND np.enabled = true")
+    long countByChannelAndEnabledTrue(@Param("channel") NotificationChannel channel);
 }

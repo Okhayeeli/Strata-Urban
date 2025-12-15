@@ -88,6 +88,7 @@ public class SecurityConfig {
 
                         // Payment endpoints require authentication
                         .requestMatchers("/api/payments/**").authenticated()
+                        .requestMatchers("/api/v2/notifications/preferences/channel").permitAll()
                         // ===================================
 
                         .anyRequest().authenticated()
@@ -113,8 +114,9 @@ public class SecurityConfig {
                         .maxSessionsPreventsLogin(false)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/admin/login", "/admin/forgot-password", "/admin/reset-password").permitAll()
+                        .requestMatchers("/admin/login", "/admin/forgot-password", "/admin/reset-password", "/admin/notifications/**").permitAll()
                         .requestMatchers("/admin/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/admin/notifications/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)

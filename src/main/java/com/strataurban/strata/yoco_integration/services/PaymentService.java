@@ -96,7 +96,6 @@ public class PaymentService {
                 checkoutResponse.getId(), request.getExternalReference());
 
         return mapToPaymentResponse(transaction);
-
     }
 
     /**
