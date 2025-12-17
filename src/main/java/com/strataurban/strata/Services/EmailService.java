@@ -174,7 +174,7 @@ public class EmailService {
         try {
             String subject = "Booking Offer Sent by " + ProviderName;
             String body = "An offer has been sent by " + ProviderName +
-                    "\nBelow are the details of the offer: " + offerDetails.getPrice() +
+                    "\nBelow are the details of the offer: " + offerDetails.getFormattedPriceWithDiscount() +
                     " for the duration of " + offerDetails.getEstimatedDuration() +
                     " the offer expires on " + offerDetails.getValidUntil();
 

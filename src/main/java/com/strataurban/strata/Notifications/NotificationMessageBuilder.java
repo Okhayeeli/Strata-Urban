@@ -84,7 +84,7 @@ public class NotificationMessageBuilder {
                     provider.getCompanyName(),
                     booking.getPickUpLocation(),
                     booking.getDestination(),
-                    offer.getPrice(),
+                    offer.getFormattedPriceWithDiscount(),
                     offer.getEstimatedDuration(),
                     offer.getValidUntil()
             );
@@ -145,7 +145,7 @@ public class NotificationMessageBuilder {
                     booking.getPickUpLocation(),
                     booking.getDestination(),
                     noteSection,
-                    offer.getPrice(),
+                    offer.getFormattedPriceWithDiscount(),
                     offer.getEstimatedDuration()
             );
         } catch (Exception e) {

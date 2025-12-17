@@ -7,33 +7,65 @@ import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
-// Webhook DTOs
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class WebhookPayload {
 
-    private String id;
-
-    private String type;
-
     private String createdDate;
+
+    private String id;
 
     private PaymentPayload payload;
 
+    private String type;
+
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PaymentPayload {
-        private String id;
-        private String type;
-        private String createdDate;
         private Long amount;
+
+        private String createdDate;
+
         private String currency;
-        private String status;
-        private String mode;
+
+        private String id;
+
         private Map<String, Object> metadata;
-        private String paymentId;
+
+        private String mode;
+
+        private PaymentMethodDetails paymentMethodDetails;
+
+        private String status;
+
+        private String type;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PaymentMethodDetails {
+        private Card card;
+
+        private String type;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Card {
+        private Integer expiryMonth;
+
+        private Integer expiryYear;
+
+        private String maskedCard;
+
+        private String scheme;
     }
 }

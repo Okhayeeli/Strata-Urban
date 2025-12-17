@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -76,9 +77,8 @@ public class WebhookService {
             WebhookPayload payload = objectMapper.readValue(rawPayload, WebhookPayload.class);
 
 
-            Optional<PaymentTransaction> paymentTransaction = paymentTransactionRepository.findByCheckoutId(payload.getPayload().getId());
-            if (paymentTransaction.isPresent()) {
-                Offer offer = offerRepository.findByTransactionReference(paymentTransaction.get().getExternalReference());
+            Offer offer = offerRepository.findByTransactionReference((String) payload.getPayload().getMetadata().get("externalReference"));
+            if (!ObjectUtils.isEmpty(offer) || offer!= null) {
                 offer.setStatus(PAID);
                 offerRepository.save(offer);
             }
@@ -260,7 +260,7 @@ public class WebhookService {
 
 
     private void handlePaymentSucceeded(String checkoutId, WebhookPayload payload) {
-        String paymentId = payload.getPayload().getPaymentId();
+        String paymentId = payload.getPayload().getId();
 
         // Update payment status in database
         paymentService.updatePaymentStatus(

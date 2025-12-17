@@ -232,7 +232,7 @@ public class EmailService2 {
         try {
             String subject = "Booking Offer Sent by " + providerName;
             String body = "An offer has been sent by " + providerName +
-                    "\nBelow are the details of the offer: " + offerDetails.getPrice() +
+                    "\nBelow are the details of the offer: " + offerDetails.getFormattedPriceWithDiscount() +
                     " for the duration of " + offerDetails.getEstimatedDuration() +
                     " the offer expires on " + offerDetails.getValidUntil();
 

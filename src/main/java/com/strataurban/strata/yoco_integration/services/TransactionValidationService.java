@@ -24,7 +24,7 @@ public class TransactionValidationService {
 
     public Boolean isCorrectOfferAmount(BigDecimal transactionAmount, String transactionReference) {
         Offer existingOffer = offerRepository.findByTransactionReference(transactionReference);
-        return transactionAmount.compareTo(existingOffer.getPrice()) == 0;
+        return transactionAmount.compareTo(existingOffer.getEffectivePrice()) == 0;
     }
 
     public Boolean transactionExists(String transactionReference) {
