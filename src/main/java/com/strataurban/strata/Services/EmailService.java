@@ -1,16 +1,14 @@
 package com.strataurban.strata.Services;
 
+import com.resend.Resend;
+import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
 import com.strataurban.strata.DTOs.v2.RequestResetPasswordResponse;
 import com.strataurban.strata.Entities.Providers.Offer;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,77 +16,85 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final EmailVerificationTokenService emailVerificationTokenService;
 
-    @Value("${spring.mail.username}")
-    private String fromEmail;
+    @Value("${resend.api.key}")
+    private String resendApiKey;
 
     @Value("${recipient.email}")
     private String recipientEmail;
 
-
-    private final EmailVerificationTokenService emailVerificationTokenService;
-
+    private Resend getResendClient() {
+        return new Resend(resendApiKey);
+    }
 
     public RequestResetPasswordResponse sendPasswordResetEmail(String toEmail, String token) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(toEmail);
-            message.setSubject("Password Reset Request");
-            message.setText("To reset your password, use the token below:\n\n" + token);
+            Resend resend = getResendClient();
 
-            mailSender.send(message);
-            log.info("Password reset email sent successfully to: {}", toEmail);
-        } catch (MailException e) {
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("Strata Urban <onboarding@resend.dev>")
+                    .to(toEmail)
+                    .subject("Password Reset Request")
+                    .text("To reset your password, use the token below:\n\n" + token)
+                    .build();
+
+            CreateEmailResponse response = resend.emails().send(params);
+            log.info("Password reset email sent successfully to: {}, ID: {}", toEmail, response.getId());
+        } catch (ResendException e) {
             log.error("Failed to send password reset email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send password reset email", e);
         }
 
         RequestResetPasswordResponse response = new RequestResetPasswordResponse();
-            response.setSubject("Password Reset Request");
-            response.setSuccess(true);
-            response.setMessage("A token has been sent to your email");
-            log.info("Sending email to {}: Subject: {}, Body: {}", toEmail, response.getSubject(), response.getMessage());
-            return response;
+        response.setSubject("Password Reset Request");
+        response.setSuccess(true);
+        response.setMessage("A token has been sent to your email");
+        log.info("Sending email to {}: Subject: {}, Body: {}", toEmail, response.getSubject(), response.getMessage());
+        return response;
     }
-
 
     public RequestResetPasswordResponse testSendPasswordResetEmail(String toEmail, String token) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(recipientEmail);
-            message.setSubject("Password Reset Request");
-            message.setText("To reset your password, use the token below:\n\n" + token);
+            Resend resend = getResendClient();
 
-            mailSender.send(message);
-            log.info("Password reset email sent successfully to: {}", toEmail);
-        } catch (MailException e) {
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("Strata Urban <onboarding@resend.dev>")
+                    .to(recipientEmail)
+                    .subject("Password Reset Request")
+                    .text("To reset your password, use the token below:\n\n" + token)
+                    .build();
+
+            CreateEmailResponse emailResponse = resend.emails().send(params);
+            log.info("Password reset email sent successfully to: {}, ID: {}", toEmail, emailResponse.getId());
+        } catch (ResendException e) {
             log.error("Failed to send password reset email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send password reset email", e);
         }
 
         RequestResetPasswordResponse response = new RequestResetPasswordResponse();
-            response.setSubject("Password Reset Request");
-            response.setSuccess(true);
-            response.setMessage("A token has been sent to your email");
-            response.setTestToken(token);
-            log.info("Sending email to {}: Subject: {}, Body: {}", toEmail, response.getSubject(), response.getMessage());
-            return response;
+        response.setSubject("Password Reset Request");
+        response.setSuccess(true);
+        response.setMessage("A token has been sent to your email");
+        response.setTestToken(token);
+        log.info("Sending email to {}: Subject: {}, Body: {}", toEmail, response.getSubject(), response.getMessage());
+        return response;
     }
 
     public void sendSimpleEmail(String to, String subject, String body) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(recipientEmail);
-            message.setSubject(subject);
-            message.setText(body);
+            Resend resend = getResendClient();
 
-            mailSender.send(message);
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("Strata Urban <onboarding@resend.dev>")
+                    .to(recipientEmail)
+                    .subject(subject)
+                    .text(body)
+                    .build();
+
+            resend.emails().send(params);
             log.info("Simple email sent to: {}", to);
-        } catch (Exception e) {
+        } catch (ResendException e) {
             log.error("Failed to send simple email to: {}", to, e);
             throw new RuntimeException("Failed to send email", e);
         }
@@ -99,17 +105,18 @@ public class EmailService {
      */
     public void sendHtmlEmail(String to, String subject, String htmlBody) {
         try {
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            Resend resend = getResendClient();
 
-            helper.setFrom(fromEmail);
-            helper.setTo(recipientEmail);
-            helper.setSubject(subject);
-            helper.setText(htmlBody, true); // true = HTML
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("Strata Urban <onboarding@resend.dev>")
+                    .to(recipientEmail)
+                    .subject(subject)
+                    .html(htmlBody)
+                    .build();
 
-            mailSender.send(mimeMessage);
+            resend.emails().send(params);
             log.info("HTML email sent to: {}", to);
-        } catch (MessagingException e) {
+        } catch (ResendException e) {
             log.error("Failed to send HTML email to: {}", to, e);
             throw new RuntimeException("Failed to send HTML email", e);
         }
@@ -118,7 +125,6 @@ public class EmailService {
     /**
      * Use cases below (examples you can call in your services)
      */
-
 
     // Email Verification
     public void sendVerificationEmail(String to, Long userId) {
@@ -133,7 +139,7 @@ public class EmailService {
         sendHtmlEmail(to, subject, htmlBody);
     }
 
-    // Email Verification
+    // Email Verification (Test)
     public String testSendVerificationEmail(String to, Long userId) {
         String token = emailVerificationTokenService.generateToken(userId);
         String subject = "Verify Your Email";
@@ -164,27 +170,36 @@ public class EmailService {
         sendHtmlEmail(recipientEmail, subject, htmlBody);
     }
 
-
     public void sendOfferEmail(String to, Offer offerDetails, String ProviderName) {
-        String subject = "Booking Offer Sent by "+ ProviderName;
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromEmail);
-        message.setTo(recipientEmail);
-        message.setSubject(subject);
-        message.setText("An offer has been sent by " + ProviderName + "\nBelow are the details of the offer: " + offerDetails.getPrice() + " for the duration of " + offerDetails.getEstimatedDuration() + " the offer expires on " + offerDetails.getValidUntil());
+        try {
+            String subject = "Booking Offer Sent by " + ProviderName;
+            String body = "An offer has been sent by " + ProviderName +
+                    "\nBelow are the details of the offer: " + offerDetails.getPrice() +
+                    " for the duration of " + offerDetails.getEstimatedDuration() +
+                    " the offer expires on " + offerDetails.getValidUntil();
 
-        mailSender.send(message);
-        log.info("Password reset email sent successfully to: {}", to);
+            Resend resend = getResendClient();
 
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("Strata Urban <onboarding@resend.dev>")
+                    .to(recipientEmail)
+                    .subject(subject)
+                    .text(body)
+                    .build();
+
+            resend.emails().send(params);
+            log.info("Offer email sent successfully to: {}", to);
+        } catch (ResendException e) {
+            log.error("Failed to send offer email to: {}", to, e);
+            throw new RuntimeException("Failed to send offer email", e);
+        }
     }
 
-    public void standbyEmail(String toEmail){
+    public void standbyEmail(String toEmail) {
         RequestResetPasswordResponse response = new RequestResetPasswordResponse();
         response.setSubject("Password Reset Request");
         response.setSuccess(true);
         response.setMessage("A token has been sent to your email");
-//            response.setToken(token);
         log.info("Sending email to {}: Subject: {}, Body: {}", toEmail, response.getSubject(), response.getMessage());
-
     }
 }
