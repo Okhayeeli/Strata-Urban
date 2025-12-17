@@ -1,15 +1,19 @@
 package com.strataurban.strata.yoco_integration.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
+import com.strataurban.strata.Enums.OfferStatus;
 import com.strataurban.strata.Notifications.NotificationFacade;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
+import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.yoco_integration.config.YocoProperties;
 import com.strataurban.strata.yoco_integration.dtos.WebhookPayload;
 import com.strataurban.strata.yoco_integration.entities.PaymentTransaction;
 import com.strataurban.strata.yoco_integration.entities.WebhookEvent;
 import com.strataurban.strata.yoco_integration.exceptions.WebhookValidationException;
+import com.strataurban.strata.yoco_integration.repositories.PaymentTransactionRepository;
 import com.strataurban.strata.yoco_integration.repositories.WebhookEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +31,8 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.strataurban.strata.Enums.OfferStatus.PAID;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -41,6 +47,8 @@ public class WebhookService {
     private static final String HMAC_SHA256 = "HmacSHA256";
     private final BookingRepository bookingRepository;
     private final NotificationFacade notificationFacade;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final OfferRepository offerRepository;
 
     /**
      * Processes incoming webhook from YOCO
@@ -67,6 +75,13 @@ public class WebhookService {
             // 3. Parse webhook payload
             WebhookPayload payload = objectMapper.readValue(rawPayload, WebhookPayload.class);
 
+
+            Optional<PaymentTransaction> paymentTransaction = paymentTransactionRepository.findByCheckoutId(payload.getId());
+            if (paymentTransaction.isPresent()) {
+                Offer offer = offerRepository.findByTransactionReference(paymentTransaction.get().getExternalReference());
+                offer.setStatus(PAID);
+                offerRepository.save(offer);
+            }
             // 4. Store raw webhook for audit trail
             WebhookEvent webhookEvent = storeWebhookEvent(eventId, rawPayload, payload, true);
 
