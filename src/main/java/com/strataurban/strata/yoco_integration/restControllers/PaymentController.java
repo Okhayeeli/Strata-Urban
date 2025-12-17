@@ -34,7 +34,6 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final WebhookService webhookService;
     private final RefundService refundService;
-    private final OfferRepository offerRepository;
 
     /**
      * Initiates a new payment with YOCO

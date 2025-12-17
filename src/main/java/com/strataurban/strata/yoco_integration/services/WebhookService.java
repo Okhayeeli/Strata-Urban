@@ -76,7 +76,7 @@ public class WebhookService {
             WebhookPayload payload = objectMapper.readValue(rawPayload, WebhookPayload.class);
 
 
-            Optional<PaymentTransaction> paymentTransaction = paymentTransactionRepository.findByCheckoutId(payload.getId());
+            Optional<PaymentTransaction> paymentTransaction = paymentTransactionRepository.findByCheckoutId(payload.getPayload().getId());
             if (paymentTransaction.isPresent()) {
                 Offer offer = offerRepository.findByTransactionReference(paymentTransaction.get().getExternalReference());
                 offer.setStatus(PAID);
