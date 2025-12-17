@@ -27,6 +27,9 @@ public class PasswordResetTokenService {
     @Value("${environment.awareness}")
     private String environmentAwareness;
 
+    @Value("${recipient.email}")
+    private String recipientEmail;
+
 //    public PasswordResetToken createToken(Long userId) {
 //        String token = UUID.randomUUID().toString();
 //        PasswordResetToken resetToken = new PasswordResetToken(
@@ -63,7 +66,7 @@ public class PasswordResetTokenService {
         passwordResetTokenRepository.save(resetToken);
 
         if(!environmentAwareness.equalsIgnoreCase("prod")){
-           return emailService.testSendPasswordResetEmail(user.getEmail(), token);
+           return emailService.testSendPasswordResetEmail(recipientEmail, token);
         }
         // Send email with the token
         return emailService.sendPasswordResetEmail(user.getEmail(), token);
