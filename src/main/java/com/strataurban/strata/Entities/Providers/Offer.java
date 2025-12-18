@@ -1,6 +1,7 @@
 package com.strataurban.strata.Entities.Providers;
 
 import com.strataurban.strata.Enums.OfferStatus;
+import com.strataurban.strata.Utils.TransactionRefGenerator;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -62,8 +63,8 @@ public class Offer implements Serializable {
     @Column(length = 500)
     private String specialConditions; // Optional special terms or conditions
 
-    @Column(length = 500, nullable = false, updatable = false)
-    private String transactionReference = UUID.randomUUID().toString();
+    @Column(length = 100, nullable = false, updatable = false, unique = true)
+    private String transactionReference;
 
     @Column
     private String rejectionReason;
@@ -71,6 +72,9 @@ public class Offer implements Serializable {
     @PrePersist
     protected void onCreate() {
         this.createdDate = LocalDateTime.now();
+        if (this.transactionReference == null) {
+            this.transactionReference = TransactionRefGenerator.generate();
+        }
     }
 
 

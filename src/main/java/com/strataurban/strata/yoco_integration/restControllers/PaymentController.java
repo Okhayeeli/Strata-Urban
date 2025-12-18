@@ -1,6 +1,5 @@
 package com.strataurban.strata.yoco_integration.restControllers;
 
-import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Security.LoggedUser;
 import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.yoco_integration.dtos.InitiatePaymentRequest;
@@ -42,19 +41,12 @@ public class PaymentController {
      * @return Payment response with redirect URL
      */
     @PostMapping("/initiate")
-    public ResponseEntity<PaymentResponse> initiatePayment(
-            @Valid @RequestBody InitiatePaymentRequest request,
-            @LoggedUser SecurityUserDetails userDetails) {
+    public ResponseEntity<PaymentResponse> initiatePayment(@Valid @RequestBody InitiatePaymentRequest request, @LoggedUser SecurityUserDetails userDetails) {
         PaymentResponse response = paymentService.initiatePayment(request, userDetails);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Retrieves payment status by checkout ID
-     *
-     * @param checkoutId YOCO checkout ID
-     * @return Payment transaction details
-     */
+
     @GetMapping("/status/{checkoutId}")
     public ResponseEntity<PaymentTransaction> getPaymentStatus(@PathVariable String checkoutId) {
 
@@ -64,29 +56,14 @@ public class PaymentController {
         return ResponseEntity.ok(transaction);
     }
 
-    /**
-     * Retrieves payment by external reference (your order ID)
-     *
-     * @param externalReference Your internal order/invoice ID
-     * @return Payment transaction details
-     */
     @GetMapping("/reference/{externalReference}")
-    public ResponseEntity<PaymentTransaction> getPaymentByReference(
-            @PathVariable String externalReference) {
+    public ResponseEntity<PaymentTransaction> getPaymentByReference(@PathVariable String externalReference) {
 
         log.debug("Retrieving payment for externalReference: {}", externalReference);
-
         PaymentTransaction transaction = paymentService.getPaymentByExternalReference(externalReference);
         return ResponseEntity.ok(transaction);
     }
 
-    /**
-     * Webhook endpoint for YOCO payment notifications
-     * CRITICAL: Must respond within 5 seconds with 2xx status
-     *
-     * @param request HTTP request containing webhook payload
-     * @return 200 OK response
-     */
     @PostMapping("/webhook")
     public ResponseEntity<Void> handleWebhook(HttpServletRequest request) {
 
@@ -94,15 +71,12 @@ public class PaymentController {
 
         try {
             // Extract raw body (needed for signature verification)
-            String rawPayload = request.getReader().lines()
-                    .collect(Collectors.joining(System.lineSeparator()));
+            String rawPayload = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
 
             // Extract webhook headers
             Map<String, String> headers = extractWebhookHeaders(request);
 
-            log.info("Received webhook: EventId={}, Type={}",
-                    headers.get("webhook-id"),
-                    headers.get("webhook-type"));
+            log.info("Received webhook: EventId={}, Type={}", headers.get("webhook-id"), headers.get("webhook-type"));
 
             // Process webhook asynchronously to respond quickly
             // IMPORTANT: In production, use async processing or queue
@@ -110,7 +84,6 @@ public class PaymentController {
 
             long duration = System.currentTimeMillis() - startTime;
             log.info("Webhook handled in {}ms", duration);
-
             return ResponseEntity.ok().build();
 
         } catch (IOException e) {
@@ -124,37 +97,15 @@ public class PaymentController {
         }
     }
 
-
-    /**
-     * Processes a refund for a payment
-     *
-     * @param request Refund request containing checkout ID and amount
-     * @return Refund response with refund ID
-     */
     @PostMapping("/refund")
-    public ResponseEntity<RefundResponse> processRefund(
-            @Valid @RequestBody RefundRequest request,
-            @LoggedUser SecurityUserDetails userDetails) {
+    public ResponseEntity<RefundResponse> processRefund(@Valid @RequestBody RefundRequest request, @LoggedUser SecurityUserDetails userDetails) {
 
-        log.info("Processing refund for checkoutId: {}, amount: {}, reason: {}",
-                request.getCheckoutId(),
-                request.getAmount(),
-                request.getReason());
-
-        RefundResponse response = refundService.processRefund(
-                request.getCheckoutId(),
-                request.getAmount(),
-                request.getReason(),
-                userDetails.getFullName()
-        );
+        log.info("Processing refund for checkoutId: {}, amount: {}, reason: {}", request.getCheckoutId(), request.getAmount(), request.getReason());
+        RefundResponse response = refundService.processRefund(request.getCheckoutId(), request.getAmount(), request.getReason(), userDetails.getFullName());
 
         return ResponseEntity.ok(response);
     }
 
-
-    /**
-     * Health check endpoint
-     */
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
         Map<String, String> response = new HashMap<>();
@@ -163,9 +114,6 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Extracts webhook-specific headers from request
-     */
     private Map<String, String> extractWebhookHeaders(HttpServletRequest request) {
         Map<String, String> headers = new HashMap<>();
 

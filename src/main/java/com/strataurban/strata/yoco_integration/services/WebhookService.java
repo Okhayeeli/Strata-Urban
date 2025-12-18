@@ -8,6 +8,7 @@ import com.strataurban.strata.Enums.OfferStatus;
 import com.strataurban.strata.Notifications.NotificationFacade;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
+import com.strataurban.strata.ServiceImpls.v2.ReceiptService;
 import com.strataurban.strata.yoco_integration.config.YocoProperties;
 import com.strataurban.strata.yoco_integration.dtos.WebhookPayload;
 import com.strataurban.strata.yoco_integration.entities.PaymentTransaction;
@@ -50,6 +51,7 @@ public class WebhookService {
     private final NotificationFacade notificationFacade;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OfferRepository offerRepository;
+    private final ReceiptService receiptService;
 
     /**
      * Processes incoming webhook from YOCO
@@ -297,7 +299,7 @@ public class WebhookService {
             );
 
             // Order fulfillment: Update booking status and trigger next steps
-            fulfillBookingOrder(bookingId, providerId);
+            fulfillBookingOrder(bookingId, providerId, payment.getId());
 
             log.info("Payment processing completed for booking: {}", bookingId);
 
@@ -315,7 +317,7 @@ public class WebhookService {
      * - Update provider's schedule
      * - Generate receipt
      */
-    private void fulfillBookingOrder(Long bookingId, Long providerId) {
+    private void fulfillBookingOrder(Long bookingId, Long providerId, Long paymentId) {
         try {
             log.info("Starting order fulfillment for booking: {}", bookingId);
 
@@ -334,8 +336,7 @@ public class WebhookService {
             // providerScheduleService.blockSchedule(providerId, booking.getServiceDate());
 
             // 4. TODO: Generate receipt
-            // receiptService.generateReceipt(bookingId, payment);
-
+             receiptService.generateReceipt(paymentId, 4L);
             // 5. TODO: Send confirmation email with booking details
             // emailService.sendBookingConfirmationEmail(booking);
 
