@@ -3,6 +3,8 @@ package com.strataurban.strata.RestControllers.v2;
 import com.strataurban.strata.DTOs.RoutesRequestDTO;
 import com.strataurban.strata.DTOs.v2.RouteWithProvidersDTO;
 import com.strataurban.strata.Entities.Providers.Routes;
+import com.strataurban.strata.Security.LoggedUser;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Services.RouteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -68,10 +70,10 @@ public class RouteRestController {
             @ApiResponse(responseCode = "200", description = "Routes retrieved successfully"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER, DRIVER, ADMIN, or DEVELOPER can get all routes. CLIENT and others are restricted.")
     })
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public List<Routes> getRoutes(@RequestBody RoutesRequestDTO requestDTO) {
+//    @PreAuthorize("hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
+    public List<Routes> getRoutes(@RequestBody RoutesRequestDTO requestDTO, @LoggedUser SecurityUserDetails userDetails) {
         try {
-            return routeService.getRoutes(requestDTO);
+            return routeService.getRoutes(requestDTO, userDetails);
         } catch (SecurityException e) {
             throw new AccessDeniedException("Access denied: Only PROVIDER, DRIVER, ADMIN, or DEVELOPER can get all routes. CLIENT and others are restricted.");
         }
@@ -84,7 +86,6 @@ public class RouteRestController {
             @ApiResponse(responseCode = "404", description = "Route not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER (if authorized) or ADMIN can update a route. CLIENT, DRIVER, DEVELOPER, and others are restricted.")
     })
-
     public Routes updateRoute(@RequestBody RoutesRequestDTO requestDTO) {
         try {
             return routeService.updateRoute(requestDTO);

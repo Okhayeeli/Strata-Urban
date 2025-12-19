@@ -82,26 +82,40 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Override
-    public List<Routes> getRoutes(RoutesRequestDTO routesRequestDTO) {
+    public List<Routes> getRoutes(RoutesRequestDTO routesRequestDTO,
+                                  SecurityUserDetails userDetails) {
 
-        String country = routesRequestDTO.getCountry();
+        boolean isAdmin = userDetails.getRole() == EnumRoles.ADMIN;
+
+        String country = isAdmin
+                ? routesRequestDTO.getCountry()
+                : userDetails.getCountry();
+
         String state = routesRequestDTO.getState();
         String city = routesRequestDTO.getCity();
 
-        if (country.isEmpty() || country.isBlank()) {
+        // Admin with no country → return everything
+        if (isAdmin && isBlank(country)) {
             return routeRepository.findAll();
         }
 
-        if (state.isEmpty() || state.isBlank()) {
+        if (isBlank(state)) {
             return routeRepository.findAllByCountryAndIsEnabledTrue(country);
         }
 
-        if (city.isEmpty() || city.isBlank()) {
+        if (isBlank(city)) {
             return routeRepository.findAllByCountryAndStateAndIsEnabledTrue(country, state);
         }
 
-        return routeRepository.findAllByCountryAndStateAndCityAndIsEnabledTrue(country, state, city);
+        return routeRepository.findAllByCountryAndStateAndCityAndIsEnabledTrue(
+                country, state, city
+        );
     }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
 
     @Override
     public Routes updateRoute(RoutesRequestDTO routesRequestDTO) {

@@ -66,7 +66,10 @@ public class PaymentController {
 
     @PostMapping("/webhook")
     public ResponseEntity<Void> handleWebhook(HttpServletRequest request) {
+        return buildWebhookResponse(request);
+    }
 
+    private ResponseEntity<Void> buildWebhookResponse(HttpServletRequest request) {
         long startTime = System.currentTimeMillis();
 
         try {

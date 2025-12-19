@@ -3,6 +3,7 @@ package com.strataurban.strata.Services;
 import com.strataurban.strata.DTOs.RoutesRequestDTO;
 import com.strataurban.strata.DTOs.v2.RouteWithProvidersDTO;
 import com.strataurban.strata.Entities.Providers.Routes;
+import com.strataurban.strata.Security.SecurityUserDetails;
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ public interface RouteService {
 
     Routes createRoute(Routes route);
     Routes getRoute(Long routeId);
-    List<Routes> getRoutes(RoutesRequestDTO routesRequestDTO);
+    List<Routes> getRoutes(RoutesRequestDTO routesRequestDTO, SecurityUserDetails userDetails);
     Routes updateRoute(RoutesRequestDTO routesRequestDTO);
     List<Routes> createMultipleRoutes(List<Routes> routes);
     String deleteRoutes(List<Long> routeIds);

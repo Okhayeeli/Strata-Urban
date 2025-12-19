@@ -1,11 +1,3 @@
-
-User Registration with Email Verification
-Require email verification during registration to ensure the email is valid (e.g., send a verification link or OTP).
-Prevent duplicate email addresses or usernames.
-
-Users whose details were created for them, have a column that indicates this and forces them to reset their password before doing anything, and must update that column.
-
-
 Multi-Factor Authentication (MFA)
 Add an extra layer of security by requiring a second factor (e.g., SMS OTP, email OTP, or authenticator app) during login.
 

@@ -7,7 +7,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -108,9 +107,6 @@ public class BookingRequest {
     private String luggageDetails; // Details on luggage type/amount (from PDF)
     @Column
     private String vehiclePreferenceType; // Preferred vehicle type (from PDF)
-
-//    @ElementCollection
-//    private List<String> amenities; // Specific passenger amenities (from PDF)
     @Column
     private String otherRequests; // Other specific passenger requests (from PDF)
     @Column
