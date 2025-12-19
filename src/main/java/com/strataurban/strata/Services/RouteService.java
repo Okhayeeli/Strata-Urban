@@ -11,7 +11,7 @@ public interface RouteService {
 
     Routes createRoute(Routes route);
     Routes getRoute(Long routeId);
-    List<Routes> getRoutes(RoutesRequestDTO routesRequestDTO, SecurityUserDetails userDetails);
+    List<Routes> getRoutes(String country, String state, String city, SecurityUserDetails userDetails);
     Routes updateRoute(RoutesRequestDTO routesRequestDTO);
     List<Routes> createMultipleRoutes(List<Routes> routes);
     String deleteRoutes(List<Long> routeIds);

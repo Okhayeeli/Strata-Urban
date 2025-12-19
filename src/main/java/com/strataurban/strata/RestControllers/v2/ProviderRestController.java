@@ -101,7 +101,10 @@ public class ProviderRestController {
     }
 
     @GetMapping(value = {"", "/{id}/documents"})
-    @Operation(summary = "Get provider documents", description = "Fetches documents for a provider. For PROVIDER role, ID is optional and defaults to the authenticated user's ID. For ADMIN, DRIVER, or DEVELOPER, ID is required in the path.")
+    @Operation(
+            summary = "Get provider documents",
+            description = "Fetches documents for a provider. For PROVIDER role, ID is optional and defaults to the authenticated user's ID. For ADMIN, DRIVER, or DEVELOPER, ID is required in the path."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Documents retrieved successfully"),
             @ApiResponse(responseCode = "400", description = "ID required for ADMIN, DRIVER, or DEVELOPER roles"),
@@ -109,11 +112,15 @@ public class ProviderRestController {
             @ApiResponse(responseCode = "404", description = "Documents not found")
     })
     @PreAuthorize("hasAnyRole('PROVIDER', 'DRIVER', 'ADMIN', 'DEVELOPER')")
-    public ResponseEntity<ProviderDocumentDTO> getProviderDocuments(@PathVariable(required = false) Long id, @LoggedUser SecurityUserDetails userDetails) {
+    public ResponseEntity<List<ProviderDocumentDTO>> getProviderDocuments(
+            @PathVariable(required = false) Long id,
+            @LoggedUser SecurityUserDetails userDetails
+    ) {
         Long providerId = resolveProviderId(id, userDetails, List.of("ADMIN", "DRIVER", "DEVELOPER"));
-        ProviderDocument documents = providerService.getProviderDocuments(providerId);
-        return ResponseEntity.ok(mapToDocumentDTO(documents));
+        List<ProviderDocument> documents = providerService.getProviderDocuments(providerId);
+        return ResponseEntity.ok(mapToDocumentDTOList(documents));
     }
+
 
     @PutMapping(value = {"", "/{id}/documents"})
     @Operation(summary = "Update provider documents", description = "Updates documents for a provider. For PROVIDER role, ID is optional and defaults to the authenticated user's ID. For ADMIN, ID is required in the path.")
@@ -258,5 +265,11 @@ public class ProviderRestController {
     private ProviderDocumentDTO mapToDocumentDTO(ProviderDocument document) {
         return new ProviderDocumentDTO(document.getId(), document.getProviderRegistrationDocument(),
                 document.getProviderLicenseDocument(), document.getProviderNameDocument(), document.getTaxDocument());
+    }
+
+    private List<ProviderDocumentDTO> mapToDocumentDTOList(List<ProviderDocument> documents) {
+        return documents.stream()
+                .map(this::mapToDocumentDTO)
+                .toList(); // Java 16+
     }
 }

@@ -91,14 +91,13 @@ public class ProviderServiceImpl implements ProviderService {
     }
 
     @Override
-    public ProviderDocument getProviderDocuments(Long providerId) {
-        return providerDocumentRepository.findByProviderId(providerId)
-                .orElseThrow(() -> new RuntimeException("Documents not found for provider ID: " + providerId));
+    public List<ProviderDocument> getProviderDocuments(Long providerId) {
+        return providerDocumentRepository.findAllByProviderId(providerId);
     }
 
     @Override
     public ProviderDocument updateProviderDocuments(Long providerId, ProviderDocument documents) {
-        ProviderDocument existingDocuments = getProviderDocuments(providerId);
+        ProviderDocument existingDocuments = getProviderDocuments(providerId).get(0);
         existingDocuments.setProviderRegistrationDocument(documents.getProviderRegistrationDocument());
         existingDocuments.setProviderLicenseDocument(documents.getProviderLicenseDocument());
         existingDocuments.setProviderNameDocument(documents.getProviderNameDocument());

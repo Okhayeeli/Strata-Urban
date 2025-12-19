@@ -73,6 +73,8 @@ public class RouteServiceImpl implements RouteService {
         if (route.getProviderId() == null) {
             throw new IllegalArgumentException("Provider ID must be specified");
         }
+
+        route.setIsEnabled(true);
         return routeRepository.save(route);
     }
 
@@ -82,17 +84,14 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Override
-    public List<Routes> getRoutes(RoutesRequestDTO routesRequestDTO,
+    public List<Routes> getRoutes(String country, String state, String city,
                                   SecurityUserDetails userDetails) {
 
         boolean isAdmin = userDetails.getRole() == EnumRoles.ADMIN;
 
-        String country = isAdmin
-                ? routesRequestDTO.getCountry()
+        country = isAdmin
+                ? country
                 : userDetails.getCountry();
-
-        String state = routesRequestDTO.getState();
-        String city = routesRequestDTO.getCity();
 
         // Admin with no country → return everything
         if (isAdmin && isBlank(country)) {

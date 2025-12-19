@@ -40,7 +40,7 @@ public class TripRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER/DRIVER or ADMIN can start a trip. DEVELOPER is restricted from this action, and CUSTOMER_SERVICE, CLIENT, and others are not allowed.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') or hasRole('ADMIN')) and @tripService.isAuthorizedProvider(#bookingId, principal.id)")
+    @PreAuthorize("(hasRole('PROVIDER') or hasRole('ADMIN'))")
     public ResponseEntity<TripDTO> startTrip(@PathVariable Long bookingId) {
         try {
             Trips trip = tripService.startTrip(bookingId);
@@ -58,7 +58,7 @@ public class TripRestController {
             @ApiResponse(responseCode = "404", description = "Trip not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER/DRIVER or ADMIN can end a trip. DEVELOPER is restricted from this action, and CUSTOMER_SERVICE, CLIENT, and others are not allowed.")
     })
-    @PreAuthorize("(hasRole('PROVIDER') or hasRole('ADMIN')) and @tripService.isAuthorizedProviderTrip(#id, principal.id)")
+    @PreAuthorize("(hasRole('PROVIDER') or hasRole('ADMIN'))")
     public ResponseEntity<TripDTO> endTrip(@PathVariable Long id) {
         try {
             Trips trip = tripService.endTrip(id);

@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.strataurban.strata.Enums.EnumRoles.ADMIN;
 import static com.strataurban.strata.Enums.OfferStatus.EXPIRED;
 
 @Slf4j
@@ -175,9 +176,11 @@ public class BookingServiceImpl implements BookingService {
     public BookingRequest assignDriver(Long id, DriverAssignmentRequest request) {
         // Fetch booking
         BookingRequest booking = getBookingById(id);
+        // Get authenticated user
+        SecurityUserDetails userDetails = securityUserDetailsService.getSecurityUserDetails();
 
         // Check booking status
-        if (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.CLAIMED) {
+        if (booking.getStatus() == BookingStatus.PENDING && userDetails.getRole()!= ADMIN) {
             throw new IllegalStateException("Driver and vehicle can only be assigned to a CONFIRMED or CLAIMED booking");
         }
 
@@ -199,8 +202,6 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalStateException("Vehicle with ID " + request.getVehicleId() + " is not Available");
         }
 
-        // Get authenticated user
-        SecurityUserDetails userDetails = securityUserDetailsService.getSecurityUserDetails();
 
         // Validate provider ID for driver and vehicle (for PROVIDER role)
         if (userDetails.getRole() == EnumRoles.PROVIDER) {

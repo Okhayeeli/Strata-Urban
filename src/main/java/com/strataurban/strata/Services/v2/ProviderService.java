@@ -24,7 +24,7 @@ public interface ProviderService {
     ProviderDocument uploadDocuments(Long providerId, ProviderDocument documents);
 
     // Get provider documents
-    ProviderDocument getProviderDocuments(Long providerId);
+    List<ProviderDocument> getProviderDocuments(Long providerId);
 
     // Update provider documents
     ProviderDocument updateProviderDocuments(Long providerId, ProviderDocument documents);

@@ -71,9 +71,12 @@ public class RouteRestController {
             @ApiResponse(responseCode = "403", description = "Access denied: Only PROVIDER, DRIVER, ADMIN, or DEVELOPER can get all routes. CLIENT and others are restricted.")
     })
 //    @PreAuthorize("hasRole('PROVIDER') or hasRole('DRIVER') or hasRole('ADMIN') or hasRole('DEVELOPER')")
-    public List<Routes> getRoutes(@RequestBody RoutesRequestDTO requestDTO, @LoggedUser SecurityUserDetails userDetails) {
+    public List<Routes> getRoutes(@RequestParam(required = false) String country,
+                                  @RequestParam(required = false) String state,
+                                  @RequestParam(required = false) String city,
+                                  @LoggedUser SecurityUserDetails userDetails) {
         try {
-            return routeService.getRoutes(requestDTO, userDetails);
+            return routeService.getRoutes(country, state, city, userDetails);
         } catch (SecurityException e) {
             throw new AccessDeniedException("Access denied: Only PROVIDER, DRIVER, ADMIN, or DEVELOPER can get all routes. CLIENT and others are restricted.");
         }
