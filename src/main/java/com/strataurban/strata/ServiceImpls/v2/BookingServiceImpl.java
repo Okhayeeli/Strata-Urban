@@ -83,8 +83,6 @@ public class BookingServiceImpl implements BookingService {
         booking.setCity(userDetails.getCity());
         booking.setState(userDetails.getState());
         booking.setCountry(userDetails.getCountry());
-
-        //TODO After Authentication
         booking.setStatus(BookingStatus.PENDING); // Default status
         bookingRepository.save(booking);
         notifyUsers(clientId, booking);
@@ -155,7 +153,6 @@ public class BookingServiceImpl implements BookingService {
             throw new RuntimeException("Only PENDING bookings can be confirmed");
         }
         booking.setStatus(BookingStatus.CLAIMED);
-        //TODO After Authentication, use the Provider Id
         booking.setProviderId(providerId);
         return bookingRepository.save(booking);
     }

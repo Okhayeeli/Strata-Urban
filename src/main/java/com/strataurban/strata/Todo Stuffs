@@ -4,7 +4,6 @@ Add an extra layer of security by requiring a second factor (e.g., SMS OTP, emai
 
 
 
-Allow users to change their password from their profile.
 Session Management
 Implement session timeouts (e.g., tokens expire after a set period).
 Allow users to log out and invalidate their session/token.
@@ -65,6 +64,8 @@ Blacklist revoked tokens (e.g., after logout).
 Secure Communication
 Enforce HTTPS for all API requests to encrypt data in transit.
 Use secure headers (e.g., X-Content-Type-Options, X-Frame-Options) to prevent attacks like clickjacking.
+
+
 Driver Access Control
 If drivers have accounts, restrict them to view only their assigned trips.
 Prevent drivers from modifying booking details (e.g., they can only start/end trips).
@@ -94,12 +95,24 @@ Rotate API keys regularly and store them securely.
 Security Monitoring
 Monitor for suspicious activity (e.g., multiple failed logins, unusual API usage).
 Set up alerts for potential security breaches.
+
+
+
+
 GDPR/CCPA Compliance
 Allow users to delete their accounts and data (right to be forgotten).
 Provide a privacy policy and obtain user consent for data collection.
 Allow users to export their data (e.g., bookings, trips).
-IP Whitelisting
-Allow Admins to restrict access to certain endpoints (e.g., admin APIs) to specific IP addresses.
+
+
+
+
+
+
+
+
+
+
 This list covers the major security functionalities you’ll need to consider for your e-hailing app. You can implement these gradually as your app grows, starting with the basics (e.g., secure login, RBAC) and adding more advanced features (e.g., MFA, audit logging) later.
 
 
@@ -108,24 +121,17 @@ In the response for Booking Request, let it fetch the client details too
 
 For the security features you want to implement in your Spring application, here's a comprehensive list based on the approach you're aiming for:
 
+
+
+
 Core Authentication Features:
 User Authentication (JWT)
 
-Secure user login with username and password.
 
-JWT (JSON Web Token) based authentication with refresh tokens.
 
-Token expiration and auto-refresh logic.
 
-Token invalidation on logout or password reset.
 
 Password Management
-
-Password hashing (e.g., BCrypt) for secure storage.
-
-Password strength enforcement (e.g., minimum length, special characters).
-
-Password reset via email with one-time links or codes.
 
 Password history check to prevent reuse.
 
@@ -139,10 +145,13 @@ Optional second factor for high-security roles (e.g., ADMIN, PROVIDER).
 
 Support for SMS, email, or authenticator apps (TOTP).
 
-Authorization Features:
-Role-Based Access Control (RBAC)
 
-Enum-based roles or database-driven roles (USER, ADMIN, CLIENT, PROVIDER, DEVELOPER, DRIVER, CUSTOMER_SERVICE).
+
+
+
+
+Authorization Features:
+
 
 Method and class-level security annotations (@PreAuthorize, @RolesAllowed).
 
@@ -171,9 +180,12 @@ Session timeout and inactivity detection.
 
 Secure token storage (e.g., HTTP-only, SameSite cookies).
 
-Token Management
 
-Blacklist/whitelist tokens on logout.
+
+
+
+
+Token Management
 
 Token invalidation on password reset or role change.
 
@@ -181,7 +193,12 @@ JTI (JWT ID) for unique token tracking.
 
 Token introspection and verification against revocation lists.
 
+
+
+
+
 Account Security and Integrity:
+
 Account Locking and Unlocking
 
 Automatic account lock after multiple failed login attempts.
@@ -190,9 +207,9 @@ Admin-controlled account lock and unlock.
 
 Security alerts for failed login attempts.
 
-Account Verification and Email Security
 
-Email verification for new accounts.
+
+
 
 Multi-step registration (verify email, complete profile).
 

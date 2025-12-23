@@ -36,16 +36,16 @@ public class Routes {
     private String city;
     @Column
     private Boolean isEnabled;
-    
+
     @Transient
     public List<String> getProviderIdList() {
         if (providerId == null || providerId.trim().isEmpty()) {
-            return Collections.emptyList();
+            return new java.util.ArrayList<>();
         }
         return Arrays.stream(providerId.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(java.util.ArrayList::new));
     }
 
     @Transient

@@ -5,6 +5,7 @@ import com.strataurban.strata.DTOs.v2.ProviderSummaryDTO;
 import com.strataurban.strata.DTOs.v2.RouteWithProvidersDTO;
 import com.strataurban.strata.Entities.Providers.Routes;
 import com.strataurban.strata.Enums.EnumRoles;
+import com.strataurban.strata.Repositories.v2.ProviderRepository;
 import com.strataurban.strata.Repositories.v2.RouteRepository;
 import com.strataurban.strata.Repositories.SupplierRepository;
 import com.strataurban.strata.Security.SecurityUserDetails;
@@ -34,6 +35,8 @@ public class RouteServiceImpl implements RouteService {
 
     @Autowired
     SecurityUserDetailsService securityUserDetailsService;
+    @Autowired
+    private ProviderRepository providerRepository;
 
 
     @Override
@@ -168,7 +171,7 @@ public class RouteServiceImpl implements RouteService {
                 .orElseThrow(() -> new RuntimeException("Route not found with id: " + routeId));
 
         // Verify provider exists
-        boolean providerExists = supplierRepository.existsById(Long.parseLong(providerIdToAdd));
+        boolean providerExists = providerRepository.existsById(Long.parseLong(providerIdToAdd));
         if (!providerExists) {
             throw new RuntimeException("Provider not found with id: " + providerIdToAdd);
         }
