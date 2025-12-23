@@ -3,7 +3,6 @@
 <head th:replace="~{admin/fragments :: head(${isEdit ? 'Edit Service Area' : 'Create Service Area'})}"></head>
 <body>
 <style>
-    /* Page Specific CSS */
     .content-area {
         max-width: 1200px;
         margin: 0 auto;
@@ -114,7 +113,7 @@
                     <div class="form-group">
                         <label for="name">Area Name <span style="color:red">*</span></label>
                         <input type="text" class="form-control" id="name" name="name" th:value="${serviceArea.name}"
-                               placeholder="e.g. Downtown Lagos" required oninput="clearError('name')">
+                               placeholder="e.g. Downtown Lagos" required oninput="clearError('name'); saveDraft()">
                         <div class="error-message" id="nameError">Name is required</div>
                     </div>
 
@@ -122,7 +121,7 @@
                         <label for="description">Description</label>
                         <textarea class="form-control" id="description" name="description"
                                   th:text="${serviceArea.description}" placeholder="Description..."
-                                  style="min-height:120px;"></textarea>
+                                  style="min-height:120px;" oninput="saveDraft()"></textarea>
                     </div>
 
                     <div class="form-actions" style="display:flex; gap:10px; margin-top:30px;">
@@ -141,6 +140,7 @@
                             <li>Use clear names</li>
                             <li>Include landmarks in description</li>
                             <li th:if="${isEdit}">Cannot delete active areas</li>
+                            <li>Ctrl+S to save</li>
                         </ul>
                     </div>
                 </div>
@@ -150,7 +150,9 @@
 </main>
 
 <div th:replace="~{admin/fragments :: commonScripts}"></div>
-<script>
+<script th:inline="javascript">
+    const isEdit = /*[[${isEdit}]]*/ false;
+
     function clearError(id) {
         document.getElementById(id).classList.remove('error');
         document.getElementById(id + 'Error').classList.remove('show');
@@ -163,8 +165,52 @@
             document.getElementById('nameError').classList.add('show');
             return false;
         }
+        // Clear draft on successful submit
+        localStorage.removeItem('serviceAreaDraft');
         return true;
     }
+
+    // --- Draft Logic ---
+    function saveDraft() {
+        if (isEdit) return; // Don't save drafts in edit mode to avoid overwriting legitimate data
+        const data = {
+            name: document.getElementById('name').value,
+            description: document.getElementById('description').value,
+            timestamp: new Date().getTime()
+        };
+        localStorage.setItem('serviceAreaDraft', JSON.stringify(data));
+    }
+
+    // Load Draft on startup
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!isEdit) {
+            const draft = localStorage.getItem('serviceAreaDraft');
+            if (draft) {
+                const draftData = JSON.parse(draft);
+                // Simple check: if draft is older than 24h, discard
+                const now = new Date().getTime();
+                if (now - draftData.timestamp < 24 * 60 * 60 * 1000) {
+                    if (confirm('You have an unsaved draft from ' + new Date(draftData.timestamp).toLocaleString() + '. Restore it?')) {
+                        document.getElementById('name').value = draftData.name;
+                        document.getElementById('description').value = draftData.description;
+                    } else {
+                        localStorage.removeItem('serviceAreaDraft');
+                    }
+                }
+            }
+        }
+    });
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', function (e) {
+        // Ctrl+S to save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            if (validateForm()) {
+                document.getElementById('serviceAreaForm').submit();
+            }
+        }
+    });
 </script>
 </body>
 </html>

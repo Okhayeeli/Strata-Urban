@@ -3,7 +3,6 @@
 <head th:replace="~{admin/fragments :: head('Provider Details')}"></head>
 <body>
 <style>
-    /* Page Specific CSS */
     .back-link {
         display: inline-flex;
         align-items: center;
@@ -20,7 +19,6 @@
         background: #f5f7fa;
     }
 
-    /* Header Profile */
     .provider-header {
         background: white;
         padding: 30px;
@@ -61,13 +59,6 @@
         margin-bottom: 5px;
     }
 
-    .provider-main-info h2 {
-        font-size: 1.2rem;
-        color: #666;
-        font-weight: 500;
-        margin-bottom: 15px;
-    }
-
     .provider-meta {
         display: flex;
         gap: 20px;
@@ -82,7 +73,6 @@
         font-size: 0.95rem;
     }
 
-    /* Layout & Cards */
     .content-grid {
         display: grid;
         grid-template-columns: 2fr 1fr;
@@ -110,10 +100,6 @@
         border-bottom: 1px solid #f5f5f5;
     }
 
-    .detail-row:last-child {
-        border-bottom: none;
-    }
-
     .detail-label {
         font-weight: 600;
         color: #666;
@@ -124,7 +110,6 @@
         grid-column: 1 / -1;
     }
 
-    /* Tabs & Tables */
     .tabs {
         display: flex;
         gap: 5px;
@@ -156,6 +141,15 @@
         display: block;
     }
 
+    .table-search {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+    }
+
     .vehicle-badge {
         padding: 4px 10px;
         border-radius: 12px;
@@ -173,35 +167,13 @@
         color: #92400e;
     }
 
-    .empty-state {
-        text-align: center;
-        padding: 40px;
-        color: #999;
-    }
-
-    .empty-state-icon {
-        font-size: 2rem;
-        margin-bottom: 10px;
-    }
-
-    .table-search {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 0.95rem;
-        margin-bottom: 15px;
-    }
-
-    @media (max-width: 1024px) {
-        .content-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
     @media (max-width: 768px) {
         .header-top {
             flex-direction: column;
+        }
+
+        .content-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -222,7 +194,6 @@
                 </div>
                 <div class="dropdown-menu">
                     <a href="/admin/profile" class="dropdown-item"><span>👤</span> Profile</a>
-                    <a href="/admin/settings" class="dropdown-item"><span>⚙️</span> Settings</a>
                     <a href="/admin/logout" class="dropdown-item logout"><span>🚪</span> Logout</a>
                 </div>
             </div>
@@ -311,10 +282,8 @@
             </div>
 
             <div id="vehicles-tab" class="tab-content active">
-                <div th:if="${vehicles == null || vehicles.isEmpty()}" class="empty-state">
-                    <div class="empty-state-icon">🚙</div>
-                    <h3>No Vehicles Found</h3>
-                    <p>This provider hasn't added any vehicles yet.</p>
+                <div th:if="${vehicles == null || vehicles.isEmpty()}"
+                     style="text-align:center; padding:20px; color:#999;">🚙 No Vehicles Found
                 </div>
                 <div th:unless="${vehicles == null || vehicles.isEmpty()}">
                     <input type="text" class="table-search" placeholder="Search vehicles..."
@@ -343,12 +312,13 @@
             </div>
 
             <div id="drivers-tab" class="tab-content">
-                <div th:if="${drivers == null || drivers.isEmpty()}" class="empty-state">
-                    <div class="empty-state-icon">🚗</div>
-                    <h3>No Drivers Found</h3>
+                <div th:if="${drivers == null || drivers.isEmpty()}"
+                     style="text-align:center; padding:20px; color:#999;">🚗 No Drivers Found
                 </div>
                 <div th:unless="${drivers == null || drivers.isEmpty()}">
-                    <table class="drivers-table">
+                    <input type="text" class="table-search" placeholder="Search drivers..."
+                           data-table-id="drivers-table">
+                    <table class="drivers-table" id="drivers-table">
                         <thead>
                         <tr>
                             <th>Name</th>
@@ -370,12 +340,13 @@
             </div>
 
             <div id="bookings-tab" class="tab-content">
-                <div th:if="${bookings == null || bookings.isEmpty()}" class="empty-state">
-                    <div class="empty-state-icon">📅</div>
-                    <h3>No Bookings Found</h3>
+                <div th:if="${bookings == null || bookings.isEmpty()}"
+                     style="text-align:center; padding:20px; color:#999;">📅 No Bookings Found
                 </div>
                 <div th:unless="${bookings == null || bookings.isEmpty()}">
-                    <table class="bookings-table">
+                    <input type="text" class="table-search" placeholder="Search bookings..."
+                           data-table-id="bookings-table">
+                    <table class="bookings-table" id="bookings-table">
                         <thead>
                         <tr>
                             <th>ID</th>
@@ -400,12 +371,18 @@
 </main>
 
 <div th:replace="~{admin/fragments :: commonScripts}"></div>
-<script>
+<script th:inline="javascript">
     function switchTab(tabName) {
+        // Remove active class from all tabs and contents
         document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        event.target.classList.add('active');
-        document.getElementById(tabName + '-tab').classList.add('active');
+
+        // Add active class to clicked tab and corresponding content
+        const clickedTab = Array.from(document.querySelectorAll('.tab')).find(t => t.innerText.toLowerCase().includes(tabName.toLowerCase().split(' ')[0]));
+        if (clickedTab) clickedTab.classList.add('active');
+
+        const content = document.getElementById(tabName + '-tab');
+        if (content) content.classList.add('active');
     }
 
     function editProvider() {
@@ -421,7 +398,21 @@
         }
     }
 
-    // Include table filtering logic here...
+    // Generic Search Function
+    document.querySelectorAll('.table-search').forEach(input => {
+        input.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const tableId = e.target.dataset.tableId;
+            const table = document.getElementById(tableId);
+            if (table) {
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            }
+        });
+    });
 </script>
 </body>
 </html>

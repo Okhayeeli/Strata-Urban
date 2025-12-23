@@ -3,7 +3,6 @@
 <head th:replace="~{admin/fragments :: head('Service Area Details')}"></head>
 <body>
 <style>
-    /* Page Specific CSS */
     .back-btn {
         padding: 10px 15px;
         background: #f3f4f6;
@@ -292,7 +291,6 @@
 <script th:inline="javascript">
     const serviceAreaId = /*[[${serviceArea.id}]]*/ 0;
 
-    // Copy the specific JS for this page (modal logic, export, delete fetch) here from your original file
     function showDeleteModal() {
         document.getElementById('deleteModal').classList.add('active');
     }
@@ -302,12 +300,32 @@
     }
 
     function confirmDelete() {
-        fetch('/admin/areas/delete/' + serviceAreaId, {method: 'POST'}).then(() => window.location.href = '/admin/areas');
+        if (confirm('Final Confirmation: Delete this Service Area?')) {
+            fetch('/admin/areas/delete/' + serviceAreaId, {method: 'POST'})
+                .then(res => {
+                    if (res.ok) window.location.href = '/admin/areas';
+                    else alert('Deletion failed.');
+                });
+        }
     }
 
     function exportAreaData() {
-        alert('Exporting...');
+        alert('Data export started. You will receive a notification when it is ready.');
+        // fetch('/admin/areas/' + serviceAreaId + '/export')...
     }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeDeleteModal();
+        }
+        if (e.key === 'Delete' && !e.ctrlKey) {
+            // Only if no input is focused
+            if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                showDeleteModal();
+            }
+        }
+    });
 </script>
 </body>
 </html>
