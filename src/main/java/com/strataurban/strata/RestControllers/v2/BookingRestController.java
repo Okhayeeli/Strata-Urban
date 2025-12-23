@@ -223,7 +223,7 @@ public class BookingRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT (if authorized) or PROVIDER (if authorized) can contact a party. ADMIN can also contact, but DEVELOPER and others are restricted.")
     })
-    @PreAuthorize("(hasRole('CLIENT') and @bookingService.isAuthorizedClientBooking(#id, principal.id)) or (hasRole('PROVIDER') and @bookingService.isAuthorizedProviderBooking(#id, principal.id)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('CLIENT') and @methodSecurity.isClientOwner(#id, principal.id)) or (hasRole('PROVIDER') and @methodSecurity.isProviderOwner(#id, principal.id)) or hasRole('ADMIN')")
     public ResponseEntity<Void> contactParty(
             @PathVariable Long id,
             @RequestBody ContactRequest request) {

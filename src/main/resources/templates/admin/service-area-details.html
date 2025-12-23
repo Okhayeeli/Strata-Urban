@@ -1,1008 +1,313 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Area Details - StrataUrban Admin</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
-            color: #333;
-        }
-
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            height: 100vh;
-            width: 260px;
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 0;
-            z-index: 1000;
-            overflow-y: auto;
-        }
-
-        .logo-section {
-            padding: 0 20px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            margin-bottom: 20px;
-        }
-
-        .logo-section h2 {
-            font-size: 1.4rem;
-        }
-
-        .nav-menu {
-            list-style: none;
-        }
-
-        .nav-item {
-            margin: 5px 10px;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            color: white;
-            text-decoration: none;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            gap: 12px;
-        }
-
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .nav-link.active {
-            background: rgba(255, 255, 255, 0.25);
-            font-weight: 600;
-        }
-
-        .main-content {
-            margin-left: 260px;
-            min-height: 100vh;
-        }
-
-        .top-header {
-            background: white;
-            padding: 20px 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 999;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .back-btn {
-            padding: 10px 15px;
-            background: #f3f4f6;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            color: #333;
-        }
-
-        .back-btn:hover {
-            background: #e5e7eb;
-        }
-
-        .header-title h1 {
-            font-size: 1.8rem;
-            color: #333;
-        }
-
-        .header-title p {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 2px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
-        .content-area {
-            padding: 30px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Hero Section */
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px;
-            border-radius: 20px;
-            color: white;
-            margin-bottom: 30px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-section::before {
-            content: '🗺️';
-            position: absolute;
-            font-size: 15rem;
-            opacity: 0.1;
-            right: -50px;
-            bottom: -50px;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .hero-content h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-
-        .hero-content p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            margin-bottom: 25px;
-        }
-
-        .hero-stats {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-        }
-
-        .hero-stat {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .hero-stat-icon {
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-
-        .hero-stat-info h3 {
-            font-size: 0.9rem;
-            opacity: 0.9;
-            font-weight: 500;
-        }
-
-        .hero-stat-info p {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        /* Content Grid */
-        .content-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .card-header h2 {
-            font-size: 1.4rem;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .info-grid {
-            display: grid;
-            gap: 20px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .info-item:hover {
-            background: #e9ecef;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #666;
-            font-size: 0.95rem;
-        }
-
-        .info-value {
-            font-weight: 600;
-            color: #333;
-            text-align: right;
-        }
-
-        /* Providers List */
-        .providers-section {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
-        }
-
-        .providers-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .providers-header h2 {
-            font-size: 1.4rem;
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .provider-count-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 6px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .providers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .provider-card {
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-
-        .provider-card:hover {
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
-        }
-
-        .provider-card-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .provider-avatar {
-            width: 55px;
-            height: 55px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .provider-info h3 {
-            font-size: 1.1rem;
-            color: #333;
-            margin-bottom: 3px;
-        }
-
-        .provider-info span {
-            font-size: 0.85rem;
-            color: #999;
-        }
-
-        .provider-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .provider-detail {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .provider-actions {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .provider-action-btn {
-            padding: 8px 16px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .provider-action-btn:hover {
-            background: #5568d3;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        .empty-state h3 {
-            font-size: 1.3rem;
-            color: #666;
-            margin-bottom: 10px;
-        }
-
-        .empty-state p {
-            color: #999;
-            margin-bottom: 20px;
-        }
-
-        /* Activity Timeline */
-        .timeline {
-            position: relative;
-            padding-left: 30px;
-        }
-
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 8px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #e0e0e0;
-        }
-
-        .timeline-item {
-            position: relative;
-            padding-bottom: 25px;
-        }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -26px;
-            top: 5px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #667eea;
-            border: 3px solid white;
-            box-shadow: 0 0 0 2px #667eea;
-        }
-
-        .timeline-content {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .timeline-content strong {
-            color: #333;
-        }
-
-        .timeline-date {
-            font-size: 0.8rem;
-            color: #999;
-            margin-top: 3px;
-        }
-
-        /* Delete Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 10000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            max-width: 500px;
-            width: 90%;
-            animation: modalSlideIn 0.3s ease;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-header h3 {
-            font-size: 1.4rem;
-            color: #333;
-        }
-
-        .modal-close {
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #999;
-        }
-
-        .modal-close:hover {
-            color: #333;
-        }
-
-        .modal-body p {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 25px;
-        }
-
-        .btn-secondary {
-            background: #f3f4f6;
-            color: #333;
-        }
-
-        .btn-secondary:hover {
-            background: #e5e7eb;
-        }
-
-        @media (max-width: 1200px) {
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .providers-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            .hero-section {
-                padding: 30px 20px;
-            }
-
-            .hero-content h1 {
-                font-size: 1.8rem;
-            }
-
-            .hero-stats {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .header-actions {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-    </style>
-</head>
+<head th:replace="~{admin/fragments :: head('Service Area Details')}"></head>
 <body>
-<!-- Sidebar -->
-<aside class="sidebar">
-    <div class="logo-section">
-        <h2>🚐 StrataUrban</h2>
-    </div>
-    <ul class="nav-menu">
-        <li class="nav-item">
-            <a href="/admin/dashboard" class="nav-link">
-                <span>📊</span> Dashboard
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="/admin/bookings" class="nav-link">
-                <span>📅</span> Bookings
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="/admin/providers" class="nav-link">
-                <span>🏢</span> Providers
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="/admin/clients" class="nav-link">
-                <span>👥</span> Clients
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="/admin/drivers" class="nav-link">
-                <span>🚗</span> Drivers
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="/admin/vehicles" class="nav-link">
-                <span>🚙</span> Vehicles
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="/admin/areas" class="nav-link active">
-                <span>🗺️</span> Service Areas
-            </a>
-        </li>
-    </ul>
-</aside>
+<style>
+    /* Page Specific CSS */
+    .back-btn {
+        padding: 10px 15px;
+        background: #f3f4f6;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #333;
+        transition: background 0.3s;
+    }
 
-<!-- Main Content -->
-<main class="main-content">
-    <!-- Top Header -->
+    .back-btn:hover {
+        background: #e5e7eb;
+    }
+
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 40px;
+        border-radius: 20px;
+        color: white;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-section::before {
+        content: '🗺️';
+        position: absolute;
+        font-size: 15rem;
+        opacity: 0.1;
+        right: -50px;
+        bottom: -50px;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-content h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+
+    .hero-content p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 25px;
+    }
+
+    .hero-stats {
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+
+    .hero-stat {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .hero-stat-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .card {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 15px;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #666;
+    }
+
+    .providers-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .providers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .provider-card {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .provider-card:hover {
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+    }
+
+    .provider-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        float: left;
+        margin-right: 15px;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 500px;
+    }
+
+    @media (max-width: 1024px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<aside th:replace="~{admin/fragments :: sidebar('areas')}"></aside>
+
+<main class="main-content" id="mainContent">
     <header class="top-header">
         <div class="header-left">
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
             <a href="/admin/areas" class="back-btn">← Back to Areas</a>
-            <div class="header-title">
+            <div class="header-title" style="margin-left: 15px;">
                 <h1>Service Area Details</h1>
-                <p>View and manage service area information</p>
             </div>
         </div>
         <div class="header-actions">
-            <a th:href="@{/admin/areas/{id}/assign-providers(id=${serviceArea.id})}" class="btn btn-primary">
-                ➕ Assign Providers
-            </a>
-            <a th:href="@{/admin/areas/edit/{id}(id=${serviceArea.id})}" class="btn btn-primary">
-                ✏️ Edit Area
-            </a>
-            <button class="btn btn-danger" onclick="showDeleteModal()">
-                🗑️ Delete
-            </button>
+            <a th:href="@{/admin/areas/{id}/assign-providers(id=${serviceArea.id})}" class="btn btn-primary">➕ Assign
+                Providers</a>
+            <a th:href="@{/admin/areas/edit/{id}(id=${serviceArea.id})}" class="btn btn-primary">✏️ Edit Area</a>
+            <button class="btn btn-delete" onclick="showDeleteModal()">🗑️ Delete</button>
         </div>
     </header>
 
-    <!-- Content Area -->
     <div class="content-area">
-        <!-- Hero Section -->
         <div class="hero-section">
             <div class="hero-content">
-                <h1 th:text="${serviceArea.name}">Service Area Name</h1>
-                <p th:text="${serviceArea.description ?: 'No description available'}">Service area description</p>
-
+                <h1 th:text="${serviceArea.name}">Area Name</h1>
+                <p th:text="${serviceArea.description ?: 'No description'}">Description</p>
                 <div class="hero-stats">
                     <div class="hero-stat">
                         <div class="hero-stat-icon">🏢</div>
-                        <div class="hero-stat-info">
-                            <h3>Active Providers</h3>
-                            <p th:text="${providerCount}">0</p>
-                        </div>
-                    </div>
-                    <div class="hero-stat">
-                        <div class="hero-stat-icon">🗺️</div>
-                        <div class="hero-stat-info">
-                            <h3>Area ID</h3>
-                            <p th:text="${serviceArea.id}">-</p>
-                        </div>
+                        <div class="hero-stat-info"><h3>Active Providers</h3>
+                            <p th:text="${providerCount}">0</p></div>
                     </div>
                     <div class="hero-stat">
                         <div class="hero-stat-icon">✓</div>
-                        <div class="hero-stat-info">
-                            <h3>Status</h3>
-                            <p th:text="${providerCount > 0 ? 'Active' : 'Inactive'}">Active</p>
-                        </div>
+                        <div class="hero-stat-info"><h3>Status</h3>
+                            <p th:text="${providerCount > 0 ? 'Active' : 'Inactive'}">Active</p></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Content Grid -->
         <div class="content-grid">
-            <!-- Area Information -->
             <div class="card">
-                <div class="card-header">
-                    <h2>
-                        <span>📋</span>
-                        <span>Area Information</span>
-                    </h2>
-                </div>
-
+                <div class="card-header"><h2>📋 Area Information</h2></div>
                 <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Area Name</span>
-                        <span class="info-value" th:text="${serviceArea.name}">-</span>
-                    </div>
-
-                    <div class="info-item">
-                        <span class="info-label">Area ID</span>
-                        <span class="info-value" th:text="${serviceArea.id}">-</span>
-                    </div>
-
-                    <div class="info-item">
-                        <span class="info-label">Description</span>
-                        <span class="info-value" th:text="${serviceArea.description ?: 'Not provided'}">-</span>
-                    </div>
-
-                    <div class="info-item">
-                        <span class="info-label">Active Providers</span>
-                        <span class="info-value">
-                            <span th:text="${providerCount}">0</span> provider(s)
-                        </span>
-                    </div>
-
-                    <div class="info-item">
-                        <span class="info-label">Coverage Status</span>
-                        <span class="info-value">
-                            <span th:if="${providerCount > 0}" style="color: #10b981;">✓ Covered</span>
-                            <span th:unless="${providerCount > 0}" style="color: #ef4444;">⚠ No Coverage</span>
-                        </span>
+                    <div class="info-item"><span class="info-label">Area ID</span><span
+                            th:text="${serviceArea.id}">-</span></div>
+                    <div class="info-item"><span class="info-label">Name</span><span
+                            th:text="${serviceArea.name}">-</span></div>
+                    <div class="info-item"><span class="info-label">Coverage Status</span>
+                        <span th:if="${providerCount > 0}" style="color: #10b981;">✓ Covered</span>
+                        <span th:unless="${providerCount > 0}" style="color: #ef4444;">⚠ No Coverage</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Actions -->
             <div class="card">
-                <div class="card-header">
-                    <h2>
-                        <span>⚡</span>
-                        <span>Quick Actions</span>
-                    </h2>
-                </div>
-
+                <div class="card-header"><h2>⚡ Actions</h2></div>
                 <div class="info-grid">
-                    <a th:href="@{/admin/areas/edit/{id}(id=${serviceArea.id})}"
-                       style="text-decoration: none;">
-                        <div class="info-item" style="cursor: pointer;">
-                            <span class="info-label">✏️ Edit Area Details</span>
-                            <span class="info-value" style="color: #667eea;">→</span>
-                        </div>
+                    <a th:href="@{/admin/areas/edit/{id}(id=${serviceArea.id})}" class="info-item"
+                       style="text-decoration:none; color:inherit; cursor:pointer;">
+                        <span class="info-label">✏️ Edit Details</span><span>→</span>
                     </a>
-
-                    <a href="#providers-section" style="text-decoration: none;">
-                        <div class="info-item" style="cursor: pointer;">
-                            <span class="info-label">🏢 View Providers</span>
-                            <span class="info-value" style="color: #667eea;">→</span>
-                        </div>
-                    </a>
-
                     <div class="info-item" style="cursor: pointer;" onclick="exportAreaData()">
-                        <span class="info-label">📄 Export Data</span>
-                        <span class="info-value" style="color: #667eea;">→</span>
-                    </div>
-
-                    <div class="info-item" style="cursor: pointer; border: 2px solid #fee2e2; background: #fee2e2;" onclick="showDeleteModal()">
-                        <span class="info-label" style="color: #991b1b;">🗑️ Delete Area</span>
-                        <span class="info-value" style="color: #ef4444;">→</span>
+                        <span class="info-label">📄 Export Data</span><span>→</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Providers Section -->
-        <div id="providers-section" class="providers-section">
-            <div class="providers-header">
-                <h2>
-                    <span>🏢</span>
-                    <span>Providers Operating in This Area</span>
-                </h2>
-                <span class="provider-count-badge" th:text="${providerCount} + ' Provider(s)'">0 Providers</span>
+        <div class="providers-section">
+            <div class="card-header"><h2>🏢 Providers in this Area</h2></div>
+            <div th:if="${providers == null or providers.empty}"
+                 style="text-align: center; color: #999; padding: 20px;">
+                <p>No providers assigned yet.</p>
+                <a th:href="@{/admin/areas/{id}/assign-providers(id=${serviceArea.id})}" class="btn btn-primary">Assign
+                    Providers</a>
             </div>
-
-            <div th:if="${providers != null and !providers.empty}" class="providers-grid">
+            <div th:unless="${providers == null or providers.empty}" class="providers-grid">
                 <div th:each="provider : ${providers}" class="provider-card">
-                    <div class="provider-card-header">
-                        <div class="provider-avatar">
-                            <span th:text="${#strings.substring(provider.companyName, 0, 1)}">P</span>
-                        </div>
-                        <div class="provider-info">
-                            <h3 th:text="${provider.companyName}">Provider Name</h3>
-                            <span>Transportation Provider</span>
-                        </div>
-                    </div>
-
-                    <div class="provider-details">
-                        <div class="provider-detail">
-                            <span>📧</span>
-                            <span th:text="${provider.email}">email@example.com</span>
-                        </div>
-                        <div class="provider-detail">
-                            <span>📞</span>
-                            <span th:text="${provider.phoneNumber ?: 'Not provided'}">+234 XXX XXX XXXX</span>
-                        </div>
-                        <div class="provider-detail">
-                            <span>📍</span>
-                            <span th:text="${provider.address ?: 'Not provided'}">Address</span>
-                        </div>
-                    </div>
-
-                    <div class="provider-actions">
-                        <a th:href="@{/admin/providers/view/{id}(id=${provider.id})}" class="provider-action-btn">
-                            View Details →
-                        </a>
-                    </div>
+                    <div class="provider-avatar"><span
+                            th:text="${#strings.substring(provider.companyName, 0, 1)}">P</span></div>
+                    <h3 th:text="${provider.companyName}">Name</h3>
+                    <p style="font-size:0.9rem; color:#666;" th:text="${provider.email}">email</p>
+                    <a th:href="@{/admin/providers/view/{id}(id=${provider.id})}"
+                       style="font-size:0.85rem; color:#667eea; text-decoration:none; display:block; margin-top:10px;">View
+                        Details →</a>
                 </div>
-            </div>
-
-            <div th:if="${providers == null or providers.empty}" class="empty-state">
-                <div class="empty-state-icon">🏢</div>
-                <h3>No Providers Yet</h3>
-                <p>No transportation providers are currently operating in this service area.</p>
-                <a th:href="@{/admin/areas/edit/{id}(id=${serviceArea.id})}" class="btn btn-primary">
-                    <span>+</span> Assign Providers
-                </a>
             </div>
         </div>
     </div>
 </main>
 
-<!-- Delete Confirmation Modal -->
 <div class="modal" id="deleteModal">
     <div class="modal-content">
-        <div class="modal-header">
-            <h3>Confirm Deletion</h3>
-            <span class="modal-close" onclick="closeDeleteModal()">×</span>
-        </div>
-        <div class="modal-body">
-            <p>Are you sure you want to delete the service area "<strong th:text="${serviceArea.name}">Area Name</strong>"?</p>
-            <p th:if="${providerCount > 0}" style="color: #ef4444; font-weight: 600;">
-                ⚠️ Warning: This area has <span th:text="${providerCount}">0</span> active provider(s). Please remove all providers before deleting.
-            </p>
-            <p th:unless="${providerCount > 0}" style="color: #ef4444; font-weight: 600;">
-                ⚠️ This action cannot be undone.
-            </p>
-        </div>
-        <div class="modal-footer">
+        <h3>Confirm Deletion</h3>
+        <p>Are you sure you want to delete <strong th:text="${serviceArea.name}"></strong>?</p>
+        <p th:if="${providerCount > 0}" style="color: #ef4444;">⚠️ Cannot delete area with active providers.</p>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
             <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
-            <button class="btn btn-danger"
-                    th:disabled="${providerCount > 0}"
-                    id="confirmDeleteBtn"
-                    onclick="confirmDelete()">
-                Delete Area
-            </button>
+            <button class="btn btn-delete" th:disabled="${providerCount > 0}" onclick="confirmDelete()">Delete</button>
         </div>
     </div>
 </div>
 
+<div th:replace="~{admin/fragments :: commonScripts}"></div>
 <script th:inline="javascript">
     const serviceAreaId = /*[[${serviceArea.id}]]*/ 0;
-    const serviceAreaName = /*[[${serviceArea.name}]]*/ '';
-    const providerCount = /*[[${providerCount}]]*/ 0;
 
-    // Show delete modal
+    // Copy the specific JS for this page (modal logic, export, delete fetch) here from your original file
     function showDeleteModal() {
         document.getElementById('deleteModal').classList.add('active');
     }
 
-    // Close delete modal
     function closeDeleteModal() {
         document.getElementById('deleteModal').classList.remove('active');
     }
 
-    // Confirm delete
     function confirmDelete() {
-        if (providerCount > 0) {
-            alert('Cannot delete this area. Please remove all providers first.');
-            return;
-        }
-
-        const confirmBtn = document.getElementById('confirmDeleteBtn');
-        confirmBtn.innerHTML = '<span class="spinner"></span> Deleting...';
-        confirmBtn.disabled = true;
-
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/admin/areas/delete/' + serviceAreaId;
-        document.body.appendChild(form);
-        form.submit();
+        fetch('/admin/areas/delete/' + serviceAreaId, {method: 'POST'}).then(() => window.location.href = '/admin/areas');
     }
 
-    // Export area data
     function exportAreaData() {
-        const data = {
-            id: serviceAreaId,
-            name: serviceAreaName,
-            description: /*[[${serviceArea.description}]]*/ '',
-            providerCount: providerCount,
-            exportDate: new Date().toISOString()
-        };
-
-        const dataStr = JSON.stringify(data, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = `service_area_${serviceAreaId}_${serviceAreaName.replace(/\s+/g, '_')}.json`;
-        link.click();
-
-        // Show success message
-        alert('Service area data exported successfully!');
+        alert('Exporting...');
     }
-
-    // Close modal when clicking outside
-    document.getElementById('deleteModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeDeleteModal();
-        }
-    });
-
-    // Smooth scroll to providers section
-    document.addEventListener('DOMContentLoaded', function() {
-        const hash = window.location.hash;
-        if (hash === '#providers-section') {
-            const element = document.getElementById('providers-section');
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-    });
-
-    // Print functionality
-    function printArea() {
-        window.print();
-    }
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        // E key to edit
-        if (e.key === 'e' && !e.ctrlKey && !e.metaKey) {
-            const activeElement = document.activeElement;
-            if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
-                window.location.href = '/admin/areas/edit/' + serviceAreaId;
-            }
-        }
-
-        // Delete key to show delete modal
-        if (e.key === 'Delete' && !e.ctrlKey && !e.metaKey) {
-            const activeElement = document.activeElement;
-            if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
-                showDeleteModal();
-            }
-        }
-
-        // Escape to close modal
-        if (e.key === 'Escape') {
-            closeDeleteModal();
-        }
-    });
-
-    // Add spinner style if not exists
-    const style = document.createElement('style');
-    style.textContent = `
-        .spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    `;
-    document.head.appendChild(style);
 </script>
 </body>
 </html>
