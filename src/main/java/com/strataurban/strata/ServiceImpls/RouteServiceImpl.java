@@ -16,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -47,15 +45,21 @@ public class RouteServiceImpl implements RouteService {
         if (userDetails.getRole() == EnumRoles.PROVIDER){
             route.setProviderId(String.valueOf(userDetails.getId()));
             route.setCountry(userDetails.getCountry());
+            route.setProviderId(String.valueOf(userDetails.getId()));
+
+            if(routeRepository.existsByStartAndEndAndCountryAndIsEnabled(route.getStart(), route.getEnd(), route.getCountry(), true)){
+                throw new IllegalArgumentException("Route already exists, please use the route that already exists, or create a new one");
+            }
+
         }
 
         if (route.getStart() == null || route.getEnd() == null) {
             throw new IllegalArgumentException("Start and End locations must be specified");
         }
 
-        if (route.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Price must be greater than zero");
-        }
+//        if (route.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+//            throw new IllegalArgumentException("Price must be greater than zero");
+//        }
 
         if (route.getCity() == null || route.getState() == null || route.getCountry() == null) {
             throw new IllegalArgumentException("City, State, and Country must be specified");
@@ -73,9 +77,9 @@ public class RouteServiceImpl implements RouteService {
             throw new IllegalArgumentException("Provider ID must be specified for ADMIN or CUSTOMER_SERVICE roles");
         }
 
-        if (route.getProviderId() == null) {
-            throw new IllegalArgumentException("Provider ID must be specified");
-        }
+//        if (route.getProviderId() == null) {
+//            throw new IllegalArgumentException("Provider ID must be specified");
+//        }
 
         route.setIsEnabled(true);
         return routeRepository.save(route);
@@ -159,10 +163,6 @@ public class RouteServiceImpl implements RouteService {
 
     public List<Routes> getRoutesByLocations(String start, String end) {
         return routeRepository.findByStartContainingAndEndContainingAndIsEnabledTrue(start, end);
-    }
-
-    public Routes addRoute(Routes route) {
-        return routeRepository.save(route);
     }
 
     @Override
@@ -290,57 +290,89 @@ public class RouteServiceImpl implements RouteService {
     /**
      * Get routes for a provider filtered by location
      */
-    @Transactional(readOnly = true)
-    public List<Routes> getRoutesForProviderByLocation(
-            String providerId,
-            String country,
-            String state,
-            String city) {
+//    @Transactional(readOnly = true)
+//    public List<Routes> getRoutesForProviderByLocation(
+//            String providerId,
+//            String country,
+//            String state,
+//            String city) {
+//
+//        if (providerId == null || providerId.trim().isEmpty()) {
+//            log.warn("Attempted to get routes for null/empty provider ID");
+//            return Collections.emptyList();
+//        }
+//
+//        log.debug("Fetching routes for provider {} in location: country={}, state={}, city={}",
+//                providerId, country, state, city);
+//
+//        List<Routes> routes = routeRepository.findRoutesByProviderIdAndLocation(
+//                providerId.trim(), country, state, city);
+//
+//        log.info("Found {} route(s) for provider {} in specified location", routes.size(), providerId);
+//        return routes;
+//    }
+//
+//    /**
+//     * Check if a provider is assigned to a specific route
+//     */
+//    @Transactional(readOnly = true)
+//    public boolean isProviderAssignedToRoute(Long routeId, String providerId) {
+//        if (routeId == null || providerId == null || providerId.trim().isEmpty()) {
+//            return false;
+//        }
+//
+//        Routes route = routeRepository.findById(routeId).orElse(null);
+//
+//        if (route == null) {
+//            return false;
+//        }
+//
+//        List<String> providerIds = route.getProviderIdList();
+//        return providerIds.contains(providerId.trim());
+//    }
+//
+//    /**
+//     * Check if a provider has any routes assigned
+//     */
+//    @Transactional(readOnly = true)
+//    public boolean hasRoutes(String providerId) {
+//        if (providerId == null || providerId.trim().isEmpty()) {
+//            return false;
+//        }
+//
+//        List<Long> routeIds = getRouteIdsForProvider(providerId);
+//        return !routeIds.isEmpty();
+//    }
 
-        if (providerId == null || providerId.trim().isEmpty()) {
-            log.warn("Attempted to get routes for null/empty provider ID");
+    @Override
+    public Long countEnabledRoutes() {
+        return routeRepository.countEnabledRoutes();
+    }
+
+    @Override
+    public Long countActiveCountries() {
+        return routeRepository.countActiveCountries();
+    }
+
+    @Override
+    public List<Routes> searchRoutes(String search) {
+        if (search == null || search.trim().isEmpty()) {
             return Collections.emptyList();
         }
-
-        log.debug("Fetching routes for provider {} in location: country={}, state={}, city={}",
-                providerId, country, state, city);
-
-        List<Routes> routes = routeRepository.findRoutesByProviderIdAndLocation(
-                providerId.trim(), country, state, city);
-
-        log.info("Found {} route(s) for provider {} in specified location", routes.size(), providerId);
-        return routes;
+        return routeRepository.searchRoutesByLocation(search.trim());
     }
 
-    /**
-     * Check if a provider is assigned to a specific route
-     */
-    @Transactional(readOnly = true)
-    public boolean isProviderAssignedToRoute(Long routeId, String providerId) {
-        if (routeId == null || providerId == null || providerId.trim().isEmpty()) {
-            return false;
-        }
-
-        Routes route = routeRepository.findById(routeId).orElse(null);
-
-        if (route == null) {
-            return false;
-        }
-
-        List<String> providerIds = route.getProviderIdList();
-        return providerIds.contains(providerId.trim());
+    @Override
+    public Routes disableRoute(Long routeId) {
+        Routes route = getRoute(routeId);
+        route.setIsEnabled(false);
+        return routeRepository.save(route);
     }
 
-    /**
-     * Check if a provider has any routes assigned
-     */
-    @Transactional(readOnly = true)
-    public boolean hasRoutes(String providerId) {
-        if (providerId == null || providerId.trim().isEmpty()) {
-            return false;
-        }
-
-        List<Long> routeIds = getRouteIdsForProvider(providerId);
-        return !routeIds.isEmpty();
+    @Override
+    public Routes enableRoute(Long routeId) {
+        Routes route = getRoute(routeId);
+        route.setIsEnabled(true);
+        return routeRepository.save(route);
     }
 }

@@ -22,4 +22,9 @@ public interface RouteService {
     RouteWithProvidersDTO getRouteWithProviders(Long routeId);
     Routes toggleRoute(Long routeId);
     Routes removeProviderToRoute(Long routeId, String providerToRemove);
+     Long countEnabledRoutes();
+     Long countActiveCountries();
+     List<Routes> searchRoutes(String search);
+     Routes disableRoute(Long routeId);
+     Routes enableRoute(Long routeId);
 }

@@ -565,6 +565,14 @@
                 <span class="nav-text">Clients</span>
             </a>
         </li>
+
+        <li class="nav-item">
+            <a href="/admin/routes" class="nav-link" th:classappend="${activeTab == 'routes'} ? 'active'">
+                <span class="nav-icon">🛣️</span>
+                <span class="nav-text">Routes</span>
+            </a>
+        </li>
+
         <li class="nav-item">
             <a href="/admin/drivers" class="nav-link" th:classappend="${activeTab == 'drivers'} ? 'active'">
                 <span class="nav-icon">🚗</span>

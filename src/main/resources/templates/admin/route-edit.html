@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Edit Route')}"><title>Edit Route</title></head>
+<body>
+
+<aside th:replace="~{admin/fragments :: sidebar('routes')}"></aside>
+
+<main class="main-content" id="mainContent">
+  <header th:replace="~{admin/fragments :: topHeader('Edit Route')}"></header>
+
+  <div class="page-content">
+    <div class="breadcrumb">
+      <a th:href="@{'/admin/routes/' + ${route.id}}">← Back to Route Details</a>
+    </div>
+
+    <div class="form-container">
+      <div class="form-header">
+        <h2>Edit Route <span th:text="'#' + ${route.id}">ID</span></h2>
+        <span class="badge badge-success" th:if="${route.isEnabled}">Active</span>
+        <span class="badge badge-warning" th:unless="${route.isEnabled}">Disabled</span>
+      </div>
+
+      <form th:action="@{'/admin/routes/' + ${route.id} + '/update'}" method="post" id="routeForm">
+        <div class="form-grid">
+          <div class="form-section">
+            <h3>Route Details</h3>
+
+            <div class="form-group">
+              <label for="start">Start Location *</label>
+              <input type="text" id="start" name="start" required
+                     th:value="${route.start}" placeholder="e.g., Lagos Airport">
+            </div>
+
+            <div class="form-group">
+              <label for="end">End Location *</label>
+              <input type="text" id="end" name="end" required
+                     th:value="${route.end}" placeholder="e.g., Victoria Island">
+            </div>
+
+            <div class="form-group">
+              <label for="price">Price ($) *</label>
+              <input type="number" id="price" name="price" step="0.01" min="0" required
+                     th:value="${route.price}" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+              <label for="enabled">Status</label>
+              <select id="enabled" name="enabled">
+                <option value="true" th:selected="${route.isEnabled}">Active</option>
+                <option value="false" th:selected="${!route.isEnabled}">Disabled</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Location</h3>
+
+            <div class="form-group">
+              <label for="country">Country *</label>
+              <input type="text" id="country" name="country" required
+                     th:value="${route.country}" placeholder="e.g., Nigeria">
+            </div>
+
+            <div class="form-group">
+              <label for="state">State *</label>
+              <input type="text" id="state" name="state" required
+                     th:value="${route.state}" placeholder="e.g., Lagos">
+            </div>
+
+            <div class="form-group">
+              <label for="city">City *</label>
+              <input type="text" id="city" name="city" required
+                     th:value="${route.city}" placeholder="e.g., Lagos">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section providers-section">
+          <h3>Assigned Providers</h3>
+          <p class="help-text">Select or deselect providers that will service this route.</p>
+
+          <div class="providers-selection">
+            <div class="search-box">
+              <label for="providerSearch">
+
+              </label><input type="text" id="providerSearch" placeholder="Search providers..."
+                                                         oninput="filterProviders()">
+            </div>
+
+            <div class="providers-list" id="providersList">
+              <div class="provider-checkbox" th:each="provider : ${providers}">
+                <label>
+                  <input type="checkbox"
+                         th:id="'provider_' + ${provider.id}"
+                         name="providerIds"
+                         th:value="${provider.id}"
+                         th:checked="${#lists.contains(selectedProviderIds, provider.id.toString())}">
+                </label>
+                <label th:for="'provider_' + ${provider.id}">
+                  <div class="provider-info">
+                    <strong th:text="${provider.companyName}">Company Name</strong>
+                    <span th:text="${provider.city + ', ' + provider.state}">Location</span>
+                    <small th:if="${provider.rating != null}"
+                           th:text="'⭐ ' + ${#numbers.formatDecimal(provider.rating, 1, 1)}">Rating</small>
+                    <span class="badge badge-success"
+                          th:if="${#lists.contains(selectedProviderIds, provider.id.toString())}"
+                          style="margin-top: 5px;">Currently Assigned</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="selected-count">
+              <span id="selectedCount">0 providers selected</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <a th:href="@{'/admin/routes/' + ${route.id}}" class="btn btn-secondary">Cancel</a>
+          <button type="button" class="btn btn-danger" onclick="confirmDelete()"
+                  style="margin-left: auto;">Delete Route</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+
+<div th:replace="~{admin/fragments :: commonScripts}"></div>
+
+<style>
+  .breadcrumb {
+    margin-bottom: 20px;
+  }
+
+  .breadcrumb a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .form-container {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+  }
+
+  .form-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-bottom: 30px;
+  }
+
+  .form-section {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  .form-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: #333;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #333;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.3s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+
+  .providers-section {
+    grid-column: 1 / -1;
+  }
+
+  .help-text {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+
+  .search-box {
+    margin-bottom: 15px;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
+  .providers-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+  }
+
+  .provider-checkbox {
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: background 0.3s ease;
+  }
+
+  .provider-checkbox:last-child {
+    border-bottom: none;
+  }
+
+  .provider-checkbox:hover {
+    background: #f9fafb;
+  }
+
+  .provider-checkbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    margin-top: 2px;
+  }
+
+  .provider-checkbox label {
+    flex: 1;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .provider-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .provider-info strong {
+    font-size: 1rem;
+    color: #333;
+  }
+
+  .provider-info span {
+    font-size: 0.85rem;
+    color: #666;
+  }
+
+  .provider-info small {
+    font-size: 0.8rem;
+    color: #999;
+  }
+
+  .selected-count {
+    text-align: center;
+    padding: 10px;
+    background: #667eea;
+    color: white;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 15px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .form-actions .btn {
+    padding: 12px 30px;
+  }
+
+  .btn-danger {
+    background: #ef4444;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+</style>
+
+<script th:inline="javascript">
+  const routeId = /*[[${route.id}]]*/ 0;
+  let allProviders = [];
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Store all providers for filtering
+    const providerCheckboxes = document.querySelectorAll('.provider-checkbox');
+    allProviders = Array.from(providerCheckboxes).map(el => ({
+      element: el,
+      name: el.querySelector('strong').textContent.toLowerCase()
+    }));
+
+    // Update selected count
+    updateSelectedCount();
+
+    // Add change listeners to checkboxes
+    document.querySelectorAll('input[name="providerIds"]').forEach(checkbox => {
+      checkbox.addEventListener('change', updateSelectedCount);
+    });
+  });
+
+  function filterProviders() {
+    const search = document.getElementById('providerSearch').value.toLowerCase();
+
+    allProviders.forEach(provider => {
+      if (provider.name.includes(search)) {
+        provider.element.style.display = 'flex';
+      } else {
+        provider.element.style.display = 'none';
+      }
+    });
+  }
+
+  function updateSelectedCount() {
+    const checked = document.querySelectorAll('input[name="providerIds"]:checked').length;
+    document.getElementById('selectedCount').textContent = `${checked} provider${checked !== 1 ? 's' : ''} selected`;
+  }
+
+  function confirmDelete() {
+    if (confirm('Are you sure you want to delete this route? This action cannot be undone.')) {
+      fetch('/admin/routes/' + routeId + '/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+              .then(response => response.json())
+              .then(data => {
+                if (data.message) {
+                  alert(data.message);
+                  window.location.href = '/admin/routes';
+                } else {
+                  alert('Failed to delete route');
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete route');
+              });
+    }
+  }
+
+  // Form validation
+  document.getElementById('routeForm').addEventListener('submit', function(e) {
+    const start = document.getElementById('start').value.trim();
+    const end = document.getElementById('end').value.trim();
+    const price = parseFloat(document.getElementById('price').value);
+
+    if (start === end) {
+      e.preventDefault();
+      alert('Start and End locations cannot be the same!');
+      return false;
+    }
+
+    if (price <= 0) {
+      e.preventDefault();
+      alert('Price must be greater than zero!');
+      return false;
+    }
+
+    return true;
+  });
+</script>
+</body>
+</html>
