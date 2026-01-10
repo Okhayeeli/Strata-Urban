@@ -132,7 +132,7 @@ public class EmailService {
         String subject = "Verify Your Email";
 //        String verificationUrl = "http://your-frontend-url/verify-email?token=" + token;
 
-        String verificationUrl = "https://strata-test.up.railway.app/api/auth/verify-email?token=" + token;
+        String verificationUrl = "https://strata-test.up.railway.app/api/v2/auth/verify-email?token=" + token;
 
         String htmlBody = "<h2>Verify Your Email</h2>" +
                 "<p>Click the link below to verify your email:</p>" +
@@ -145,7 +145,7 @@ public class EmailService {
     public String testSendVerificationEmail(String to, Long userId) {
         String token = emailVerificationTokenService.generateToken(userId);
         String subject = "Verify Your Email";
-        String verificationUrl = "https://strata-test.up.railway.app/api/verify-email?token=" + token;
+        String verificationUrl = "https://strata-test.up.railway.app/api/v2/auth/verify-email?token=" + token;
 
         String htmlBody = "<h2>Verify Your Email</h2>" +
                 "<p>Click the link below to verify your email:</p>" +
