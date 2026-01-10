@@ -185,13 +185,13 @@ public class AuthController {
 
             return ResponseEntity
                     .status(HttpStatus.FOUND)
-                    .location(URI.create("/verification-success"))
+                    .location(URI.create("/verification-success.html"))
                     .build();
 
         } catch (InvalidTokenException ex) {
             return ResponseEntity
                     .status(HttpStatus.FOUND)
-                    .location(URI.create("/verification-failed"))
+                    .location(URI.create("/verification-failed.html"))
                     .build();
         }
     }
