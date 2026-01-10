@@ -21,7 +21,7 @@ public class CustomUserDetails implements org.springframework.security.core.user
     private final boolean emailVerified;
     private final int failedLoginAttempts;
     private final LocalDateTime accountLockedUntil;
-
+    private final LocalDateTime accountExpiryDate;
 
     public CustomUserDetails(User user) {
         logger.debug("Constructing CustomUserDetails for user: {}", user.getUsername());
@@ -32,6 +32,7 @@ public class CustomUserDetails implements org.springframework.security.core.user
         this.emailVerified = user.isEmailVerified();
         this.failedLoginAttempts = user.getFailedLoginAttempts();
         this.accountLockedUntil = user.getAccountLockedUntil();
+        this.accountExpiryDate = user.getAccountExpiryDate();
     }
 
     public Long getId() {
@@ -44,13 +45,11 @@ public class CustomUserDetails implements org.springframework.security.core.user
         return role;
     }
 
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         logger.debug("Getting authorities for role: {}", role);
         return role != null ? Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)) : Collections.emptyList();
     }
-
 
     @Override
     public String getPassword() {
@@ -67,7 +66,18 @@ public class CustomUserDetails implements org.springframework.security.core.user
     @Override
     public boolean isAccountNonExpired() {
         logger.debug("Checking isAccountNonExpired");
-        return true;
+
+        // If no expiry date is set, account is not expired
+        if (accountExpiryDate == null) {
+            return true;
+        }
+
+        // Check if current time is before expiry date
+        boolean isNotExpired = LocalDateTime.now().isBefore(accountExpiryDate);
+        logger.debug("Account expiry status - Expiry Date: {}, Is Not Expired: {}",
+                accountExpiryDate, isNotExpired);
+
+        return isNotExpired;
     }
 
     @Override

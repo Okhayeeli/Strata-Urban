@@ -52,6 +52,9 @@ public class EmailVerificationTokenService {
 
 
         User user = userRepository.findById(verificationToken.getUserId()).orElseThrow(() -> new InvalidTokenException("Invalid user"));
+        if (user.isEmailVerified()) {
+            throw new InvalidTokenException("Email already verified");
+        }
         user.setEmailVerified(true);
         tokenRepository.delete(verificationToken);
     }

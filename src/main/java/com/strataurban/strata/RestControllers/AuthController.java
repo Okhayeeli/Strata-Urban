@@ -3,6 +3,7 @@ package com.strataurban.strata.RestControllers;
 import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.Generics.Notification;
 import com.strataurban.strata.Entities.User;
+import com.strataurban.strata.Exceptions.InvalidTokenException;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
@@ -18,12 +19,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 
 @Slf4j
 @RestController
@@ -50,6 +54,13 @@ public class AuthController {
     private NotificationService notificationService;
     @Autowired
     private EmailVerificationTokenService emailVerificationTokenService;
+
+    @Value("${app.verification.success-url}")
+    private String successUrl;
+
+    @Value("${app.verification.failure-url}")
+    private String failureUrl;
+
 
 
     @PostMapping("/signup/client")
@@ -164,5 +175,24 @@ public class AuthController {
     public ResponseEntity<String> validateUser(@RequestBody UserDTO userDTO) {
         emailVerificationTokenService.validateToken(userDTO.getToken());
         return ResponseEntity.ok("Email/Username validated successfully");
+    }
+
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmail(@RequestParam("token") String token) {
+        try {
+            emailVerificationTokenService.validateToken(token);
+
+            return ResponseEntity
+                    .status(HttpStatus.FOUND)
+                    .location(URI.create("/verification-success"))
+                    .build();
+
+        } catch (InvalidTokenException ex) {
+            return ResponseEntity
+                    .status(HttpStatus.FOUND)
+                    .location(URI.create("/verification-failed"))
+                    .build();
+        }
     }
 }

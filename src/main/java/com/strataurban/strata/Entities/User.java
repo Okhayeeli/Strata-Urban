@@ -108,4 +108,7 @@ public class User {
 
     @Column
     private String deviceToken;
+
+    @Column(name = "account_expiry_date")
+    private LocalDateTime accountExpiryDate;
 }

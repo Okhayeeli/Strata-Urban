@@ -304,4 +304,187 @@ public class AdminClientsController {
             return 0L;
         }
     }
+
+
+    /**
+     * Lock client account
+     * Sets accountLockedUntil to 100 years in the future (effectively permanent)
+     */
+    @PostMapping("/clients/{id}/lock")
+    @ResponseBody
+    public ResponseEntity<?> lockAccount(
+            @PathVariable Long id,
+            HttpSession session
+    ) {
+        if (!isAuthenticated(session)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        try {
+            Client client = clientRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Client not found"));
+
+            // Lock account for 100 years (effectively permanent until manually unlocked)
+            client.setAccountLockedUntil(LocalDateTime.now().plusYears(100));
+            clientRepository.save(client);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Account locked successfully",
+                    "lockedUntil", client.getAccountLockedUntil().toString()
+            ));
+        } catch (Exception e) {
+            System.err.println("Error locking account: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to lock account"));
+        }
+    }
+
+    /**
+     * Unlock client account
+     * Clears the accountLockedUntil field
+     */
+    @PostMapping("/clients/{id}/unlock")
+    @ResponseBody
+    public ResponseEntity<?> unlockAccount(
+            @PathVariable Long id,
+            HttpSession session
+    ) {
+        if (!isAuthenticated(session)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        try {
+            Client client = clientRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Client not found"));
+
+            client.setAccountLockedUntil(null);
+            clientRepository.save(client);
+
+            return ResponseEntity.ok(Map.of("message", "Account unlocked successfully"));
+        } catch (Exception e) {
+            System.err.println("Error unlocking account: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to unlock account"));
+        }
+    }
+
+    /**
+     * Enable client account
+     * Sets emailVerified to true (isEnabled() in CustomUserDetails)
+     */
+    @PostMapping("/clients/{id}/enable")
+    @ResponseBody
+    public ResponseEntity<?> enableAccount(
+            @PathVariable Long id,
+            HttpSession session
+    ) {
+        if (!isAuthenticated(session)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        try {
+            Client client = clientRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Client not found"));
+
+            client.setEmailVerified(true);
+            clientRepository.save(client);
+
+            return ResponseEntity.ok(Map.of("message", "Account enabled successfully"));
+        } catch (Exception e) {
+            System.err.println("Error enabling account: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to enable account"));
+        }
+    }
+
+    /**
+     * Disable client account
+     * Sets emailVerified to false (isEnabled() in CustomUserDetails)
+     */
+    @PostMapping("/clients/{id}/disable")
+    @ResponseBody
+    public ResponseEntity<?> disableAccount(
+            @PathVariable Long id,
+            HttpSession session
+    ) {
+        if (!isAuthenticated(session)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        try {
+            Client client = clientRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Client not found"));
+
+            client.setEmailVerified(false);
+            clientRepository.save(client);
+
+            return ResponseEntity.ok(Map.of("message", "Account disabled successfully"));
+        } catch (Exception e) {
+            System.err.println("Error disabling account: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to disable account"));
+        }
+    }
+
+    /**
+     * Set account expiry date
+     */
+    @PostMapping("/clients/{id}/set-expiry")
+    @ResponseBody
+    public ResponseEntity<?> setAccountExpiry(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> payload,
+            HttpSession session
+    ) {
+        if (!isAuthenticated(session)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        try {
+            Client client = clientRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Client not found"));
+
+            String expiryDateStr = payload.get("expiryDate");
+            if (expiryDateStr == null || expiryDateStr.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Expiry date is required"));
+            }
+
+            // Parse the datetime-local format: yyyy-MM-ddTHH:mm
+            LocalDateTime expiryDate = LocalDateTime.parse(expiryDateStr);
+
+            client.setAccountExpiryDate(expiryDate);
+            clientRepository.save(client);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Account expiry set successfully",
+                    "expiryDate", expiryDate.toString()
+            ));
+        } catch (Exception e) {
+            System.err.println("Error setting account expiry: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to set account expiry: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Remove account expiry date
+     */
+    @PostMapping("/clients/{id}/remove-expiry")
+    @ResponseBody
+    public ResponseEntity<?> removeAccountExpiry(
+            @PathVariable Long id,
+            HttpSession session
+    ) {
+        if (!isAuthenticated(session)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        try {
+            Client client = clientRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Client not found"));
+
+            client.setAccountExpiryDate(null);
+            clientRepository.save(client);
+
+            return ResponseEntity.ok(Map.of("message", "Account expiry removed successfully"));
+        } catch (Exception e) {
+            System.err.println("Error removing account expiry: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to remove account expiry"));
+        }
+    }
 }

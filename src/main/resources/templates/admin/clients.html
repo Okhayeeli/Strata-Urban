@@ -1,6 +1,127 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{admin/fragments :: head('Clients')}"></head>
+<head th:replace="~{admin/fragments :: head('Clients')}">
+    <style>
+        .account-status {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .status-indicator {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .status-locked {
+            background-color: #fee;
+            color: #c33;
+        }
+        .status-disabled {
+            background-color: #fef3cd;
+            color: #856404;
+        }
+        .status-expired {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h3 {
+            margin: 0;
+        }
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .btn-icon {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-lock {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-unlock {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-disable {
+            background-color: #ffc107;
+            color: #000;
+        }
+        .btn-enable {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .btn-expire {
+            background-color: #6c757d;
+            color: white;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+    </style>
+</head>
 <body>
 
 <aside th:replace="~{admin/fragments :: sidebar('clients')}"></aside>
@@ -29,7 +150,7 @@
         </div>
 
         <div class="filters-section">
-            <form th:action="@{/admin/clients}" method="get">
+            <form th:action="@{/admin/v2/clients}" method="get">
                 <div class="filters-grid">
                     <div class="filter-group">
                         <label>Search Name/Email</label>
@@ -46,7 +167,7 @@
                 </div>
                 <div class="filter-actions">
                     <button type="submit" class="btn btn-primary">Apply Filters</button>
-                    <a href="/admin/clients" class="btn btn-secondary">Clear</a>
+                    <a href="/admin/v2/clients" class="btn btn-secondary">Clear</a>
                 </div>
             </form>
         </div>
@@ -63,7 +184,7 @@
                     <th>Contact</th>
                     <th>Location</th>
                     <th>Joined</th>
-                    <th>Status</th>
+                    <th>Account Status</th>
                     <th>Actions</th>
                 </tr>
                 </thead>
@@ -92,11 +213,59 @@
                     </td>
                     <td th:text="${client.lastPasswordChange != null ? #temporals.format(client.lastPasswordChange, 'MMM dd, yyyy') : 'N/A'}">Date</td>
                     <td>
-                        <span class="badge badge-verified" th:if="${client.emailVerified}">✓ Verified</span>
-                        <span class="badge badge-unverified" th:unless="${client.emailVerified}">⚠ Unverified</span>
+                        <div class="account-status">
+                            <span class="status-indicator badge-verified" th:if="${client.emailVerified}">✓ Verified</span>
+                            <span class="status-indicator badge-unverified" th:unless="${client.emailVerified}">⚠ Unverified</span>
+
+                            <span class="status-indicator status-locked"
+                                  th:if="${client.accountLockedUntil != null && client.accountLockedUntil.isAfter(T(java.time.LocalDateTime).now())}">
+                                🔒 Locked
+                            </span>
+
+                            <span class="status-indicator status-disabled"
+                                  th:if="${!client.emailVerified}">
+                                ⛔ Disabled
+                            </span>
+
+                            <span class="status-indicator status-expired"
+                                  th:if="${client.accountExpiryDate != null && client.accountExpiryDate.isBefore(T(java.time.LocalDateTime).now())}">
+                                ⏱️ Expired
+                            </span>
+                        </div>
                     </td>
                     <td>
                         <div class="action-buttons">
+                            <!-- Lock/Unlock -->
+                            <button class="btn-icon btn-unlock"
+                                    th:if="${client.accountLockedUntil != null && client.accountLockedUntil.isAfter(T(java.time.LocalDateTime).now())}"
+                                    th:onclick="'unlockAccount(' + ${client.id} + ')'">
+                                🔓 Unlock
+                            </button>
+                            <button class="btn-icon btn-lock"
+                                    th:unless="${client.accountLockedUntil != null && client.accountLockedUntil.isAfter(T(java.time.LocalDateTime).now())}"
+                                    th:onclick="'lockAccount(' + ${client.id} + ')'">
+                                🔒
+                            </button>
+
+                            <!-- Enable/Disable -->
+                            <button class="btn-icon btn-enable"
+                                    th:if="${!client.emailVerified}"
+                                    th:onclick="'enableAccount(' + ${client.id} + ')'">
+                                ✅
+                            </button>
+                            <button class="btn-icon btn-disable"
+                                    th:if="${client.emailVerified}"
+                                    th:onclick="'disableAccount(' + ${client.id} + ')'">
+                                ⛔
+                            </button>
+
+                            <!-- Expiry Management -->
+                            <button class="btn-icon btn-expire"
+                                    th:onclick="'manageExpiry(' + ${client.id} + ')'">
+                                ⏱️
+                            </button>
+
+                            <!-- Original Actions -->
                             <button class="btn-icon btn-view" th:onclick="'viewClient(' + ${client.id} + ')'">👁️</button>
                             <button class="btn-icon btn-edit" th:onclick="'editClient(' + ${client.id} + ')'">✏️</button>
                             <button class="btn-icon btn-delete" th:onclick="'deleteClient(' + ${client.id} + ')'">🗑️</button>
@@ -108,16 +277,16 @@
 
             <div class="pagination" th:if="${clients.totalPages > 1}">
                 <button th:disabled="${clients.first}"
-                        th:onclick="'window.location.href=\'/admin/clients?page=' + ${clients.number - 1} + '&size=' + ${clients.size} + '\''">
+                        th:onclick="'window.location.href=\'/admin/v2/clients?page=' + ${clients.number - 1} + '&size=' + ${clients.size} + '\''">
                     Previous
                 </button>
                 <button th:each="i : ${#numbers.sequence(0, clients.totalPages - 1)}"
                         th:text="${i + 1}"
                         th:classappend="${i == clients.number} ? 'current-page' : ''"
-                        th:onclick="'window.location.href=\'/admin/clients?page=' + ${i} + '&size=' + ${clients.size} + '\''">
+                        th:onclick="'window.location.href=\'/admin/v2/clients?page=' + ${i} + '&size=' + ${clients.size} + '\''">
                 </button>
                 <button th:disabled="${clients.last}"
-                        th:onclick="'window.location.href=\'/admin/clients?page=' + ${clients.number + 1} + '&size=' + ${clients.size} + '\''">
+                        th:onclick="'window.location.href=\'/admin/v2/clients?page=' + ${clients.number + 1} + '&size=' + ${clients.size} + '\''">
                     Next
                 </button>
             </div>
@@ -125,18 +294,182 @@
     </div>
 </main>
 
+<!-- Expiry Management Modal -->
+<div id="expiryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Manage Account Expiry</h3>
+            <span class="close" onclick="closeExpiryModal()">&times;</span>
+        </div>
+        <form id="expiryForm">
+            <input type="hidden" id="expiryClientId">
+
+            <div class="form-group">
+                <label>Action</label>
+                <select id="expiryAction" onchange="toggleExpiryDate()">
+                    <option value="set">Set Expiry Date</option>
+                    <option value="remove">Remove Expiry</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="expiryDateGroup">
+                <label>Expiry Date & Time</label>
+                <input type="datetime-local" id="expiryDate">
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeExpiryModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitExpiry()">Apply</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div th:replace="~{admin/fragments :: commonScripts}"></div>
 
 <script>
-    function viewClient(id) { window.location.href = '/admin/clients/' + id; }
-    function editClient(id) { window.location.href = '/admin/clients/' + id + '/edit'; }
+    function viewClient(id) { window.location.href = '/admin/v2/clients/' + id; }
+    function editClient(id) { window.location.href = '/admin/v2/clients/' + id + '/edit'; }
+
     function deleteClient(id) {
         if (confirm('Are you sure you want to delete this client?')) {
-            fetch('/admin/clients/' + id + '/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            fetch('/admin/v2/clients/' + id + '/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
                 .then(response => {
-                    if (response.ok) { alert('Client deleted'); window.location.reload(); }
-                    else { alert('Failed to delete client'); }
+                    if (response.ok) {
+                        alert('Client deleted');
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete client');
+                    }
                 });
+        }
+    }
+
+    // Lock Account
+    function lockAccount(id) {
+        if (confirm('Lock this account? User will not be able to login.')) {
+            fetch('/admin/v2/clients/' + id + '/lock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Account locked successfully');
+                    window.location.reload();
+                })
+                .catch(error => {
+                    alert('Error locking account: ' + error);
+                });
+        }
+    }
+
+    // Unlock Account
+    function unlockAccount(id) {
+        if (confirm('Unlock this account?')) {
+            fetch('/admin/v2/clients/' + id + '/unlock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Account unlocked successfully');
+                    window.location.reload();
+                })
+                .catch(error => {
+                    alert('Error unlocking account: ' + error);
+                });
+        }
+    }
+
+    // Enable Account (Email Verified = true)
+    function enableAccount(id) {
+        if (confirm('Enable this account? User will be able to login.')) {
+            fetch('/admin/v2/clients/' + id + '/enable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Account enabled successfully');
+                    window.location.reload();
+                })
+                .catch(error => {
+                    alert('Error enabling account: ' + error);
+                });
+        }
+    }
+
+    // Disable Account (Email Verified = false)
+    function disableAccount(id) {
+        if (confirm('Disable this account? User will not be able to login.')) {
+            fetch('/admin/v2/clients/' + id + '/disable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Account disabled successfully');
+                    window.location.reload();
+                })
+                .catch(error => {
+                    alert('Error disabling account: ' + error);
+                });
+        }
+    }
+
+    // Manage Expiry Modal
+    function manageExpiry(id) {
+        document.getElementById('expiryClientId').value = id;
+        document.getElementById('expiryModal').style.display = 'block';
+    }
+
+    function closeExpiryModal() {
+        document.getElementById('expiryModal').style.display = 'none';
+    }
+
+    function toggleExpiryDate() {
+        const action = document.getElementById('expiryAction').value;
+        const dateGroup = document.getElementById('expiryDateGroup');
+        dateGroup.style.display = action === 'set' ? 'block' : 'none';
+    }
+
+    function submitExpiry() {
+        const clientId = document.getElementById('expiryClientId').value;
+        const action = document.getElementById('expiryAction').value;
+        const expiryDate = document.getElementById('expiryDate').value;
+
+        if (action === 'set' && !expiryDate) {
+            alert('Please select an expiry date');
+            return;
+        }
+
+        const endpoint = action === 'set' ? '/admin/v2/clients/' + clientId + '/set-expiry' : '/admin/v2/clients/' + clientId + '/remove-expiry';
+        const body = action === 'set' ? JSON.stringify({ expiryDate: expiryDate }) : '{}';
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: body
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Expiry updated successfully');
+                closeExpiryModal();
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error updating expiry: ' + error);
+            });
+    }
+
+    // Close modal on outside click
+    window.onclick = function(event) {
+        const modal = document.getElementById('expiryModal');
+        if (event.target == modal) {
+            closeExpiryModal();
         }
     }
 </script>
