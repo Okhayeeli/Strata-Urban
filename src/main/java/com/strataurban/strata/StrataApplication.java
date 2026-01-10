@@ -1,6 +1,5 @@
 package com.strataurban.strata;
 
-import com.strataurban.strata.Security.SecurityUserDetails;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
