@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
 import com.strataurban.strata.Security.SecurityUserDetails;
+import com.strataurban.strata.Security.SecurityUserDetailsService;
 import com.strataurban.strata.yoco_integration.config.YocoProperties;
 import com.strataurban.strata.yoco_integration.dtos.CheckoutResponse;
 import com.strataurban.strata.yoco_integration.dtos.CreateCheckoutRequest;
@@ -27,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,7 +44,8 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
     private final TransactionValidationService transactionValidationService;
     private final OfferRepository offerRepository;
-
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final SecurityUserDetailsService securityUserDetailsService;
 
     @Value("${yoco.payment.success.url}")
     private String successUrl;
@@ -178,6 +181,12 @@ public class PaymentService {
         transactionRepository.save(transaction);
 
         log.info("Payment status updated: CheckoutId={}, Status={}", checkoutId, status);
+    }
+
+
+    public List<PaymentTransaction> getUserTransactions(){
+        SecurityUserDetails userDetails = securityUserDetailsService.getSecurityUserDetails();
+        return paymentTransactionRepository.findByCustomerId(userDetails.getId());
     }
 
     // Helper methods

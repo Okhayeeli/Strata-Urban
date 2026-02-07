@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
 import com.strataurban.strata.Enums.BookingStatus;
-import com.strataurban.strata.Enums.OfferStatus;
 import com.strataurban.strata.Notifications.NotificationFacade;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.OfferRepository;
@@ -28,10 +27,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.strataurban.strata.Enums.OfferStatus.PAID;
 
@@ -49,7 +46,6 @@ public class WebhookService {
     private static final String HMAC_SHA256 = "HmacSHA256";
     private final BookingRepository bookingRepository;
     private final NotificationFacade notificationFacade;
-    private final PaymentTransactionRepository paymentTransactionRepository;
     private final OfferRepository offerRepository;
     private final ReceiptService receiptService;
 
@@ -85,7 +81,7 @@ public class WebhookService {
                 offerRepository.save(offer);
 
                 BookingRequest bookingRequest = bookingRepository.findById(offer.getBookingRequestId()).orElseThrow();
-                bookingRequest.setStatus(BookingStatus.CLAIMED);
+                bookingRequest.setStatus(BookingStatus.CONFIRMED);
                 bookingRepository.save(bookingRequest);
             }
             // 4. Store raw webhook for audit trail

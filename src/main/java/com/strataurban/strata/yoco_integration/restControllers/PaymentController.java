@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -62,6 +63,13 @@ public class PaymentController {
         log.debug("Retrieving payment for externalReference: {}", externalReference);
         PaymentTransaction transaction = paymentService.getPaymentByExternalReference(externalReference);
         return ResponseEntity.ok(transaction);
+    }
+
+    @GetMapping("/history/{clientId}")
+    public ResponseEntity<List<PaymentTransaction>> getPaymentHistory(@PathVariable String clientId) {
+        log.debug("Retrieving payment history for clientId: {}", clientId);
+        paymentService.getUserTransactions();
+        return ResponseEntity.ok(paymentService.getUserTransactions());
     }
 
     @PostMapping("/webhook")
