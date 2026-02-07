@@ -113,8 +113,8 @@ public class RouteServiceImpl implements RouteService {
             return routeRepository.findAllByCountryAndStateAndIsEnabledTrue(country, state);
         }
 
-        return routeRepository.findAllByCountryAndStateAndCityAndIsEnabledTrue(
-                country, state, city
+        return routeRepository.findAllByCountryAndIsEnabledTrue(
+                country
         );
     }
 

@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Fleet Management')}"></head>
+<body>
+
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --card-shadow: 0 8px 32px rgba(0,0,0,0.08);
+        --card-hover-shadow: 0 16px 48px rgba(0,0,0,0.15);
+    }
+
+    /* Modern Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 28px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 2px solid transparent;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: var(--primary-gradient);
+        transition: height 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--card-hover-shadow);
+        border-color: rgba(102, 126, 234, 0.3);
+    }
+
+    .stat-card:hover::before {
+        height: 100%;
+        opacity: 0.05;
+    }
+
+    .stat-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin-bottom: 16px;
+        position: relative;
+        background: rgba(102, 126, 234, 0.1);
+    }
+
+    .stat-card:nth-child(1) .stat-icon { background: var(--primary-gradient); color: white; }
+    .stat-card:nth-child(2) .stat-icon { background: var(--success-gradient); color: white; }
+    .stat-card:nth-child(3) .stat-icon { background: var(--warning-gradient); color: white; }
+    .stat-card:nth-child(4) .stat-icon { background: var(--info-gradient); color: white; }
+
+    .stat-value {
+        font-size: 36px;
+        font-weight: 800;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 8px;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: #6b7280;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Provider Section with Automotive Theme */
+    .provider-fleet {
+        background: white;
+        border-radius: 24px;
+        padding: 32px;
+        margin-bottom: 32px;
+        box-shadow: var(--card-shadow);
+        position: relative;
+        overflow: hidden;
+        border: 2px solid #f3f4f6;
+        transition: all 0.3s ease;
+    }
+
+    .provider-fleet::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: -100px;
+        width: 300px;
+        height: 300px;
+        background: var(--primary-gradient);
+        opacity: 0.03;
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .provider-fleet:hover {
+        border-color: rgba(102, 126, 234, 0.3);
+        box-shadow: var(--card-hover-shadow);
+    }
+
+    .fleet-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 24px;
+        border-bottom: 3px solid #f3f4f6;
+        margin-bottom: 32px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .fleet-provider-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex: 1;
+    }
+
+    .fleet-logo {
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 800;
+        font-size: 32px;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        position: relative;
+    }
+
+    .fleet-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 20px;
+    }
+
+    .fleet-logo::after {
+        content: '';
+        position: absolute;
+        inset: -4px;
+        border-radius: 22px;
+        padding: 2px;
+        background: var(--primary-gradient);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.3;
+    }
+
+    .fleet-details h2 {
+        margin: 0 0 8px 0;
+        font-size: 28px;
+        font-weight: 800;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .fleet-meta {
+        display: flex;
+        gap: 24px;
+        font-size: 14px;
+        color: #6b7280;
+        flex-wrap: wrap;
+    }
+
+    .fleet-meta span {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+    }
+
+    .fleet-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .fleet-stat-box {
+        text-align: center;
+        padding: 16px;
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        border-radius: 16px;
+        border: 2px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+
+    .fleet-stat-box:hover {
+        transform: translateY(-4px);
+        border-color: rgba(102, 126, 234, 0.5);
+        background: white;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+    .fleet-stat-box h3 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 800;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .fleet-stat-box p {
+        margin: 4px 0 0 0;
+        font-size: 12px;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+
+    .toggle-fleet {
+        font-size: 28px;
+        transition: transform 0.3s ease;
+        color: #9ca3af;
+        cursor: pointer;
+    }
+
+    .toggle-fleet.collapsed {
+        transform: rotate(-90deg);
+    }
+
+    /* Vehicle Cards - Automotive Showroom Style */
+    .vehicles-showcase {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 32px;
+        margin-top: 32px;
+        transition: all 0.3s ease;
+    }
+
+    .vehicles-showcase.collapsed {
+        display: none;
+    }
+
+    .vehicle-card {
+        background: white;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        border: 2px solid #f3f4f6;
+    }
+
+    .vehicle-card:hover {
+        transform: translateY(-12px) scale(1.02);
+        box-shadow: var(--card-hover-shadow);
+        border-color: rgba(102, 126, 234, 0.4);
+    }
+
+    .vehicle-preview {
+        height: 240px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .vehicle-preview::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(255,255,255,0.03) 50px, rgba(255,255,255,0.03) 100px),
+            repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(255,255,255,0.03) 50px, rgba(255,255,255,0.03) 100px);
+    }
+
+    .vehicle-3d-placeholder {
+        position: relative;
+        width: 200px;
+        height: 120px;
+        perspective: 1000px;
+    }
+
+    .vehicle-icon {
+        font-size: 120px;
+        color: rgba(255, 255, 255, 0.9);
+        filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotateY(-10deg); }
+        50% { transform: translateY(-15px) rotateY(10deg); }
+    }
+
+    .vehicle-type-badge {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .vehicle-status-badge {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .status-available {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+
+    .status-booked {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+
+    .status-maintenance {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+    }
+
+    .vehicle-info {
+        padding: 24px;
+    }
+
+    .vehicle-header {
+        margin-bottom: 16px;
+    }
+
+    .vehicle-brand {
+        font-size: 14px;
+        color: #6b7280;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 4px;
+    }
+
+    .vehicle-model {
+        font-size: 24px;
+        font-weight: 800;
+        color: #1f2937;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .vehicle-specs {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin: 20px 0;
+    }
+
+    .spec-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: #f9fafb;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
+    }
+
+    .spec-item:hover {
+        background: white;
+        border-color: rgba(102, 126, 234, 0.3);
+        transform: translateX(4px);
+    }
+
+    .spec-icon {
+        font-size: 20px;
+        color: #667eea;
+    }
+
+    .spec-content {
+        flex: 1;
+    }
+
+    .spec-label {
+        font-size: 10px;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+
+    .spec-value {
+        font-size: 14px;
+        color: #1f2937;
+        font-weight: 700;
+        margin-top: 2px;
+    }
+
+    .vehicle-plate {
+        text-align: center;
+        padding: 12px;
+        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+        border-radius: 8px;
+        margin: 16px 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vehicle-plate::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24);
+    }
+
+    .plate-number {
+        font-family: 'Courier New', monospace;
+        font-size: 20px;
+        font-weight: 800;
+        color: white;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+    }
+
+    .vehicle-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding-top: 20px;
+        border-top: 2px solid #f3f4f6;
+    }
+
+    .vehicle-action-btn {
+        padding: 12px;
+        border: 2px solid #e5e7eb;
+        background: white;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .vehicle-action-btn:hover {
+        border-color: #667eea;
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .action-icon {
+        font-size: 18px;
+    }
+
+    /* Filters and Controls */
+    .controls-bar {
+        background: white;
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 32px;
+        box-shadow: var(--card-shadow);
+        border: 2px solid #f3f4f6;
+    }
+
+    .search-box {
+        flex: 1;
+        position: relative;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 16px 48px 16px 20px;
+        border: 2px solid #e5e7eb;
+        border-radius: 16px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 20px;
+    }
+
+    .filter-chips {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+
+    .filter-chip {
+        padding: 10px 20px;
+        border: 2px solid #e5e7eb;
+        background: white;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-chip:hover,
+    .filter-chip.active {
+        border-color: #667eea;
+        background: var(--primary-gradient);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .view-toggle {
+        display: flex;
+        gap: 8px;
+        background: #f3f4f6;
+        padding: 6px;
+        border-radius: 16px;
+    }
+
+    .view-btn {
+        padding: 10px 20px;
+        border: none;
+        background: transparent;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #6b7280;
+    }
+
+    .view-btn.active {
+        background: white;
+        color: #667eea;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* Add Vehicle Button */
+    .add-vehicle-fab {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--primary-gradient);
+        border: none;
+        color: white;
+        font-size: 32px;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 100;
+    }
+
+    .add-vehicle-fab:hover {
+        transform: scale(1.1) rotate(90deg);
+        box-shadow: 0 12px 32px rgba(102, 126, 234, 0.6);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        background: white;
+        border-radius: 24px;
+        margin: 40px 0;
+    }
+
+    .empty-icon {
+        font-size: 120px;
+        opacity: 0.2;
+        margin-bottom: 24px;
+    }
+
+    .empty-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 12px;
+    }
+
+    .empty-text {
+        font-size: 16px;
+        color: #6b7280;
+        margin-bottom: 32px;
+    }
+
+    @media (max-width: 768px) {
+        .vehicles-showcase {
+            grid-template-columns: 1fr;
+        }
+        
+        .fleet-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<aside th:replace="~{admin/fragments :: sidebar('vehicles')}"></aside>
+
+<main class="main-content" id="mainContent">
+    <header th:replace="~{admin/fragments :: topHeader('Fleet Management')}"></header>
+
+    <div class="page-content">
+        
+        <!-- Statistics Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🏎️</div>
+                <div class="stat-value" th:text="${totalVehicles}">0</div>
+                <div class="stat-label">Total Fleet</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" th:text="${availableVehicles}">0</div>
+                <div class="stat-label">Available</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div class="stat-value" th:text="${bookedVehicles}">0</div>
+                <div class="stat-label">Booked</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🔧</div>
+                <div class="stat-value" th:text="${maintenanceVehicles}">0</div>
+                <div class="stat-label">Maintenance</div>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="controls-bar">
+            <div class="search-box">
+                <input type="text" 
+                       class="search-input" 
+                       id="vehicleSearch" 
+                       placeholder="Search by brand, model, plate number, color..."
+                       onkeyup="filterVehicles()">
+                <span class="search-icon">🔍</span>
+            </div>
+            
+            <div class="filter-chips">
+                <button class="filter-chip active" onclick="filterByStatus('all')">All Vehicles</button>
+                <button class="filter-chip" onclick="filterByStatus('Available')">Available</button>
+                <button class="filter-chip" onclick="filterByStatus('Booked')">Booked</button>
+                <button class="filter-chip" onclick="filterByStatus('Maintenance')">Maintenance</button>
+                <button class="filter-chip" onclick="filterByType('Taxi')">🚕 Taxis</button>
+                <button class="filter-chip" onclick="filterByType('Bus')">🚌 Buses</button>
+            </div>
+        </div>
+
+        <!-- Provider Fleet Groups -->
+        <div id="providerFleets">
+            <div class="provider-fleet" th:each="group : ${vehiclesGroupedByProvider}">
+                <!-- Fleet Header -->
+                <div class="fleet-header" th:onclick="'toggleFleet(' + ${group.providerId} + ')'">
+                    <div class="fleet-provider-info">
+                        <div class="fleet-logo">
+                            <img th:if="${group.providerLogoUrl != null}" 
+                                 th:src="${group.providerLogoUrl}" 
+                                 alt="Provider Logo">
+                            <span th:if="${group.providerLogoUrl == null}" 
+                                  th:text="${group.providerName.substring(0, 1).toUpperCase()}">P</span>
+                        </div>
+                        <div class="fleet-details">
+                            <h2 th:text="${group.providerName}">Provider Name</h2>
+                            <div class="fleet-meta">
+                                <span th:if="${group.providerCity != null && group.providerCity != 'N/A'}">
+                                    📍 <span th:text="${group.providerCity}">City</span>
+                                </span>
+                                <span th:if="${group.providerPhone != null && group.providerPhone != 'N/A'}">
+                                    📞 <span th:text="${group.providerPhone}">Phone</span>
+                                </span>
+                                <span th:if="${group.providerRating != null && group.providerRating > 0}">
+                                    ⭐ <span th:text="${#numbers.formatDecimal(group.providerRating, 1, 1)} + ' Rating'">Rating</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="fleet-stats">
+                        <div class="fleet-stat-box">
+                            <h3 th:text="${group.totalVehicles}">0</h3>
+                            <p>Total</p>
+                        </div>
+                        <div class="fleet-stat-box">
+                            <h3 th:text="${group.availableVehicles}">0</h3>
+                            <p>Available</p>
+                        </div>
+                        <div class="fleet-stat-box">
+                            <h3 th:text="${group.bookedVehicles}">0</h3>
+                            <p>Booked</p>
+                        </div>
+                        <div class="fleet-stat-box">
+                            <h3 th:text="${group.maintenanceVehicles}">0</h3>
+                            <p>Maintenance</p>
+                        </div>
+                    </div>
+                    
+                    <div class="toggle-fleet" th:id="'toggle-' + ${group.providerId}">▼</div>
+                </div>
+
+                <!-- Vehicle Showcase Grid -->
+                <div class="vehicles-showcase" th:id="'vehicles-' + ${group.providerId}">
+                    <div class="vehicle-card" th:each="vehicle : ${group.vehicles}">
+                        <!-- Vehicle Preview with 3D Placeholder -->
+                        <div class="vehicle-preview" th:style="'background: linear-gradient(135deg, ' + ${vehicle.color != null ? vehicle.color : '#667eea'} + ' 0%, ' + ${vehicle.color != null ? vehicle.color : '#764ba2'} + ' 100%);'">
+                            <div class="vehicle-3d-placeholder">
+                                <div class="vehicle-icon" th:text="${vehicle.type == 'Bus' ? '🚌' : '🚗'}">🚗</div>
+                            </div>
+                            
+                            <div class="vehicle-type-badge" th:text="${vehicle.type}">Taxi</div>
+                            
+                            <div class="vehicle-status-badge" 
+                                 th:classappend="${vehicle.status == 'Available' ? 'status-available' : (vehicle.status == 'Booked' ? 'status-booked' : 'status-maintenance')}"
+                                 th:text="${vehicle.status}">
+                                Available
+                            </div>
+                        </div>
+
+                        <!-- Vehicle Information -->
+                        <div class="vehicle-info">
+                            <div class="vehicle-header">
+                                <div class="vehicle-brand" th:text="${vehicle.brand}">Brand</div>
+                                <h3 class="vehicle-model" th:text="${vehicle.model}">Model</h3>
+                            </div>
+
+                            <div class="vehicle-specs">
+                                <div class="spec-item">
+                                    <div class="spec-icon">👥</div>
+                                    <div class="spec-content">
+                                        <div class="spec-label">Capacity</div>
+                                        <div class="spec-value" th:text="${vehicle.capacity} + ' Seats'">4 Seats</div>
+                                    </div>
+                                </div>
+                                <div class="spec-item">
+                                    <div class="spec-icon">🎨</div>
+                                    <div class="spec-content">
+                                        <div class="spec-label">Color</div>
+                                        <div class="spec-value" th:text="${vehicle.color}">Black</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="vehicle-plate">
+                                <div class="plate-number" th:text="${vehicle.plateNumber}">ABC-1234</div>
+                            </div>
+
+                            <div class="vehicle-actions">
+                                <button class="vehicle-action-btn" th:onclick="'viewVehicle(' + ${vehicle.id} + ')'">
+                                    <span class="action-icon">👁️</span>
+                                    <span>View</span>
+                                </button>
+                                <button class="vehicle-action-btn" th:onclick="'editVehicle(' + ${vehicle.id} + ')'">
+                                    <span class="action-icon">✏️</span>
+                                    <span>Edit</span>
+                                </button>
+                                <button class="vehicle-action-btn" th:onclick="'deleteVehicle(' + ${vehicle.id} + ')'">
+                                    <span class="action-icon">🗑️</span>
+                                    <span>Delete</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" th:if="${totalVehicles == 0}">
+                <div class="empty-icon">🚗</div>
+                <h2 class="empty-title">No Vehicles Found</h2>
+                <p class="empty-text">Start building your fleet by adding vehicles</p>
+                <button class="btn btn-primary" onclick="openAddVehicleModal()">
+                    ➕ Add First Vehicle
+                </button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Floating Add Button -->
+<button class="add-vehicle-fab" onclick="openAddVehicleModal()" title="Add New Vehicle">+</button>
+
+<div th:replace="~{admin/fragments :: commonScripts}"></div>
+
+<script>
+    // Toggle fleet visibility
+    function toggleFleet(providerId) {
+        const showcase = document.getElementById('vehicles-' + providerId);
+        const toggleIcon = document.getElementById('toggle-' + providerId);
+        
+        if (showcase.classList.contains('collapsed')) {
+            showcase.classList.remove('collapsed');
+            toggleIcon.classList.remove('collapsed');
+            toggleIcon.textContent = '▼';
+        } else {
+            showcase.classList.add('collapsed');
+            toggleIcon.classList.add('collapsed');
+            toggleIcon.textContent = '▶';
+        }
+    }
+
+    // Filter vehicles by search
+    function filterVehicles() {
+        const searchTerm = document.getElementById('vehicleSearch').value.toLowerCase();
+        const vehicleCards = document.querySelectorAll('.vehicle-card');
+        
+        vehicleCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+        });
+    }
+
+    // Filter by status
+    function filterByStatus(status) {
+        const chips = document.querySelectorAll('.filter-chip');
+        chips.forEach(chip => chip.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        const vehicleCards = document.querySelectorAll('.vehicle-card');
+        
+        vehicleCards.forEach(card => {
+            const statusBadge = card.querySelector('.vehicle-status-badge');
+            if (!statusBadge) return;
+            
+            const cardStatus = statusBadge.textContent.trim();
+            
+            if (status === 'all') {
+                card.style.display = 'block';
+            } else {
+                card.style.display = cardStatus === status ? 'block' : 'none';
+            }
+        });
+    }
+
+    // Filter by type
+    function filterByType(type) {
+        const chips = document.querySelectorAll('.filter-chip');
+        chips.forEach(chip => chip.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        const vehicleCards = document.querySelectorAll('.vehicle-card');
+        
+        vehicleCards.forEach(card => {
+            const typeBadge = card.querySelector('.vehicle-type-badge');
+            if (!typeBadge) return;
+            
+            const cardType = typeBadge.textContent.trim();
+            card.style.display = cardType === type ? 'block' : 'none';
+        });
+    }
+
+    // Vehicle CRUD Functions
+    function viewVehicle(id) {
+        window.location.href = '/admin/vehicles/' + id;
+    }
+
+    function editVehicle(id) {
+        window.location.href = '/admin/vehicles/' + id + '/edit';
+    }
+
+    function deleteVehicle(id) {
+        if (confirm('Are you sure you want to delete this vehicle? This action cannot be undone.')) {
+            fetch('/admin/vehicles/' + id + '/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Vehicle deleted successfully');
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error deleting vehicle: ' + error);
+            });
+        }
+    }
+
+    function openAddVehicleModal() {
+        // TODO: Implement add vehicle modal
+        alert('Add vehicle functionality - coming soon!');
+    }
+</script>
+</body>
+</html>

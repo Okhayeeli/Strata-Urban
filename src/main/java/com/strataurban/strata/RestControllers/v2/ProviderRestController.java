@@ -235,8 +235,8 @@ public class ProviderRestController {
             @ApiResponse(responseCode = "404", description = "Booking not found")
     })
     @PreAuthorize("hasRole('PROVIDER')")
-    public ResponseEntity<List<DriverResponse>> getAvailableDrivers() {
-        return ResponseEntity.ok(bookingService.getAvailableDrivers());
+    public ResponseEntity<List<DriverResponse>> getAvailableDrivers(@RequestParam(required = false) Long providerId) {
+        return ResponseEntity.ok(bookingService.getAvailableDrivers(providerId));
     }
 
     private Long resolveProviderId(Long id, SecurityUserDetails userDetails, List<String> rolesRequiringId) {

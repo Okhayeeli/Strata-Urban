@@ -80,5 +80,5 @@ public interface BookingService {
 
     BookingRequestResponseDTO mapToResponseDTO(BookingRequest entity);
 
-    List<DriverResponse> getAvailableDrivers();
+    List<DriverResponse> getAvailableDrivers(Long providerId);
 }

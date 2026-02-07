@@ -4,13 +4,16 @@ import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.CustomUserDetails;
 import com.strataurban.strata.Entities.Generics.BlacklistedToken;
 import com.strataurban.strata.Entities.Passengers.Client;
+import com.strataurban.strata.Entities.Passengers.Driver;
 import com.strataurban.strata.Entities.Providers.Provider;
 import com.strataurban.strata.Entities.Providers.ServiceArea;
 import com.strataurban.strata.Entities.User;
+import com.strataurban.strata.Enums.DriverStatus;
 import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Enums.ProviderRole;
 import com.strataurban.strata.Notifications.NotificationPreferenceService;
 import com.strataurban.strata.Notifications.UserContactService;
+import com.strataurban.strata.Repositories.DriverRepository;
 import com.strataurban.strata.Repositories.v2.ServiceAreaRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Security.SecurityUserDetails;
@@ -47,6 +50,7 @@ import java.time.LocalDateTime;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final DriverRepository driverRepository;
     private final UserContactService userContactService;
     private final ServiceAreaRepository serviceAreaRepository;
     private final BlacklistedTokenRepository blacklistedTokenRepository;
@@ -71,13 +75,14 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     public UserServiceImpl(
-            UserRepository userRepository, UserContactService userContactService,
+            UserRepository userRepository, DriverRepository driverRepository, UserContactService userContactService,
             ServiceAreaRepository serviceAreaRepository,
             BlacklistedTokenRepository blacklistedTokenRepository,
             PasswordEncoder passwordEncoder,
             @Lazy AuthenticationManager authenticationManager,
             JwtUtil jwtUtil, EmailService emailService, NotificationPreferenceService preferenceService) {
         this.userRepository = userRepository;
+        this.driverRepository = driverRepository;
         this.userContactService = userContactService;
         this.serviceAreaRepository = serviceAreaRepository;
         this.blacklistedTokenRepository = blacklistedTokenRepository;
@@ -496,60 +501,80 @@ public class UserServiceImpl implements UserService {
 
         return user;
     }
+    // REFACTORED METHOD FOR UserServiceImpl.java
+
     @Override
-    public User registerDriver(AdminRegistrationRequest request, SecurityUserDetails userDetails) {
-        // Check for existing username or email
+    public Driver registerDriver(AdminRegistrationRequest request, SecurityUserDetails userDetails) {
+        // Check for existing username or email in both User and Driver tables
         if (userRepository.findByUsernameOrEmail(request.getUsername(), request.getEmail()).isPresent()) {
             throw new RuntimeException("Username or email already exists");
+        }
+
+        if (driverRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        if (driverRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username already exists");
         }
 
         // Validate password
         validatePassword(request.getPassword());
 
-        // Create new user
-        User user = new User();
-        user.setTitle(request.getTitle());
-        user.setFirstName(request.getFirstName());
-        user.setMiddleName(request.getMiddleName());
-        user.setLastName(request.getLastName());
-        user.setEmail(request.getEmail());
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setPhone(request.getPhone());
-        user.setPhone2(request.getPhone2());
-        user.setAddress(request.getAddress());
-        user.setPreferredLanguage(request.getPreferredLanguage());
-        user.setImageUrl(request.getImageUrl());
-        user.setRoles(EnumRoles.DRIVER);
-        user.setEmailVerified(true);
-        user.setSelfCreated(false);
+        // Create new Driver instance (not User)
+        Driver driver = new Driver();
 
-        // Set fields based on user role
+        // Set basic user fields
+        driver.setTitle(request.getTitle());
+        driver.setFirstName(request.getFirstName());
+        driver.setMiddleName(request.getMiddleName());
+        driver.setLastName(request.getLastName());
+        driver.setEmail(request.getEmail());
+        driver.setUsername(request.getUsername());
+        driver.setPassword(passwordEncoder.encode(request.getPassword()));
+        driver.setPhone(request.getPhone());
+        driver.setPhone2(request.getPhone2());
+        driver.setAddress(request.getAddress());
+        driver.setPreferredLanguage(request.getPreferredLanguage());
+        driver.setImageUrl(request.getImageUrl());
+        driver.setEmailVerified(true);
+        driver.setSelfCreated(false);
+        driver.setRoles(EnumRoles.DRIVER);
+        driver.setBankAccountName(request.getBankAccountName());
+        driver.setBankName(request.getBankName());
+        driver.setBankCode(request.getBankCode());
+        driver.setCountry(request.getCountry());
+
+        // Set fields based on who is creating the driver
         if (userDetails.getRole() == EnumRoles.PROVIDER) {
-            // For PROVIDER: use userDetails for city, state, country, and id
-            user.setCity(userDetails.getCity());
-            user.setState(userDetails.getState());
-            user.setCountry(userDetails.getCountry());
-            user.setProviderId(String.valueOf(userDetails.getId()));
-            user.setProviderRole(ProviderRole.DRIVER);
+            // For PROVIDER: use userDetails for location and provider ID
+            driver.setCity(userDetails.getCity());
+            driver.setState(userDetails.getState());
+            driver.setCountry(userDetails.getCountry());
+            driver.setProviderId(String.valueOf(userDetails.getId()));
+            driver.setProviderRole(ProviderRole.DRIVER);
         } else {
-            // For ADMIN, CUSTOMER_SERVICE: use request body for city, state, country
-            user.setCity(request.getCity());
-            user.setState(request.getState());
-            user.setCountry(request.getCountry());
+            // For ADMIN, CUSTOMER_SERVICE, DEVELOPER: use request body
+            driver.setCity(request.getCity());
+            driver.setState(request.getState());
+            driver.setCountry(request.getCountry());
+
             if (StringUtils.hasText(request.getProviderId())) {
-                user.setProviderId(request.getProviderId());
-            }
-            else{
+                driver.setProviderId(request.getProviderId());
+            } else {
                 throw new RuntimeException("Provider ID is required for driver registration");
             }
-            user.setProviderRole(null); // Adjust based on your requirements
+            driver.setProviderRole(null);
         }
 
-        return userRepository.save(user);
+        // Set driver-specific fields with defaults
+        driver.setIsActive(true);
+        driver.setAvailable(false); // Driver must go online manually
+        driver.setDriverStatus(DriverStatus.AVAILABLE);
+
+        return driverRepository.save(driver);
     }
 
-    // Update last activity on every request (via a filter or service call)
     public void updateLastActivity(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));

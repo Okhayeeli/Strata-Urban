@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -89,6 +90,8 @@ public class PasswordResetTokenService {
         String newPasswordHash = passwordEncoder.encode(newPassword);
         user.setPassword(newPasswordHash);
         user.setLastPasswordChange(LocalDateTime.now());
+        user.setModifiedDate(new Date());
+        user.setModificationAction("PASSWORD RESET");
 //        userService.savePasswordHistory(user, newPasswordHash);
         userService.resetFailedLoginAttempts(user);
         userRepository.save(user);

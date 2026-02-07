@@ -1,6 +1,7 @@
 package com.strataurban.strata.ServiceImpls.v2;
 
 import com.strataurban.strata.DTOs.v2.*;
+import com.strataurban.strata.Entities.Passengers.Driver;
 import com.strataurban.strata.Entities.Providers.Offer;
 import com.strataurban.strata.Entities.Providers.Routes;
 import com.strataurban.strata.Entities.Providers.Transport;
@@ -10,6 +11,7 @@ import com.strataurban.strata.Enums.BookingStatus;
 import com.strataurban.strata.Enums.EnumPriority;
 import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Notifications.NotificationFacade;
+import com.strataurban.strata.Repositories.DriverRepository;
 import com.strataurban.strata.Repositories.v2.*;
 import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Security.SecurityUserDetailsService;
@@ -48,6 +50,9 @@ public class BookingServiceImpl implements BookingService {
     private final OfferService offerService;
 
     @Autowired
+    private final DriverRepository driverRepository;
+
+    @Autowired
     private final UserRepository userRepository;
 
     private final SecurityUserDetailsService securityUserDetailsService;
@@ -60,10 +65,11 @@ public class BookingServiceImpl implements BookingService {
     private RouteServiceImpl routeServiceImpl;
 
     @Autowired
-    public BookingServiceImpl(BookingRepository bookingRepository, OfferRepository offerRepository, OfferService offerService, UserRepository userRepository, SecurityUserDetailsService securityUserDetailsService, TransportRepository transportRepository, RouteRepository routeRepository, NotificationFacade notificationFacade) {
+    public BookingServiceImpl(BookingRepository bookingRepository, OfferRepository offerRepository, OfferService offerService, DriverRepository driverRepository, UserRepository userRepository, SecurityUserDetailsService securityUserDetailsService, TransportRepository transportRepository, RouteRepository routeRepository, NotificationFacade notificationFacade) {
         this.bookingRepository = bookingRepository;
         this.offerRepository = offerRepository;
         this.offerService = offerService;
+        this.driverRepository = driverRepository;
         this.userRepository = userRepository;
         this.securityUserDetailsService = securityUserDetailsService;
         this.transportRepository = transportRepository;
@@ -693,29 +699,45 @@ public class BookingServiceImpl implements BookingService {
     }
 
 
-    public List<DriverResponse> getAvailableDrivers() {
-
+    public List<DriverResponse> getAvailableDrivers(Long providerId) {
         // Get authenticated user
         SecurityUserDetails userDetails = securityUserDetailsService.getSecurityUserDetails();
 
-        // Fetch drivers
-        List<User> drivers;
+        // Fetch available drivers based on role
+        List<Driver> drivers;
+
         if (userDetails.getRole() == EnumRoles.PROVIDER) {
-            // For PROVIDER, only get drivers with matching providerId
-            drivers = userRepository.findByRolesAndProviderId(EnumRoles.DRIVER, String.valueOf(userDetails.getId()));
+            // For PROVIDER, only get their own available drivers
+            drivers = driverRepository.findAvailableDriversByProvider(String.valueOf(userDetails.getId()));
+        } else if (userDetails.getRole() == ADMIN && providerId != null) {
+            drivers = driverRepository.findAvailableDriversByProvider(String.valueOf(providerId));
         } else {
-            // For ADMIN or CUSTOMER_SERVICE, get all DRIVERs
-            drivers = userRepository.findByRoles(EnumRoles.DRIVER);
+            // For ADMIN or CUSTOMER_SERVICE, get all available drivers
+            drivers = driverRepository.findAvailableDrivers();
         }
 
         // Map to DriverResponse
         return drivers.stream()
-                .map(user -> {
+                .map(driver -> {
                     DriverResponse response = new DriverResponse();
-                    response.setId(user.getId());
-                    response.setFullName(buildFullName(user));
-                    response.setAddress(user.getAddress());
-                    response.setEmail(user.getEmail());
+                    response.setId(driver.getId());
+                    response.setFullName(driver.getFullName()); // Use the helper method from Driver entity
+                    response.setAddress(driver.getAddress());
+                    response.setEmail(driver.getEmail());
+                    return response;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<DriverResponse> getAvailableDriversAdmin(Long providerId) {
+        List<Driver> drivers=  driverRepository.findAvailableDriversByProvider(String.valueOf(providerId));
+        return drivers.stream()
+                .map(driver -> {
+                    DriverResponse response = new DriverResponse();
+                    response.setId(driver.getId());
+                    response.setFullName(driver.getFullName()); // Use the helper method from Driver entity
+                    response.setAddress(driver.getAddress());
+                    response.setEmail(driver.getEmail());
                     return response;
                 })
                 .collect(Collectors.toList());

@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Driver Details')}"></head>
+<body>
+
+<style>
+    .detail-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: #f3f4f6;
+        border: none;
+        border-radius: 8px;
+        color: #374151;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 20px;
+        transition: all 0.2s;
+    }
+
+    .back-button:hover {
+        background: #e5e7eb;
+        transform: translateX(-4px);
+    }
+
+    .driver-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        padding: 40px;
+        color: white;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .driver-header-content {
+        display: flex;
+        gap: 30px;
+        align-items: flex-start;
+    }
+
+    .driver-avatar-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: bold;
+        color: white;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        flex-shrink: 0;
+    }
+
+    .driver-avatar-large img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 16px;
+    }
+
+    .driver-header-info {
+        flex: 1;
+    }
+
+    .driver-name {
+        font-size: 32px;
+        font-weight: 700;
+        margin: 0 0 10px 0;
+    }
+
+    .driver-id {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 20px;
+    }
+
+    .driver-badges-header {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .badge-large {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .driver-header-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .header-action-btn {
+        padding: 12px 24px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        color: white;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .header-action-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .info-section {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0 0 20px 0;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f3f4f6;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-icon {
+        font-size: 24px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .info-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-value {
+        font-size: 15px;
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .info-value.empty {
+        color: #9ca3af;
+        font-style: italic;
+    }
+
+    .provider-card {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .provider-card-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .provider-logo-small {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 20px;
+    }
+
+    .provider-logo-small img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 10px;
+    }
+
+    .provider-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .provider-info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .provider-info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #4b5563;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        border: 2px solid #f3f4f6;
+        transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+        border-color: #4f46e5;
+        transform: translateY(-2px);
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #4f46e5;
+        margin: 0 0 5px 0;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .action-section {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .action-btn {
+        padding: 14px 20px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .action-btn-primary {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+    }
+
+    .action-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+
+    .action-btn-success {
+        background: #10b981;
+        color: white;
+    }
+
+    .action-btn-success:hover {
+        background: #059669;
+        transform: translateY(-2px);
+    }
+
+    .action-btn-warning {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .action-btn-warning:hover {
+        background: #d97706;
+        transform: translateY(-2px);
+    }
+
+    .action-btn-danger {
+        background: #ef4444;
+        color: white;
+    }
+
+    .action-btn-danger:hover {
+        background: #dc2626;
+        transform: translateY(-2px);
+    }
+
+    .action-btn-secondary {
+        background: #f3f4f6;
+        color: #374151;
+        border: 2px solid #e5e7eb;
+    }
+
+    .action-btn-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-2px);
+    }
+
+    .timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .timeline-item {
+        display: flex;
+        gap: 15px;
+        padding: 15px;
+        background: #f9fafb;
+        border-radius: 10px;
+        border-left: 4px solid #4f46e5;
+    }
+
+    .timeline-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #4f46e5;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .timeline-content {
+        flex: 1;
+    }
+
+    .timeline-title {
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0 0 5px 0;
+    }
+
+    .timeline-date {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert-warning {
+        background: #fef3c7;
+        color: #92400e;
+        border-left: 4px solid #f59e0b;
+    }
+
+    .alert-danger {
+        background: #fee2e2;
+        color: #991b1b;
+        border-left: 4px solid #ef4444;
+    }
+
+    .alert-info {
+        background: #dbeafe;
+        color: #1e40af;
+        border-left: 4px solid #3b82f6;
+    }
+
+    @media (max-width: 1024px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .driver-header-content {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style>
+
+<aside th:replace="~{admin/fragments :: sidebar('drivers')}"></aside>
+
+<main class="main-content" id="mainContent">
+    <header th:replace="~{admin/fragments :: topHeader('Driver Details')}"></header>
+
+    <div class="page-content">
+        <div class="detail-container">
+            <!-- Back Button -->
+            <button class="back-button" onclick="window.location.href='/admin/drivers'">
+                ← Back to Drivers
+            </button>
+
+            <!-- Driver Header -->
+            <div class="driver-header">
+                <div class="driver-header-content">
+                    <div class="driver-avatar-large">
+                        <img th:if="${driver.imageUrl}" th:src="${driver.imageUrl}" alt="Driver">
+                        <span th:unless="${driver.imageUrl}" th:text="${#strings.substring(driver.firstName ?: 'D', 0, 1)}">D</span>
+                    </div>
+                    <div class="driver-header-info">
+                        <h1 class="driver-name" th:text="${driver.firstName + ' ' + (driver.middleName != null ? driver.middleName + ' ' : '') + driver.lastName}">Driver Name</h1>
+                        <div class="driver-id" th:text="'Driver ID: #' + ${driver.id}">Driver ID</div>
+                        
+                        <div class="driver-badges-header">
+                            <span class="badge-large" th:if="${driver.emailVerified}">✓ Verified</span>
+                            <span class="badge-large" th:unless="${driver.emailVerified}">⚠ Unverified</span>
+                            <span class="badge-large" th:if="${driver.accountLockedUntil == null || driver.accountLockedUntil.isBefore(T(java.time.LocalDateTime).now())}">🟢 Active</span>
+                            <span class="badge-large" th:if="${driver.accountLockedUntil != null && driver.accountLockedUntil.isAfter(T(java.time.LocalDateTime).now())}">🔒 Locked</span>
+                        </div>
+
+                        <div class="driver-header-actions">
+                            <button class="header-action-btn" onclick="editDriver()">
+                                ✏️ Edit Driver
+                            </button>
+                            <button class="header-action-btn" th:if="${!driver.emailVerified}" onclick="verifyDriver()">
+                                ✓ Verify Email
+                            </button>
+                            <button class="header-action-btn" th:if="${driver.accountLockedUntil != null && driver.accountLockedUntil.isAfter(T(java.time.LocalDateTime).now())}" onclick="unlockAccount()">
+                                🔓 Unlock Account
+                            </button>
+                            <button class="header-action-btn" th:if="${driver.accountLockedUntil == null || driver.accountLockedUntil.isBefore(T(java.time.LocalDateTime).now())}" onclick="lockAccount()">
+                                🔒 Lock Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Messages -->
+            <div class="alert alert-danger" th:if="${driver.accountLockedUntil != null && driver.accountLockedUntil.isAfter(T(java.time.LocalDateTime).now())}">
+                <span>⚠️</span>
+                <span>This account is locked until <span th:text="${#temporals.format(driver.accountLockedUntil, 'MMM dd, yyyy HH:mm')}"></span></span>
+            </div>
+
+            <div class="alert alert-warning" th:if="${!driver.emailVerified}">
+                <span>⚠️</span>
+                <span>Email not verified - Driver may have limited access</span>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="content-grid">
+                <!-- Left Column -->
+                <div>
+                    <!-- Personal Information -->
+                    <div class="info-section">
+                        <h2 class="section-title">
+                            <span class="section-icon">👤</span>
+                            Personal Information
+                        </h2>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">Full Name</div>
+                                <div class="info-value" th:text="${driver.firstName + ' ' + (driver.middleName != null ? driver.middleName + ' ' : '') + driver.lastName}">Name</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Title</div>
+                                <div class="info-value" th:text="${driver.title}" th:classappend="${driver.title == null || driver.title.isEmpty()} ? 'empty' : ''">
+                                    <span th:if="${driver.title != null && !driver.title.isEmpty()}" th:text="${driver.title}"></span>
+                                    <span th:if="${driver.title == null || driver.title.isEmpty()}">Not specified</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Email</div>
+                                <div class="info-value" th:text="${driver.email}">Email</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Username</div>
+                                <div class="info-value" th:text="${driver.username}">Username</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Primary Phone</div>
+                                <div class="info-value" th:text="${driver.phone}" th:classappend="${driver.phone == null || driver.phone.isEmpty()} ? 'empty' : ''">
+                                    <span th:if="${driver.phone != null && !driver.phone.isEmpty()}" th:text="${driver.phone}"></span>
+                                    <span th:if="${driver.phone == null || driver.phone.isEmpty()}">Not specified</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Secondary Phone</div>
+                                <div class="info-value" th:text="${driver.phone2}" th:classappend="${driver.phone2 == null || driver.phone2.isEmpty()} ? 'empty' : ''">
+                                    <span th:if="${driver.phone2 != null && !driver.phone2.isEmpty()}" th:text="${driver.phone2}"></span>
+                                    <span th:if="${driver.phone2 == null || driver.phone2.isEmpty()}">Not specified</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Information -->
+                    <div class="info-section" style="margin-top: 30px;">
+                        <h2 class="section-title">
+                            <span class="section-icon">📍</span>
+                            Location Information
+                        </h2>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">City</div>
+                                <div class="info-value" th:text="${driver.city}" th:classappend="${driver.city == null || driver.city.isEmpty()} ? 'empty' : ''">
+                                    <span th:if="${driver.city != null && !driver.city.isEmpty()}" th:text="${driver.city}"></span>
+                                    <span th:if="${driver.city == null || driver.city.isEmpty()}">Not specified</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">State</div>
+                                <div class="info-value" th:text="${driver.state}" th:classappend="${driver.state == null || driver.state.isEmpty()} ? 'empty' : ''">
+                                    <span th:if="${driver.state != null && !driver.state.isEmpty()}" th:text="${driver.state}"></span>
+                                    <span th:if="${driver.state == null || driver.state.isEmpty()}">Not specified</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Country</div>
+                                <div class="info-value" th:text="${driver.country}" th:classappend="${driver.country == null || driver.country.isEmpty()} ? 'empty' : ''">
+                                    <span th:if="${driver.country != null && !driver.country.isEmpty()}" th:text="${driver.country}"></span>
+                                    <span th:if="${driver.country == null || driver.country.isEmpty()}">Not specified</span>
+                                </div>
+                            </div>
+                            <div class="info-item full-width">
+                                <div class="info-label">Full Address</div>
+                                <div class="info-value" th:text="${driver.address}" th:classappend="${driver.address == null || driver.address.isEmpty()} ? 'empty' : ''">
+                                    <span th:if="${driver.address != null && !driver.address.isEmpty()}" th:text="${driver.address}"></span>
+                                    <span th:if="${driver.address == null || driver.address.isEmpty()}">Not specified</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Information -->
+                    <div class="info-section" style="margin-top: 30px;">
+                        <h2 class="section-title">
+                            <span class="section-icon">⚙️</span>
+                            Account Information
+                        </h2>
+                        <div class="info-grid">
+
+                            <div class="info-item">
+                                <div class="info-label">Account Created</div>
+                                <div class="info-value"
+                                     th:text="${driver.createdDate != null
+               ? #dates.format(driver.createdDate, 'MMM dd, yyyy HH:mm')
+               : 'N/A'}">
+                                    Date
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Last Modified</div>
+                                <div class="info-value"
+                                     th:text="${driver.modifiedDate != null
+               ? #dates.format(driver.modifiedDate, 'MMM dd, yyyy HH:mm')
+               : 'Never'}">
+                                    Date
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Email Verified</div>
+                                <div class="info-value"
+                                     th:text="${driver.emailVerified ? 'Yes ✓' : 'No ✗'}">
+                                    Status
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Self Created</div>
+                                <div class="info-value"
+                                     th:text="${driver.selfCreated != null && driver.selfCreated
+               ? 'Yes'
+               : 'No (Admin Created)'}">
+                                    Status
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Failed Login Attempts</div>
+                                <div class="info-value"
+                                     th:text="${driver.failedLoginAttempts}">
+                                    0
+                                </div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Last Activity</div>
+                                <div class="info-value"
+                                     th:text="${driver.lastActivity != null
+               ? #temporals.format(driver.lastActivity, 'MMM dd, yyyy HH:mm')
+               : 'Never'}">
+                                    Date
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div>
+                    <!-- Provider Information -->
+                    <div class="info-section">
+                        <h2 class="section-title">
+                            <span class="section-icon">🏢</span>
+                            Provider Information
+                        </h2>
+                        
+                        <div th:if="${provider != null}">
+                            <div class="provider-card">
+                                <div class="provider-card-header">
+                                    <div class="provider-logo-small">
+                                        <img th:if="${provider.companyLogoUrl}" th:src="${provider.companyLogoUrl}" alt="Logo">
+                                        <span th:unless="${provider.companyLogoUrl}" th:text="${#strings.substring(provider.companyName ?: 'P', 0, 1)}">P</span>
+                                    </div>
+                                    <div>
+                                        <div class="provider-name" th:text="${provider.companyName ?: (provider.firstName + ' ' + provider.lastName)}">Provider Name</div>
+                                    </div>
+                                </div>
+                                <div class="provider-info-list">
+                                    <div class="provider-info-item">
+                                        📍 <span th:text="${provider.city + ', ' + provider.state}">Location</span>
+                                    </div>
+                                    <div class="provider-info-item">
+                                        📞 <span th:text="${provider.phone}">Phone</span>
+                                    </div>
+                                    <div class="provider-info-item">
+                                        📧 <span th:text="${provider.companyBusinessEmail ?: provider.email}">Email</span>
+                                    </div>
+                                    <div class="provider-info-item" th:if="${provider.rating != null}">
+                                        ⭐ <span th:text="${provider.rating} + ' / 5.0'">Rating</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="action-btn action-btn-secondary" th:onclick="'window.location.href=\'/admin/providers/' + ${provider.id} + '\''">
+                                View Provider Details →
+                            </button>
+                        </div>
+                        
+                        <div th:if="${provider == null}">
+                            <div class="alert alert-info">
+                                <span>ℹ️</span>
+                                <span>No provider assigned to this driver</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="action-section" style="margin-top: 30px;">
+                        <h2 class="section-title">
+                            <span class="section-icon">⚡</span>
+                            Quick Actions
+                        </h2>
+                        <div class="action-buttons">
+                            <button class="action-btn action-btn-primary" onclick="editDriver()">
+                                ✏️ Edit Driver Information
+                            </button>
+                            
+                            <button class="action-btn action-btn-success" 
+                                    th:if="${!driver.emailVerified}"
+                                    onclick="verifyDriver()">
+                                ✓ Verify Email
+                            </button>
+                            
+                            <button class="action-btn action-btn-warning" 
+                                    th:if="${driver.emailVerified}"
+                                    onclick="unverifyDriver()">
+                                ⚠ Unverify Email
+                            </button>
+                            
+                            <button class="action-btn action-btn-danger" 
+                                    th:if="${driver.accountLockedUntil == null || driver.accountLockedUntil.isBefore(T(java.time.LocalDateTime).now())}"
+                                    onclick="lockAccount()">
+                                🔒 Lock Account
+                            </button>
+                            
+                            <button class="action-btn action-btn-success" 
+                                    th:if="${driver.accountLockedUntil != null && driver.accountLockedUntil.isAfter(T(java.time.LocalDateTime).now())}"
+                                    onclick="unlockAccount()">
+                                🔓 Unlock Account
+                            </button>
+                            
+                            <button class="action-btn action-btn-secondary" onclick="resetPassword()">
+                                🔑 Reset Password
+                            </button>
+                            
+                            <button class="action-btn action-btn-danger" onclick="deleteDriver()">
+                                🗑️ Delete Driver
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{admin/fragments :: commonScripts}"></div>
+
+<script th:inline="javascript">
+    const driverId = /*[[${driver.id}]]*/ 0;
+    
+    function editDriver() {
+        window.location.href = '/admin/drivers/' + driverId + '/edit';
+    }
+    
+    function verifyDriver() {
+        if (confirm('Verify this driver\'s email address?')) {
+            fetch('/admin/drivers/' + driverId + '/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Driver verified successfully');
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error verifying driver: ' + error);
+            });
+        }
+    }
+    
+    function unverifyDriver() {
+        if (confirm('Remove email verification for this driver?')) {
+            fetch('/admin/drivers/' + driverId + '/unverify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Driver unverified successfully');
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error unverifying driver: ' + error);
+            });
+        }
+    }
+    
+    function lockAccount() {
+        if (confirm('Lock this driver\'s account? They will not be able to login.')) {
+            fetch('/admin/drivers/' + driverId + '/lock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Account locked successfully');
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error locking account: ' + error);
+            });
+        }
+    }
+    
+    function unlockAccount() {
+        if (confirm('Unlock this driver\'s account?')) {
+            fetch('/admin/drivers/' + driverId + '/unlock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Account unlocked successfully');
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error unlocking account: ' + error);
+            });
+        }
+    }
+    
+    function resetPassword() {
+        alert('Password reset functionality - Send reset email to: ' + /*[[${driver.email}]]*/ '');
+        // Implement password reset logic here
+    }
+    
+    function deleteDriver() {
+        if (confirm('Are you sure you want to DELETE this driver? This action cannot be undone!')) {
+            if (confirm('FINAL WARNING: This will permanently delete all driver data. Continue?')) {
+                fetch('/admin/drivers/' + driverId + '/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Driver deleted successfully');
+                    window.location.href = '/admin/drivers';
+                })
+                .catch(error => {
+                    alert('Error deleting driver: ' + error);
+                });
+            }
+        }
+    }
+</script>
+</body>
+</html>

@@ -9,8 +9,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.AllArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -39,6 +42,16 @@ public class User {
 
     @Column(nullable = false)
     private boolean emailVerified = false;
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private Date createdDate;
+
+    @Column
+    private Date modifiedDate;
+
+    @Column
+    private String modificationAction;
 
     @Column
     private String email;
@@ -111,4 +124,17 @@ public class User {
 
     @Column(name = "account_expiry_date")
     private LocalDateTime accountExpiryDate;
+
+    @Column(name = "is_active")
+    private Boolean isActive;
+
+    @PrePersist
+    protected void onCreate() {
+        this.modifiedDate = null;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.modifiedDate = new Date();
+    }
 }

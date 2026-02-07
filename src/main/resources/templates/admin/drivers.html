@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Drivers')}"></head>
+<body>
+
+<style>
+    /* Provider Grouping Styles */
+    .provider-section {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-left: 4px solid #4f46e5;
+        transition: all 0.3s ease;
+    }
+
+    .provider-section:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+
+    .provider-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f3f4f6;
+        margin-bottom: 20px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .provider-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex: 1;
+    }
+
+    .provider-logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 24px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .provider-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+
+    .provider-details h3 {
+        margin: 0 0 5px 0;
+        color: #1f2937;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .provider-meta {
+        display: flex;
+        gap: 20px;
+        font-size: 13px;
+        color: #6b7280;
+    }
+
+    .provider-meta span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .provider-stats {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .provider-stat {
+        text-align: center;
+        padding: 8px 15px;
+        background: #f9fafb;
+        border-radius: 8px;
+        min-width: 80px;
+    }
+
+    .provider-stat h4 {
+        margin: 0;
+        font-size: 24px;
+        color: #4f46e5;
+        font-weight: 700;
+    }
+
+    .provider-stat p {
+        margin: 2px 0 0 0;
+        font-size: 11px;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .toggle-icon {
+        font-size: 24px;
+        transition: transform 0.3s ease;
+        color: #9ca3af;
+    }
+
+    .toggle-icon.collapsed {
+        transform: rotate(-90deg);
+    }
+
+    .drivers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .drivers-grid.collapsed {
+        display: none;
+    }
+
+    .driver-card {
+        background: #fff;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .driver-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+    }
+
+    .driver-card:hover {
+        border-color: #4f46e5;
+        box-shadow: 0 8px 16px rgba(79, 70, 229, 0.15);
+        transform: translateY(-4px);
+    }
+
+    .driver-header-card {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .driver-avatar {
+        width: 70px;
+        height: 70px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 28px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        flex-shrink: 0;
+    }
+
+    .driver-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+
+    .driver-main-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .driver-main-info h4 {
+        margin: 0 0 5px 0;
+        color: #1f2937;
+        font-size: 18px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .driver-id {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 8px;
+    }
+
+    .driver-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .driver-detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 14px;
+    }
+
+    .driver-detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .driver-detail-label {
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    .driver-detail-value {
+        color: #1f2937;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .driver-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 2px solid #f3f4f6;
+    }
+
+    .driver-actions button {
+        flex: 1;
+    }
+
+    .badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-active {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-inactive {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-verified {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+
+    .badge-unverified {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-available {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-busy {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-offline {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+
+    .view-mode-toggle {
+        display: flex;
+        gap: 10px;
+        background: #f9fafb;
+        padding: 4px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .view-mode-btn {
+        flex: 1;
+        padding: 10px 20px;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #6b7280;
+        transition: all 0.2s;
+    }
+
+    .view-mode-btn.active {
+        background: #fff;
+        color: #4f46e5;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .table-view {
+        display: none;
+    }
+
+    .table-view.active {
+        display: block;
+    }
+
+    .provider-sections.table-mode {
+        display: none;
+    }
+
+    /* Add Driver Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .modal-content {
+        background-color: #fff;
+        margin: 3% auto;
+        padding: 0;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        animation: slideIn 0.3s;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 25px 30px;
+        border-bottom: 2px solid #f3f4f6;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: #1f2937;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .close {
+        font-size: 32px;
+        font-weight: bold;
+        color: #9ca3af;
+        cursor: pointer;
+        transition: color 0.2s;
+        line-height: 1;
+    }
+
+    .close:hover {
+        color: #4b5563;
+    }
+
+    .modal-body {
+        padding: 30px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s;
+        font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding: 20px 30px;
+        border-top: 2px solid #f3f4f6;
+        background: #f9fafb;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+
+    .btn-secondary {
+        background: #fff;
+        color: #6b7280;
+        border: 2px solid #e5e7eb;
+    }
+
+    .btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    .btn-icon {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.2s;
+        background: #f3f4f6;
+    }
+
+    .btn-view {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .btn-view:hover {
+        background: #bfdbfe;
+        transform: scale(1.05);
+    }
+
+    .btn-edit {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .btn-edit:hover {
+        background: #fde68a;
+        transform: scale(1.05);
+    }
+
+    .btn-delete {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .btn-delete:hover {
+        background: #fecaca;
+        transform: scale(1.05);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #9ca3af;
+    }
+
+    .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        margin: 0 0 10px 0;
+        color: #6b7280;
+        font-size: 20px;
+    }
+
+    .empty-state p {
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .add-driver-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+        transition: all 0.3s;
+        z-index: 100;
+    }
+
+    .add-driver-btn:hover {
+        transform: scale(1.1) rotate(90deg);
+        box-shadow: 0 15px 35px rgba(79, 70, 229, 0.5);
+    }
+
+    /* Search and Filter Enhancements */
+    .search-bar {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .search-bar input {
+        width: 100%;
+        padding: 14px 20px 14px 50px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 15px;
+        transition: all 0.2s;
+    }
+
+    .search-bar input:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 20px;
+        color: #9ca3af;
+    }
+
+    .quick-filters {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .filter-chip {
+        padding: 8px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 20px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        transition: all 0.2s;
+    }
+
+    .filter-chip:hover {
+        border-color: #4f46e5;
+        color: #4f46e5;
+    }
+
+    .filter-chip.active {
+        background: #4f46e5;
+        color: white;
+        border-color: #4f46e5;
+    }
+
+    /* Rating Stars */
+    .rating {
+        color: #fbbf24;
+        font-size: 14px;
+    }
+
+    /* Status Indicators */
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+    .status-dot.active {
+        background: #10b981;
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    .status-dot.inactive {
+        background: #ef4444;
+    }
+
+    .status-dot.busy {
+        background: #f59e0b;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .drivers-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .provider-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .provider-stats {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .modal-content {
+            width: 95%;
+            margin: 10px auto;
+        }
+
+        .add-driver-btn {
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            bottom: 20px;
+            right: 20px;
+        }
+    }
+</style>
+
+<aside th:replace="~{admin/fragments :: sidebar('drivers')}"></aside>
+
+<main class="main-content" id="mainContent">
+    <header th:replace="~{admin/fragments :: topHeader('Drivers Management')}"></header>
+
+    <div class="page-content">
+        <!-- Statistics Row -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <h4>Total Drivers</h4>
+                <p th:text="${totalDrivers} ?: '0'">0</p>
+            </div>
+            <div class="stat-box">
+                <h4>Active Drivers</h4>
+                <p th:text="${activeDrivers} ?: '0'">0</p>
+            </div>
+            <div class="stat-box">
+                <h4>Available Now</h4>
+                <p th:text="${availableDrivers} ?: '0'">0</p>
+            </div>
+            <div class="stat-box">
+                <h4>Verified Drivers</h4>
+                <p th:text="${verifiedDrivers} ?: '0'">0</p>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="driverSearch" placeholder="Search drivers by name, license, or phone..." onkeyup="filterDrivers()">
+        </div>
+
+        <!-- Quick Filters -->
+        <div class="quick-filters">
+            <button class="filter-chip active" onclick="filterByStatus('all')">All Drivers</button>
+            <button class="filter-chip" onclick="filterByStatus('active')">Active Only</button>
+            <button class="filter-chip" onclick="filterByStatus('available')">Available</button>
+            <button class="filter-chip" onclick="filterByStatus('verified')">Verified</button>
+            <button class="filter-chip" onclick="filterByStatus('busy')">On Trip</button>
+        </div>
+
+        <!-- View Mode Toggle -->
+        <div class="view-mode-toggle">
+            <button class="view-mode-btn active" onclick="switchView('provider')">
+                📁 Provider View
+            </button>
+            <button class="view-mode-btn" onclick="switchView('table')">
+                📊 Table View
+            </button>
+        </div>
+
+        <!-- Provider Grouped View -->
+        <div class="provider-sections" id="providerView">
+            <div th:each="providerGroup : ${driversGroupedByProvider}" class="provider-section">
+                <div class="provider-header" th:onclick="'toggleProvider(' + ${providerGroup.providerId} + ')'">
+                    <div class="provider-info">
+                        <div class="provider-logo">
+                            <img th:if="${providerGroup.providerLogoUrl}"
+                                 th:src="${providerGroup.providerLogoUrl}"
+                                 alt="Provider Logo">
+                            <span th:unless="${providerGroup.providerLogoUrl}"
+                                  th:text="${#strings.substring(providerGroup.providerName ?: 'P', 0, 1)}">P</span>
+                        </div>
+                        <div class="provider-details">
+                            <h3 th:text="${providerGroup.providerName}">Provider Name</h3>
+                            <div class="provider-meta">
+                                <span>📍 <span th:text="${providerGroup.providerCity ?: 'N/A'}">City</span></span>
+                                <span>📞 <span th:text="${providerGroup.providerPhone ?: 'N/A'}">Phone</span></span>
+                                <span>⭐ <span th:text="${providerGroup.providerRating ?: 'N/A'}">Rating</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="provider-stats">
+                        <div class="provider-stat">
+                            <h4 th:text="${providerGroup.totalDrivers}">0</h4>
+                            <p>Total</p>
+                        </div>
+                        <div class="provider-stat">
+                            <h4 th:text="${providerGroup.activeDrivers}">0</h4>
+                            <p>Active</p>
+                        </div>
+                        <div class="provider-stat">
+                            <h4 th:text="${providerGroup.availableDrivers}">0</h4>
+                            <p>Available</p>
+                        </div>
+                    </div>
+                    <span class="toggle-icon" th:id="'toggle-' + ${providerGroup.providerId}">▼</span>
+                </div>
+
+                <div class="drivers-grid" th:id="'drivers-' + ${providerGroup.providerId}">
+                    <div th:each="driver : ${providerGroup.drivers}" class="driver-card">
+                        <div class="driver-header-card">
+                            <div class="driver-avatar">
+                                <img th:if="${driver.imageUrl}"
+                                     th:src="${driver.imageUrl}"
+                                     alt="Driver">
+                                <span th:unless="${driver.imageUrl}"
+                                      th:text="${#strings.substring(driver.firstName ?: 'D', 0, 1)}">D</span>
+                            </div>
+                            <div class="driver-main-info">
+                                <h4 th:text="${driver.firstName + ' ' + driver.lastName}">Driver Name</h4>
+                                <div class="driver-id" th:text="'ID: #' + ${driver.id}">ID</div>
+                                <div class="driver-badges">
+                                    <span class="badge badge-active" th:if="${driver.isActive}">
+                                        <span class="status-dot active"></span>Active
+                                    </span>
+                                    <span class="badge badge-inactive" th:unless="${driver.isActive}">
+                                        <span class="status-dot inactive"></span>Inactive
+                                    </span>
+                                    <span class="badge badge-verified" th:if="${driver.emailVerified}">✓ Verified</span>
+                                    <span class="badge badge-unverified" th:unless="${driver.emailVerified}">⚠ Unverified</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="driver-detail-row">
+                            <span class="driver-detail-label">📱 Phone</span>
+                            <span class="driver-detail-value" th:text="${driver.phone ?: 'N/A'}">N/A</span>
+                        </div>
+                        <div class="driver-detail-row">
+                            <span class="driver-detail-label">📧 Email</span>
+                            <span class="driver-detail-value" th:text="${driver.email ?: 'N/A'}">N/A</span>
+                        </div>
+                        <div class="driver-detail-row">
+                            <span class="driver-detail-label">📍 Location</span>
+                            <span class="driver-detail-value"
+                                  th:text="${driver.city != null && driver.state != null ? driver.city + ', ' + driver.state : 'N/A'}">N/A</span>
+                        </div>
+
+                        <div class="driver-actions">
+                            <button class="btn-icon btn-view" th:onclick="'viewDriver(' + ${driver.id} + ')'">👁️</button>
+                            <button class="btn-icon btn-edit" th:onclick="'editDriver(' + ${driver.id} + ')'">✏️</button>
+                            <button class="btn-icon btn-delete" th:onclick="'deleteDriver(' + ${driver.id} + ')'">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty state for provider with no drivers -->
+                <div th:if="${providerGroup.drivers.isEmpty()}" class="empty-state">
+                    <div class="empty-state-icon">🚗</div>
+                    <h3>No Drivers Yet</h3>
+                    <p>This provider hasn't added any drivers yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div class="table-view" id="tableView">
+            <div class="bookings-table">
+                <div class="table-header">
+                    <h3>All Drivers (<span th:text="${totalDrivers}">0</span>)</h3>
+                </div>
+
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Driver</th>
+                        <th>Provider</th>
+                        <th>Contact</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="driver : ${allDrivers}">
+                        <td>
+                            <div class="client-info">
+                                <div class="client-avatar">
+                                    <span th:text="${#strings.substring(driver.firstName ?: 'D', 0, 1)}">D</span>
+                                </div>
+                                <div class="client-details">
+                                    <h4 th:text="${driver.firstName + ' ' + driver.lastName}">Name</h4>
+                                    <p th:text="'ID: ' + ${driver.id}">ID</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td th:text="${driver.providerName ?: 'N/A'}">Provider</td>
+                        <td>
+                            <div class="client-details">
+                                <h4 th:text="${driver.email}">email</h4>
+                                <p th:text="${driver.phone ?: 'No phone'}">Phone</p>
+                            </div>
+                        </td>
+                        <td>
+                            <span th:if="${driver.city != null && driver.state != null}"
+                                  th:text="${driver.city + ', ' + driver.state}">Location</span>
+                            <span th:if="${driver.city == null || driver.state == null}">N/A</span>
+                        </td>
+                        <td>
+                            <div class="account-status">
+                                <span class="badge badge-active" th:if="${driver.isActive}">Active</span>
+                                <span class="badge badge-inactive" th:unless="${driver.isActive}">Inactive</span>
+                                <span class="badge badge-verified" th:if="${driver.emailVerified}">Verified</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-icon btn-view" th:onclick="'viewDriver(' + ${driver.id} + ')'">👁️</button>
+                                <button class="btn-icon btn-edit" th:onclick="'editDriver(' + ${driver.id} + ')'">✏️</button>
+                                <button class="btn-icon btn-delete" th:onclick="'deleteDriver(' + ${driver.id} + ')'">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empty State for All Drivers -->
+        <div th:if="${totalDrivers == 0}" class="empty-state" style="margin-top: 40px;">
+            <div class="empty-state-icon">🚗</div>
+            <h3>No Drivers Found</h3>
+            <p>Start by adding your first driver using the button below.</p>
+        </div>
+    </div>
+</main>
+
+<!-- Add/Edit Driver Modal -->
+<div id="driverModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add New Driver</h3>
+            <span class="close" onclick="closeDriverModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="driverForm">
+                <input type="hidden" id="driverId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name *</label>
+                        <input type="text" id="firstName" required placeholder="Enter first name">
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name *</label>
+                        <input type="text" id="lastName" required placeholder="Enter last name">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="email" required placeholder="driver@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        <input type="tel" id="phone" required placeholder="+234 XXX XXX XXXX">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Provider *</label>
+                        <select id="providerId" required>
+                            <option value="">Select Provider</option>
+                            <option th:each="provider : ${providers}"
+                                    th:value="${provider.id}"
+                                    th:text="${provider.companyName}">Provider</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Middle Name</label>
+                        <input type="text" id="middleName" placeholder="Enter middle name">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" id="city" placeholder="Enter city">
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" id="state" placeholder="Enter state">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input type="text" id="country" placeholder="Enter country">
+                    </div>
+                    <div class="form-group">
+                        <label>Secondary Phone</label>
+                        <input type="tel" id="phone2" placeholder="+234 XXX XXX XXXX">
+                    </div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Address</label>
+                    <textarea id="address" placeholder="Enter full address"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="emailVerified"> Email Verified
+                        </label>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeDriverModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="submitDriver()">Save Driver</button>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Add Button -->
+<button class="add-driver-btn" onclick="openAddDriverModal()" title="Add New Driver">+</button>
+
+<div th:replace="~{admin/fragments :: commonScripts}"></div>
+
+<script>
+    // Toggle provider section
+    function toggleProvider(providerId) {
+        const driversGrid = document.getElementById('drivers-' + providerId);
+        const toggleIcon = document.getElementById('toggle-' + providerId);
+
+        if (driversGrid.classList.contains('collapsed')) {
+            driversGrid.classList.remove('collapsed');
+            toggleIcon.classList.remove('collapsed');
+        } else {
+            driversGrid.classList.add('collapsed');
+            toggleIcon.classList.add('collapsed');
+        }
+    }
+
+    // Switch between views
+    function switchView(viewType) {
+        const providerView = document.getElementById('providerView');
+        const tableView = document.getElementById('tableView');
+        const buttons = document.querySelectorAll('.view-mode-btn');
+
+        if (viewType === 'provider') {
+            providerView.style.display = 'block';
+            tableView.classList.remove('active');
+            buttons[0].classList.add('active');
+            buttons[1].classList.remove('active');
+        } else {
+            providerView.style.display = 'none';
+            tableView.classList.add('active');
+            buttons[1].classList.add('active');
+            buttons[0].classList.remove('active');
+        }
+    }
+
+    // Filter drivers by search
+    function filterDrivers() {
+        const searchTerm = document.getElementById('driverSearch').value.toLowerCase();
+        const driverCards = document.querySelectorAll('.driver-card');
+        const tableRows = document.querySelectorAll('tbody tr');
+
+        // Filter cards
+        driverCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+        });
+
+        // Filter table rows
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    }
+
+    // Filter by status
+    function filterByStatus(status) {
+        const chips = document.querySelectorAll('.filter-chip');
+        chips.forEach(chip => chip.classList.remove('active'));
+        event.target.classList.add('active');
+
+        const driverCards = document.querySelectorAll('.driver-card');
+        const tableRows = document.querySelectorAll('tbody tr');
+
+        driverCards.forEach(card => {
+            const badges = card.querySelector('.driver-badges').textContent.toLowerCase();
+
+            if (status === 'all') {
+                card.style.display = 'block';
+            } else if (status === 'active') {
+                card.style.display = badges.includes('active') && !badges.includes('inactive') ? 'block' : 'none';
+            } else if (status === 'available') {
+                card.style.display = badges.includes('available') ? 'block' : 'none';
+            } else if (status === 'verified') {
+                card.style.display = badges.includes('verified') && !badges.includes('unverified') ? 'block' : 'none';
+            } else if (status === 'busy') {
+                card.style.display = badges.includes('busy') ? 'block' : 'none';
+            }
+        });
+
+        // Similar filtering for table view
+        tableRows.forEach(row => {
+            const statusCell = row.querySelector('.account-status');
+            if (!statusCell) return;
+
+            const statusText = statusCell.textContent.toLowerCase();
+
+            if (status === 'all') {
+                row.style.display = '';
+            } else if (status === 'active') {
+                row.style.display = statusText.includes('active') && !statusText.includes('inactive') ? '' : 'none';
+            } else if (status === 'verified') {
+                row.style.display = statusText.includes('verified') ? '' : 'none';
+            }
+        });
+    }
+
+    // Modal functions
+    function openAddDriverModal() {
+        document.getElementById('modalTitle').textContent = 'Add New Driver';
+        document.getElementById('driverForm').reset();
+        document.getElementById('driverId').value = '';
+        document.getElementById('driverModal').style.display = 'block';
+    }
+
+    function closeDriverModal() {
+        document.getElementById('driverModal').style.display = 'none';
+    }
+
+    function submitDriver() {
+        const driverId = document.getElementById('driverId').value;
+        const formData = {
+            firstName: document.getElementById('firstName').value,
+            middleName: document.getElementById('middleName').value,
+            lastName: document.getElementById('lastName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            phone2: document.getElementById('phone2').value,
+            providerId: document.getElementById('providerId').value,
+            city: document.getElementById('city').value,
+            state: document.getElementById('state').value,
+            country: document.getElementById('country').value,
+            address: document.getElementById('address').value,
+            emailVerified: document.getElementById('emailVerified').checked
+        };
+
+        const endpoint = driverId ? `/admin/drivers/${driverId}/update` : '/admin/drivers/create';
+        const method = 'POST';
+
+        fetch(endpoint, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Driver saved successfully');
+                closeDriverModal();
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error saving driver: ' + error);
+            });
+    }
+
+    // CRUD Functions
+    function viewDriver(id) {
+        window.location.href = '/admin/drivers/' + id;
+    }
+
+    function editDriver(id) {
+        fetch('/admin/drivers/' + id + '/details')
+            .then(response => response.json())
+            .then(driver => {
+                document.getElementById('modalTitle').textContent = 'Edit Driver';
+                document.getElementById('driverId').value = driver.id;
+                document.getElementById('firstName').value = driver.firstName || '';
+                document.getElementById('middleName').value = driver.middleName || '';
+                document.getElementById('lastName').value = driver.lastName || '';
+                document.getElementById('email').value = driver.email || '';
+                document.getElementById('phone').value = driver.phone || '';
+                document.getElementById('phone2').value = driver.phone2 || '';
+                document.getElementById('providerId').value = driver.providerId || '';
+                document.getElementById('city').value = driver.city || '';
+                document.getElementById('state').value = driver.state || '';
+                document.getElementById('country').value = driver.country || '';
+                document.getElementById('address').value = driver.address || '';
+                document.getElementById('emailVerified').checked = driver.emailVerified || false;
+
+                document.getElementById('driverModal').style.display = 'block';
+            })
+            .catch(error => {
+                alert('Error loading driver details: ' + error);
+            });
+    }
+
+    function deleteDriver(id) {
+        if (confirm('Are you sure you want to delete this driver? This action cannot be undone.')) {
+            fetch('/admin/drivers/' + id + '/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message || 'Driver deleted successfully');
+                    window.location.reload();
+                })
+                .catch(error => {
+                    alert('Error deleting driver: ' + error);
+                });
+        }
+    }
+
+    // Close modal on outside click
+    window.onclick = function(event) {
+        const modal = document.getElementById('driverModal');
+        if (event.target == modal) {
+            closeDriverModal();
+        }
+    }
+</script>
+</body>
+</html>

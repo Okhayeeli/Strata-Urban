@@ -105,7 +105,7 @@ public class OfferRestController {
             @ApiResponse(responseCode = "404", description = "Offer not found"),
             @ApiResponse(responseCode = "403", description = "Access denied: Only CLIENT (if authorized for the associated booking), PROVIDER (if authorized), DRIVER, ADMIN, or DEVELOPER can access this endpoint. Others are restricted.")
     })
-    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENT', 'CUSTOMER_SERVICE', 'DEVELOPER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENT', 'CUSTOMER_SERVICE', 'DEVELOPER', 'PROVIDER')")
     public ResponseEntity<Offer> getOfferById(@PathVariable Long offerId) {
         try {
             logger.info("Fetching offer with ID: {}", offerId);

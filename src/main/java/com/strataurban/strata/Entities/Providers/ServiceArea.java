@@ -2,9 +2,11 @@ package com.strataurban.strata.Entities.Providers;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "service_area")
 @Schema(description = "Entity representing a service area where providers operate")

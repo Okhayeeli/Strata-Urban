@@ -185,17 +185,6 @@ Secure token storage (e.g., HTTP-only, SameSite cookies).
 
 
 
-Token Management
-
-Token invalidation on password reset or role change.
-
-JTI (JWT ID) for unique token tracking.
-
-Token introspection and verification against revocation lists.
-
-
-
-
 
 Account Security and Integrity:
 
@@ -244,6 +233,5 @@ Use of preflight checks for security.
 
 Custom Security Annotations
 
-Clean, reusable annotations for common security checks (e.g., @CurrentUser, @HasPermission).
 
 Separation of concerns for cleaner code.

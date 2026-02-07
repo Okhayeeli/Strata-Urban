@@ -125,10 +125,10 @@
                                                  booking.status == 'CONFIRMED' ? 'Booking confirmed' :
                                                  booking.status == 'COMPLETED' ? 'Booking completed' :
                                                  'Booking cancelled'}">New booking</strong>
-                                <span th:if="${booking.clientName}" th:text="' from ' + ${booking.clientName}"></span>
+                                <span th:if="${booking.client_name}" th:text="' from ' + ${booking.client_name}"></span>
                             </p>
-                            <span th:text="${booking.pickUpLocation + ' to ' + booking.destination}">Route</span>
-                            <small th:text="${#temporals.format(booking.createdDate, 'MMM dd, yyyy HH:mm')}">Time</small>
+                            <span th:text="${booking['pick_up_location'] + ' to ' + booking['destination']}">Route</span>
+                            <small th:text="${#temporals.format(booking.created_date, 'MMM dd, yyyy HH:mm')}">Time</small>
                         </div>
                         <span class="badge"
                               th:classappend="${booking.status == 'PENDING' ? 'badge-pending' :
@@ -151,31 +151,32 @@
                 </div>
 
                 <div class="activity-list">
-                    <div class="activity-item" th:each="provider : ${recentProviders}">
-                        <div class="activity-icon provider">🏢</div>
-                        <div class="activity-content">
-                            <p>
-                                <strong>New Provider:</strong>
-                                <span th:text="${provider.companyName}">Company Name</span>
-                            </p>
-                            <span th:text="${provider.city + ', ' + provider.state}">Location</span>
-                            <small th:text="${#temporals.format(provider.createdAt, 'MMM dd, yyyy HH:mm')}">Time</small>
-                        </div>
-                        <span class="badge"
-                              th:classappend="${provider.emailVerified ? 'badge-verified' : 'badge-unverified'}"
-                              th:text="${provider.emailVerified ? 'Verified' : 'Pending'}">Status</span>
-                    </div>
 
                     <div class="activity-item" th:each="client : ${recentClients}">
                         <div class="activity-icon user">👤</div>
                         <div class="activity-content">
                             <p>
                                 <strong>New Client:</strong>
-                                <span th:text="${client.firstName + ' ' + client.lastName}">Client Name</span>
+                                <span th:text="${client.first_name + ' ' + client.last_name}">Client Name</span>
                             </p>
                             <span th:text="${client.city ?: 'N/A'}">Location</span>
-                            <small th:text="${#temporals.format(client.createdAt, 'MMM dd, yyyy HH:mm')}">Time</small>
+                            <small th:text="${#temporals.format(client.created_date, 'MMM dd, yyyy HH:mm')}">Time</small>
                         </div>
+                    </div>
+
+                    <div class="activity-item" th:each="provider : ${recentProviders}">
+                        <div class="activity-icon provider">🏢</div>
+                        <div class="activity-content">
+                            <p>
+                                <strong>New Provider:</strong>
+                                <span th:text="${provider.company_name}">Company Name</span>
+                            </p>
+                            <span th:text="${provider.city + ', ' + provider.state}">Location</span>
+                            <small th:text="${#temporals.format(provider.created_date, 'MMM dd, yyyy HH:mm')}">Time</small>
+                        </div>
+                        <span class="badge"
+                              th:classappend="${provider.email_verified ? 'badge-verified' : 'badge-unverified'}"
+                              th:text="${provider.email_verified ? 'Verified' : 'Pending'}">Status</span>
                     </div>
 
                     <div class="empty-state" th:if="${(recentProviders == null || recentProviders.isEmpty()) && (recentClients == null || recentClients.isEmpty())}">
@@ -210,6 +211,8 @@
     </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<div th:replace="~{admin/fragments :: commonScripts}"></div>
 <div th:replace="~{admin/fragments :: commonScripts}"></div>
 
 <style>
@@ -605,64 +608,97 @@
 </style>
 
 <script>
+    // function filterChart(period) {
+    //     // Remove active class from all buttons
+    //     document.querySelectorAll('.filter-btn').forEach(btn => {
+    //         btn.classList.remove('active');
+    //     });
+    //
+    //     // Add active class to clicked button
+    //     event.target.classList.add('active');
+    //
+    //     // TODO: Implement chart data update based on period
+    //     console.log('Filtering chart by:', period);
+    // }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCharts('week');
+    });
+
     function filterChart(period) {
-        // Remove active class from all buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-
-        // Add active class to clicked button
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
         event.target.classList.add('active');
-
-        // TODO: Implement chart data update based on period
-        console.log('Filtering chart by:', period);
+        initializeCharts(period);
     }
 
-    // Initialize charts (placeholder - integrate Chart.js when ready)
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('Dashboard loaded. Ready to initialize charts.');
+    let bookingChart = null;
+    let serviceChart = null;
 
-        // TODO: Initialize booking trends chart
-        // TODO: Initialize service distribution chart
+    function initializeCharts(period) {
+        // Fetch and render Booking Trends
+        fetch(`/admin/dashboard/booking-trends?period=${period}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('bookingChart').getContext('2d');
 
-        // Example with Chart.js (uncomment when Chart.js is added):
-        /*
-        const bookingCtx = document.getElementById('bookingChart').getContext('2d');
-        const bookingChart = new Chart(bookingCtx, {
-            type: 'line',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    label: 'Bookings',
-                    data: [12, 19, 3, 5, 2, 3, 7],
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
+                if (bookingChart) bookingChart.destroy();
 
-        const serviceCtx = document.getElementById('serviceChart').getContext('2d');
-        const serviceChart = new Chart(serviceCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Transport', 'Logistics', 'Delivery'],
-                datasets: [{
-                    data: [300, 50, 100],
-                    backgroundColor: ['#667eea', '#10b981', '#f59e0b']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-        */
-    });
+                bookingChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Bookings',
+                            data: data.data,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            });
+
+        // Fetch and render Service Distribution (only once, doesn't change with period)
+        if (!serviceChart) {
+            fetch('/admin/dashboard/service-distribution')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('serviceChart').getContext('2d');
+
+                    serviceChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                data: data.data,
+                                backgroundColor: [
+                                    '#667eea', '#10b981', '#f59e0b',
+                                    '#ef4444', '#8b5cf6', '#06b6d4'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    });
+                });
+        }
+    }
 </script>
 </body>
 </html>

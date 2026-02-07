@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Edit Vehicle')}"></head>
+<body>
+
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .edit-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* Back Navigation */
+    .back-nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 28px;
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 16px;
+        color: #374151;
+        font-weight: 700;
+        cursor: pointer;
+        margin-bottom: 32px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    }
+
+    .back-nav:hover {
+        border-color: #667eea;
+        background: #667eea;
+        color: white;
+        transform: translateX(-8px);
+        box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+    }
+
+    .back-icon {
+        font-size: 24px;
+        transition: transform 0.3s ease;
+    }
+
+    .back-nav:hover .back-icon {
+        transform: translateX(-4px);
+    }
+
+    /* Edit Header Card */
+    .edit-header-card {
+        background: white;
+        border-radius: 24px;
+        padding: 40px;
+        margin-bottom: 40px;
+        box-shadow: 0 16px 64px rgba(0,0,0,0.12);
+        position: relative;
+        overflow: hidden;
+        border: 2px solid #f3f4f6;
+    }
+
+    .edit-header-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: var(--primary-gradient);
+    }
+
+    .edit-header-content {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .edit-vehicle-icon {
+        width: 100px;
+        height: 100px;
+        border-radius: 24px;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 56px;
+        box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .edit-header-text h1 {
+        font-size: 36px;
+        font-weight: 900;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0 0 8px 0;
+    }
+
+    .edit-header-text p {
+        color: #6b7280;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* Main Form Card */
+    .form-card {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+        overflow: hidden;
+        border: 2px solid #f3f4f6;
+    }
+
+    /* Form Sections */
+    .form-section {
+        padding: 48px;
+        border-bottom: 2px solid #f3f4f6;
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 32px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid #f3f4f6;
+    }
+
+    .section-icon-box {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        color: white;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+    }
+
+    .section-title {
+        font-size: 28px;
+        font-weight: 800;
+        color: #1f2937;
+        margin: 0;
+    }
+
+    /* Form Grid */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 32px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    /* Form Labels */
+    .form-label {
+        font-size: 14px;
+        font-weight: 700;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-label.required::after {
+        content: "*";
+        color: #ef4444;
+        font-size: 18px;
+    }
+
+    .label-icon {
+        font-size: 16px;
+    }
+
+    /* Form Inputs */
+    .form-input,
+    .form-select,
+    .form-textarea {
+        padding: 18px 20px;
+        border: 3px solid #e5e7eb;
+        border-radius: 16px;
+        font-size: 16px;
+        font-weight: 600;
+        font-family: inherit;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #f9fafb;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .form-input:hover,
+    .form-select:hover,
+    .form-textarea:hover {
+        border-color: #cbd5e1;
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 140px;
+        line-height: 1.6;
+    }
+
+    .form-input:disabled,
+    .form-select:disabled {
+        background: #f3f4f6;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    /* Input with Icon */
+    .input-with-icon {
+        position: relative;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 20px;
+        color: #9ca3af;
+        pointer-events: none;
+        transition: all 0.3s ease;
+    }
+
+    .input-with-icon .form-input,
+    .input-with-icon .form-select {
+        padding-left: 56px;
+    }
+
+    .form-input:focus ~ .input-icon,
+    .form-select:focus ~ .input-icon {
+        color: #667eea;
+    }
+
+    /* Help Text */
+    .help-text {
+        font-size: 13px;
+        color: #6b7280;
+        font-weight: 500;
+        margin-top: -6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .help-text::before {
+        content: "ℹ️";
+        font-size: 14px;
+    }
+
+    /* Color Picker Preview */
+    .color-input-group {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .color-preview {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        border: 3px solid #e5e7eb;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .color-preview:hover {
+        transform: scale(1.1);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .color-input-group .form-input {
+        flex: 1;
+    }
+
+    /* Status Selector */
+    .status-selector {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .status-option {
+        position: relative;
+    }
+
+    .status-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .status-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 24px;
+        border: 3px solid #e5e7eb;
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #f9fafb;
+    }
+
+    .status-label:hover {
+        border-color: #667eea;
+        background: white;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+    }
+
+    .status-option input:checked + .status-label {
+        border-color: #667eea;
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
+    }
+
+    .status-icon {
+        font-size: 36px;
+    }
+
+    .status-text {
+        font-size: 16px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Type Selector */
+    .type-selector {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .type-option {
+        position: relative;
+    }
+
+    .type-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .type-label {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 28px;
+        border: 3px solid #e5e7eb;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #f9fafb;
+    }
+
+    .type-label:hover {
+        border-color: #667eea;
+        background: white;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+    }
+
+    .type-option input:checked + .type-label {
+        border-color: #667eea;
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
+    }
+
+    .type-icon {
+        font-size: 48px;
+    }
+
+    .type-text {
+        flex: 1;
+    }
+
+    .type-name {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+
+    .type-desc {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    /* Form Actions */
+    .form-actions {
+        padding: 40px 48px;
+        background: linear-gradient(to bottom, #f9fafb, white);
+        display: flex;
+        gap: 20px;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .action-btn {
+        padding: 18px 40px;
+        border-radius: 16px;
+        font-weight: 800;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn-save {
+        background: var(--success-gradient);
+        color: white;
+        box-shadow: 0 8px 32px rgba(17, 153, 142, 0.4);
+    }
+
+    .btn-save:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 48px rgba(17, 153, 142, 0.6);
+    }
+
+    .btn-cancel {
+        background: white;
+        color: #6b7280;
+        border: 3px solid #e5e7eb;
+    }
+
+    .btn-cancel:hover {
+        background: #f3f4f6;
+        border-color: #cbd5e1;
+        transform: translateY(-2px);
+    }
+
+    .action-icon {
+        font-size: 20px;
+    }
+
+    /* Validation States */
+    .form-input.error,
+    .form-select.error,
+    .form-textarea.error {
+        border-color: #ef4444;
+        background: #fef2f2;
+    }
+
+    .error-message {
+        color: #ef4444;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: -6px;
+    }
+
+    .error-message::before {
+        content: "⚠️";
+    }
+
+    /* Loading State */
+    .btn-save.loading {
+        pointer-events: none;
+        opacity: 0.7;
+    }
+
+    .btn-save.loading::after {
+        content: "";
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .status-selector {
+            grid-template-columns: 1fr;
+        }
+
+        .type-selector {
+            grid-template-columns: 1fr;
+        }
+
+        .form-section {
+            padding: 32px 24px;
+        }
+
+        .form-actions {
+            padding: 24px;
+            flex-direction: column-reverse;
+        }
+
+        .action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<aside th:replace="~{admin/fragments :: sidebar('vehicles')}"></aside>
+
+<main class="main-content" id="mainContent">
+    <header th:replace="~{admin/fragments :: topHeader('Edit Vehicle')}"></header>
+
+    <div class="page-content">
+        <div class="edit-container">
+            
+            <!-- Back Navigation -->
+            <button class="back-nav" th:onclick="'window.location.href=\'/admin/vehicles/' + ${vehicle.id} + '\''">
+                <span class="back-icon">←</span>
+                <span>Back to Vehicle Details</span>
+            </button>
+
+            <!-- Edit Header -->
+            <div class="edit-header-card">
+                <div class="edit-header-content">
+                    <div class="edit-vehicle-icon" th:text="${vehicle.type == 'Bus' ? '🚌' : '🏎️'}">🏎️</div>
+                    <div class="edit-header-text">
+                        <h1>Edit Vehicle</h1>
+                        <p th:text="'Updating: ' + ${vehicle.brand} + ' ' + ${vehicle.model} + ' (' + ${vehicle.plateNumber} + ')'">
+                            Vehicle Info
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Form -->
+            <form id="editVehicleForm" 
+                  th:action="@{/admin/vehicles/{id}/update-form(id=${vehicle.id})}" 
+                  method="post">
+                
+                <div class="form-card">
+                    
+                    <!-- Vehicle Type Section -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <div class="section-icon-box">🚗</div>
+                            <h2 class="section-title">Vehicle Type</h2>
+                        </div>
+
+                        <div class="type-selector">
+                            <div class="type-option">
+                                <input type="radio" 
+                                       id="typeTaxi" 
+                                       name="type" 
+                                       value="Taxi"
+                                       th:checked="${vehicle.type == 'Taxi'}">
+                                <label for="typeTaxi" class="type-label">
+                                    <div class="type-icon">🚕</div>
+                                    <div class="type-text">
+                                        <div class="type-name">Taxi</div>
+                                        <div class="type-desc">Personal transport vehicle</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="type-option">
+                                <input type="radio" 
+                                       id="typeBus" 
+                                       name="type" 
+                                       value="Bus"
+                                       th:checked="${vehicle.type == 'Bus'}">
+                                <label for="typeBus" class="type-label">
+                                    <div class="type-icon">🚌</div>
+                                    <div class="type-text">
+                                        <div class="type-name">Bus</div>
+                                        <div class="type-desc">Multi-passenger transport</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Basic Information -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <div class="section-icon-box">📝</div>
+                            <h2 class="section-title">Basic Information</h2>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label required">
+                                    <span class="label-icon">🏷️</span>
+                                    Brand
+                                </label>
+                                <div class="input-with-icon">
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="brand" 
+                                           th:value="${vehicle.brand}"
+                                           required 
+                                           placeholder="e.g., Toyota, Honda, Mercedes">
+                                    <span class="input-icon">🏷️</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">
+                                    <span class="label-icon">🚙</span>
+                                    Model
+                                </label>
+                                <div class="input-with-icon">
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="model" 
+                                           th:value="${vehicle.model}"
+                                           required 
+                                           placeholder="e.g., Camry, Accord, E-Class">
+                                    <span class="input-icon">🚙</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">
+                                    <span class="label-icon">🔢</span>
+                                    Plate Number
+                                </label>
+                                <div class="input-with-icon">
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="plateNumber" 
+                                           th:value="${vehicle.plateNumber}"
+                                           required 
+                                           placeholder="e.g., ABC-1234"
+                                           style="text-transform: uppercase; font-family: 'Courier New', monospace; font-weight: 800;">
+                                    <span class="input-icon">🔢</span>
+                                </div>
+                                <p class="help-text">Vehicle registration/license plate number</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">
+                                    <span class="label-icon">👥</span>
+                                    Seating Capacity
+                                </label>
+                                <div class="input-with-icon">
+                                    <input type="number" 
+                                           class="form-input" 
+                                           name="capacity" 
+                                           th:value="${vehicle.capacity}"
+                                           required 
+                                           min="1" 
+                                           max="100"
+                                           placeholder="e.g., 4, 6, 50">
+                                    <span class="input-icon">👥</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <span class="label-icon">📋</span>
+                                    Description
+                                </label>
+                                <textarea class="form-textarea" 
+                                          name="description" 
+                                          th:text="${vehicle.description}"
+                                          placeholder="Additional details about the vehicle (optional)..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Appearance -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <div class="section-icon-box">🎨</div>
+                            <h2 class="section-title">Appearance</h2>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label required">
+                                    <span class="label-icon">🎨</span>
+                                    Vehicle Color
+                                </label>
+                                <div class="color-input-group">
+                                    <input type="color" 
+                                           id="colorPicker"
+                                           class="color-preview" 
+                                           th:value="${vehicle.color != null ? vehicle.color : '#667eea'}">
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="color" 
+                                           id="colorInput"
+                                           th:value="${vehicle.color}"
+                                           required 
+                                           placeholder="e.g., #667eea or Black">
+                                </div>
+                                <p class="help-text">Click the color box to pick or enter color name/hex code</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location & Assignment -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <div class="section-icon-box">📍</div>
+                            <h2 class="section-title">Location & Assignment</h2>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <span class="label-icon">📍</span>
+                                    State/Region
+                                </label>
+                                <div class="input-with-icon">
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="state" 
+                                           th:value="${vehicle.state}"
+                                           placeholder="e.g., Lagos, California">
+                                    <span class="input-icon">📍</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <span class="label-icon">🏢</span>
+                                    Company/Fleet Name
+                                </label>
+                                <div class="input-with-icon">
+                                    <input type="text" 
+                                           class="form-input" 
+                                           name="company" 
+                                           th:value="${vehicle.company}"
+                                           placeholder="e.g., ABC Transport Co.">
+                                    <span class="input-icon">🏢</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <span class="label-icon">🏢</span>
+                                    Provider
+                                </label>
+                                <div class="input-with-icon">
+                                    <select class="form-select" name="providerId" disabled>
+                                        <option value="">No Provider</option>
+                                        <option th:each="provider : ${providers}" 
+                                                th:value="${provider.id}" 
+                                                th:text="${provider.companyName ?: (provider.firstName + ' ' + provider.lastName)}"
+                                                th:selected="${vehicle.providerId != null && vehicle.providerId.equals(provider.id)}">
+                                            Provider
+                                        </option>
+                                    </select>
+                                    <span class="input-icon">🏢</span>
+                                </div>
+                                <p class="help-text">Provider assignment cannot be changed from this page</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <div class="section-icon-box">📊</div>
+                            <h2 class="section-title">Operational Status</h2>
+                        </div>
+
+                        <div class="status-selector">
+                            <div class="status-option">
+                                <input type="radio" 
+                                       id="statusAvailable" 
+                                       name="status" 
+                                       value="Available"
+                                       th:checked="${vehicle.status == 'Available'}">
+                                <label for="statusAvailable" class="status-label">
+                                    <div class="status-icon">✅</div>
+                                    <div class="status-text">Available</div>
+                                </label>
+                            </div>
+
+                            <div class="status-option">
+                                <input type="radio" 
+                                       id="statusBooked" 
+                                       name="status" 
+                                       value="Booked"
+                                       th:checked="${vehicle.status == 'Booked'}">
+                                <label for="statusBooked" class="status-label">
+                                    <div class="status-icon">📅</div>
+                                    <div class="status-text">Booked</div>
+                                </label>
+                            </div>
+
+                            <div class="status-option">
+                                <input type="radio" 
+                                       id="statusMaintenance" 
+                                       name="status" 
+                                       value="Maintenance"
+                                       th:checked="${vehicle.status == 'Maintenance'}">
+                                <label for="statusMaintenance" class="status-label">
+                                    <div class="status-icon">🔧</div>
+                                    <div class="status-text">Maintenance</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="button" 
+                                class="action-btn btn-cancel" 
+                                th:onclick="'window.location.href=\'/admin/vehicles/' + ${vehicle.id} + '\''">
+                            <span class="action-icon">❌</span>
+                            <span>Cancel</span>
+                        </button>
+                        <button type="submit" class="action-btn btn-save">
+                            <span class="action-icon">💾</span>
+                            <span>Save Changes</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{admin/fragments :: commonScripts}"></div>
+
+<script>
+    // Color picker sync
+    const colorPicker = document.getElementById('colorPicker');
+    const colorInput = document.getElementById('colorInput');
+
+    colorPicker.addEventListener('input', function() {
+        colorInput.value = this.value;
+    });
+
+    colorInput.addEventListener('input', function() {
+        if (this.value.startsWith('#')) {
+            colorPicker.value = this.value;
+        }
+    });
+
+    // Form validation
+    document.getElementById('editVehicleForm').addEventListener('submit', function(e) {
+        const brand = document.querySelector('input[name="brand"]').value.trim();
+        const model = document.querySelector('input[name="model"]').value.trim();
+        const plateNumber = document.querySelector('input[name="plateNumber"]').value.trim();
+        const capacity = document.querySelector('input[name="capacity"]').value;
+        const color = document.querySelector('input[name="color"]').value.trim();
+
+        if (!brand || !model || !plateNumber || !capacity || !color) {
+            e.preventDefault();
+            alert('⚠️ Please fill in all required fields (Brand, Model, Plate Number, Capacity, Color)');
+            return false;
+        }
+
+        if (capacity < 1) {
+            e.preventDefault();
+            alert('⚠️ Capacity must be at least 1');
+            return false;
+        }
+
+        // Add loading state to button
+        const submitBtn = this.querySelector('.btn-save');
+        submitBtn.classList.add('loading');
+        submitBtn.innerHTML = '<span class="action-icon">⏳</span><span>Saving...</span>';
+
+        return true;
+    });
+
+    // Auto-uppercase plate number
+    const plateInput = document.querySelector('input[name="plateNumber"]');
+    plateInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + S to save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('editVehicleForm').submit();
+        }
+        
+        // Escape to cancel
+        if (e.key === 'Escape') {
+            if (confirm('Discard changes and go back?')) {
+                window.history.back();
+            }
+        }
+    });
+
+    // Show unsaved changes warning
+    let formChanged = false;
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('change', function() {
+            formChanged = true;
+        });
+    });
+
+    window.addEventListener('beforeunload', function(e) {
+        if (formChanged) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    document.getElementById('editVehicleForm').addEventListener('submit', function() {
+        formChanged = false;
+    });
+</script>
+</body>
+</html>
