@@ -83,6 +83,10 @@ public class WebhookService {
             if (!ObjectUtils.isEmpty(offer) || offer!= null) {
                 offer.setStatus(PAID);
                 offerRepository.save(offer);
+
+                BookingRequest bookingRequest = bookingRepository.findById(offer.getBookingRequestId()).orElseThrow();
+                bookingRequest.setStatus(BookingStatus.CLAIMED);
+                bookingRepository.save(bookingRequest);
             }
             // 4. Store raw webhook for audit trail
             WebhookEvent webhookEvent = storeWebhookEvent(eventId, rawPayload, payload, true);
