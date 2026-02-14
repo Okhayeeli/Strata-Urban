@@ -1,0 +1,156 @@
+🔹 1. Booking & Trip Analytics (Core Health)
+Mandatory
+
+Total Booking Requests
+
+Booking Requests → Trips Conversion Rate
+
+Completed Trips
+
+Cancelled Trips (by party)
+
+Average Trip Duration
+
+Average Trip Distance
+
+Peak Booking Hours
+
+Peak Booking Days
+
+Advanced
+
+Drop-off stage analysis:
+
+Request → Offer
+
+Offer → Acceptance
+
+Acceptance → Trip Start
+
+Failed Trips per Route
+
+High-cancellation Routes
+
+
+
+
+🔹 2. Offer & Matching Analytics
+
+Average Time to First Offer
+
+Average Number of Offers per Booking
+
+Offer Acceptance Rate
+
+Provider Response Rate
+
+Rejected vs Expired Offers
+
+Suggested (smart):
+
+Providers with slow response times
+
+Routes with poor offer coverage
+
+
+
+
+🔹 3. User Analytics
+Clients
+
+New Clients per period
+
+Repeat Booking Rate
+
+Average Spend per Client
+
+Drivers
+
+Active vs Inactive Drivers
+
+Trip Completion Rate per Driver
+
+Cancellation Rate per Driver
+
+Providers
+
+Active Providers
+
+Trips per Provider
+
+Revenue per Provider
+
+🔹 4. Financial Analytics
+Core
+
+Gross Transaction Volume (GTV)
+
+Platform Revenue
+
+Provider Earnings
+
+Refund Volume
+
+Failed Payment Rate
+
+Advanced
+
+Revenue per Route
+
+Revenue per Service Area
+
+Average Fare per Trip
+
+Refund Reasons Distribution
+
+🔹 5. Support & Quality Analytics (Very important)
+Core
+
+Total Support Tickets
+
+Tickets by Category
+
+Tickets by Priority
+
+Open vs Resolved Tickets
+
+Performance
+
+Average First Response Time
+
+Average Resolution Time
+
+Tickets per Admin
+
+Escalation Rate
+
+Suggested (Elite level)
+
+Tickets per 1,000 Trips
+
+Routes generating most complaints
+
+Providers with frequent complaints
+
+Refund-triggered tickets %
+
+🔹 6. Operational Analytics
+
+Vehicle Utilization Rate
+
+Trips per Vehicle Type
+
+Service Area Coverage vs Demand
+
+Idle Driver Time
+
+
+🔹 7. System & Reliability Analytics
+
+Webhook Failures
+
+Payment Gateway Downtime
+
+Notification Delivery Rate
+
+System-generated Support Tickets

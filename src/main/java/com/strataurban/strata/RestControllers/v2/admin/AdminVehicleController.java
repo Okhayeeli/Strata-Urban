@@ -4,6 +4,7 @@ import com.strataurban.strata.Entities.Providers.Provider;
 import com.strataurban.strata.Entities.Providers.Transport;
 import com.strataurban.strata.Repositories.v2.ProviderRepository;
 import com.strataurban.strata.Repositories.v2.TransportRepository;
+import com.strataurban.strata.Utils.VehicleImageHelper;
 import jakarta.servlet.http.HttpSession;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,6 +26,9 @@ public class AdminVehicleController {
 
     @Autowired
     private ProviderRepository providerRepository;
+
+    @Autowired
+    private VehicleImageHelper vehicleImageHelper;
 
     /**
      * Check if user is authenticated and is an admin
@@ -495,6 +499,22 @@ public class AdminVehicleController {
                 }
             }
             vehicleMap.put("providerName", providerName);
+
+            // Get brand logo for list view (main page)
+            String brandLogoUrl = vehicleImageHelper.getBrandLogoUrl(vehicle.getBrand());
+            vehicleMap.put("brandLogoUrl", brandLogoUrl);
+
+            // Get vehicle image for detail view
+            String vehicleImageUrl = vehicleImageHelper.getVehicleImageUrl(
+                    vehicle.getBrand(),
+                    vehicle.getModel(),
+                    vehicle.getType()
+            );
+            vehicleMap.put("vehicleImageUrl", vehicleImageUrl);
+
+            // Get vehicle icon (emoji fallback)
+            String vehicleIcon = vehicleImageHelper.getVehicleIcon(vehicle.getType());
+            vehicleMap.put("vehicleIcon", vehicleIcon);
 
             enrichedVehicles.add(vehicleMap);
         }

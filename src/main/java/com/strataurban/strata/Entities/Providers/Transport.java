@@ -20,8 +20,10 @@ public class Transport {
     private String brand;
     private String model;
     private String color;
+    private String year;
     private String state;
     private String company;
+    private String carClass;
     private Long routeId;
     private String status; // Available, Booked, etc.
 }

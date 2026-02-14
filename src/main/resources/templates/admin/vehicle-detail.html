@@ -64,11 +64,30 @@
     .hero-showcase {
         position: relative;
         height: 500px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #1a1a1a;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
+    }
+
+    /* Vehicle Detail Image */
+    .vehicle-detail-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    /* Dark overlay for better badge visibility */
+    .image-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+        z-index: 1;
     }
 
     /* Animated Background Pattern */
@@ -80,6 +99,7 @@
             repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(255,255,255,0.02) 100px, rgba(255,255,255,0.02) 200px),
             repeating-linear-gradient(0deg, transparent, transparent 100px, rgba(255,255,255,0.02) 100px, rgba(255,255,255,0.02) 200px);
         animation: gridMove 20s linear infinite;
+        z-index: 0;
     }
 
     @keyframes gridMove {
@@ -132,6 +152,7 @@
         transform: translateX(-50%);
         pointer-events: none;
         animation: pulse 3s ease-in-out infinite;
+        z-index: 2;
     }
 
     @keyframes pulse {
@@ -148,6 +169,7 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
+        z-index: 10;
         z-index: 20;
     }
 
@@ -717,8 +739,16 @@
 
             <!-- Hero Showcase Section -->
             <div class="vehicle-hero">
-                <!-- 3D Vehicle Display -->
-                <div class="hero-showcase" th:style="'background: linear-gradient(135deg, ' + ${vehicle.color != null ? vehicle.color : '#667eea'} + ' 0%, ' + ${vehicle.color != null ? vehicle.color : '#764ba2'} + ' 100%);'">
+                <!-- Vehicle Image Display -->
+                <div class="hero-showcase">
+                    <!-- Real Vehicle Image -->
+                    <img class="vehicle-detail-image" 
+                         th:src="@{'/images/vehicles/specific/' + ${vehicle.brand != null ? vehicle.brand.toLowerCase().replaceAll('[^a-z0-9]', '') : 'default'} + '-' + ${vehicle.model != null ? vehicle.model.toLowerCase().replaceAll('[^a-z0-9]', '') : 'car'} + '.jpg'}" 
+                         th:alt="${vehicle.brand} + ' ' + ${vehicle.model}"
+                         onerror="this.onerror=null; this.src='/images/vehicles/generic/' + (this.getAttribute('data-type') || 'sedan') + '.jpg';"
+                         th:attr="data-type=${vehicle.type != null ? vehicle.type.toLowerCase() : 'sedan'}">
+                    
+                    <div class="image-overlay"></div>
                     <div class="spotlight"></div>
                     
                     <!-- Status Badges -->
@@ -727,13 +757,6 @@
                         <div class="hero-badge badge-status" 
                              th:classappend="${vehicle.status == 'Booked' ? 'booked' : (vehicle.status == 'Maintenance' ? 'maintenance' : '')}"
                              th:text="${vehicle.status}">Available</div>
-                    </div>
-
-                    <!-- 3D Vehicle -->
-                    <div class="vehicle-3d-stage">
-                        <div class="vehicle-3d-model">
-                            <div class="vehicle-icon-3d" th:text="${vehicle.type == 'Bus' ? '🚌' : '🏎️'}">🏎️</div>
-                        </div>
                     </div>
                 </div>
 

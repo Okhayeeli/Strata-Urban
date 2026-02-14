@@ -6,8 +6,6 @@ Add an extra layer of security by requiring a second factor (e.g., SMS OTP, emai
 
 Session Management
 Implement session timeouts (e.g., tokens expire after a set period).
-Allow users to log out and invalidate their session/token.
-Support refresh tokens to extend user sessions without re-authentication.
 
 
 
@@ -22,6 +20,7 @@ Allow Providers to generate API keys for integrating with your app programmatica
 //Todo Track devices used for login (e.g., show a list of active devices).
 Allow users to log out from specific devices remotely.
 
+
 2. Authorization Functionalities
 Authorization ensures that users can only access resources and perform actions they are permitted to.
 
@@ -32,12 +31,12 @@ Role-Based Access Control (RBAC)
 Permission-Based Access Control
 
 
-Ensure users can only access their own resources (e.g., a Client can only see their own bookings, a Provider can only see their own vehicles).
-Validate ownership during API requests (e.g., check if userId matches the clientId in /api/bookings/client/{clientId}).
-Provider-Specific Access
-Restrict Providers to manage only their own bookings, vehicles, and drivers.
-Prevent Providers from accessing other Providers’ data (e.g., bookings, dashboard stats).
-Booking Status-Based Access
+
+
+
+
+
+
 Restrict actions based on booking status (e.g., a Client can’t cancel a booking that’s already in progress).
 Allow Providers to confirm or assign drivers only for PENDING bookings.
 Admin Privileges
@@ -120,12 +119,6 @@ In the response for Booking Request, let it fetch the client details too
 
 
 For the security features you want to implement in your Spring application, here's a comprehensive list based on the approach you're aiming for:
-
-
-
-
-Core Authentication Features:
-User Authentication (JWT)
 
 
 

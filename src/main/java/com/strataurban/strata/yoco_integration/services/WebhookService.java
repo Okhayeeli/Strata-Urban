@@ -13,7 +13,6 @@ import com.strataurban.strata.yoco_integration.dtos.WebhookPayload;
 import com.strataurban.strata.yoco_integration.entities.PaymentTransaction;
 import com.strataurban.strata.yoco_integration.entities.WebhookEvent;
 import com.strataurban.strata.yoco_integration.exceptions.WebhookValidationException;
-import com.strataurban.strata.yoco_integration.repositories.PaymentTransactionRepository;
 import com.strataurban.strata.yoco_integration.repositories.WebhookEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
