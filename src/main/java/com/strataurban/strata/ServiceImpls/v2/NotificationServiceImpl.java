@@ -3,11 +3,13 @@ package com.strataurban.strata.ServiceImpls.v2;
 import com.strataurban.strata.DTOs.v2.NotificationRequest;
 import com.strataurban.strata.Entities.Generics.Notification;
 import com.strataurban.strata.Entities.RequestEntities.BookingRequest;
+import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Enums.NotificationType;
 import com.strataurban.strata.Enums.RecipientType;
 import com.strataurban.strata.Enums.ReferenceType;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.NotificationRepository;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Services.v2.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -106,8 +108,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Page<Notification> getAllUserNotifications(Pageable pageable) {
-        return notificationRepository.findAll(pageable);
+    public Page<Notification> getAllUserNotifications(SecurityUserDetails userDetails, Pageable pageable) {
+        if (userDetails.getRole() == EnumRoles.ADMIN) {
+            return notificationRepository.findAll(pageable);
+        }
+        return notificationRepository.findByRecipientId(userDetails.getId(), pageable);
     }
 
 

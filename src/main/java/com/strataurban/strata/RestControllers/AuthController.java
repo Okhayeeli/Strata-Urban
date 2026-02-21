@@ -6,6 +6,8 @@ import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Exceptions.InvalidTokenException;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
+import com.strataurban.strata.Security.LoggedUser;
+import com.strataurban.strata.Security.SecurityUserDetails;
 import com.strataurban.strata.Security.jwtConfigs.JwtUtil;
 import com.strataurban.strata.ServiceImpls.v2.UserServiceImpl;
 import com.strataurban.strata.Services.EmailVerificationTokenService;
@@ -167,8 +169,8 @@ public class AuthController {
 
     @GetMapping("/get-all")
     @Operation(summary = "Get all notifications", description = "Fetches all notifications")
-    public Page<Notification> getAllNotifications(Pageable pageable) {
-        return notificationService.getAllUserNotifications(pageable);
+    public Page<Notification> getAllNotifications(@LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
+        return notificationService.getAllUserNotifications(userDetails, pageable);
     }
 
     @PutMapping("/validate-user")

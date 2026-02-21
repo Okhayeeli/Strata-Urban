@@ -5,6 +5,10 @@ import com.strataurban.strata.Notifications.NotificationChannel;
 import com.strataurban.strata.Notifications.NotificationFacade;
 import com.strataurban.strata.Notifications.NotificationPreferenceDTO;
 import com.strataurban.strata.Notifications.NotificationPreferenceService;
+import com.strataurban.strata.Security.LoggedUser;
+import com.strataurban.strata.Security.SecurityUserDetails;
+import com.strataurban.strata.ServiceImpls.v2.NotificationServiceImpl;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,6 +35,7 @@ public class NotificationRestController {
 
     private final NotificationFacade notificationFacade;
     private final NotificationPreferenceService preferenceService;
+    private final NotificationServiceImpl notificationServiceImpl;
 
     // ===== NOTIFICATION QUERIES =====
 
@@ -241,5 +246,11 @@ public class NotificationRestController {
         log.info("Deleting all preferences for user {}", userId);
         preferenceService.deleteUserPreferences(userId);
         return ResponseEntity.ok(Map.of("message", "All preferences deleted"));
+    }
+
+    @GetMapping("/get-all")
+    @Operation(summary = "Get all notifications", description = "Fetches all notifications")
+    public Page<Notification> getAllNotifications(@LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
+        return notificationServiceImpl.getAllUserNotifications(userDetails, pageable);
     }
 }
