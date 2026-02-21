@@ -2,6 +2,7 @@ package com.strataurban.strata.Services.v2;
 
 import com.strataurban.strata.DTOs.v2.NotificationRequest;
 import com.strataurban.strata.Entities.Generics.Notification;
+import com.strataurban.strata.Notifications.NotificationChannel;
 import com.strataurban.strata.Security.SecurityUserDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,5 +29,5 @@ public interface NotificationService {
     // Send a booking confirmation notification to a client
     void sendBookingConfirmationNotification(Long bookingId);
 
-    Page<Notification> getAllUserNotifications(SecurityUserDetails userDetails, Pageable pageable);
+    Page<Notification> getAllUserNotifications(SecurityUserDetails userDetails, NotificationChannel channel, Pageable pageable);
 }

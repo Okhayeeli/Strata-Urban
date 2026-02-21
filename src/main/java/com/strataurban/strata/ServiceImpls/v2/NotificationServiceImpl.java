@@ -7,6 +7,7 @@ import com.strataurban.strata.Enums.EnumRoles;
 import com.strataurban.strata.Enums.NotificationType;
 import com.strataurban.strata.Enums.RecipientType;
 import com.strataurban.strata.Enums.ReferenceType;
+import com.strataurban.strata.Notifications.NotificationChannel;
 import com.strataurban.strata.Repositories.v2.BookingRepository;
 import com.strataurban.strata.Repositories.v2.NotificationRepository;
 import com.strataurban.strata.Security.SecurityUserDetails;
@@ -108,12 +109,15 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Page<Notification> getAllUserNotifications(SecurityUserDetails userDetails, Pageable pageable) {
+    public Page<Notification> getAllUserNotifications(SecurityUserDetails userDetails, NotificationChannel channel, Pageable pageable) {
         if (userDetails.getRole() == EnumRoles.ADMIN) {
             return notificationRepository.findAll(pageable);
         }
-        return notificationRepository.findByRecipientId(userDetails.getId(), pageable);
-    }
 
+        if(channel == null){
+            channel = NotificationChannel.IN_APP;
+        }
+        return notificationRepository.findByRecipientIdAndChannel(userDetails.getId(), channel, pageable);
+    }
 
 }

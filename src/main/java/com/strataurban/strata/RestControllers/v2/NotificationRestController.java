@@ -250,7 +250,8 @@ public class NotificationRestController {
 
     @GetMapping("/get-all")
     @Operation(summary = "Get all notifications", description = "Fetches all notifications")
-    public Page<Notification> getAllNotifications(@LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
-        return notificationServiceImpl.getAllUserNotifications(userDetails, pageable);
+    public Page<Notification> getAllNotifications(@RequestParam(required = false) NotificationChannel channel,
+                                                  @LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
+        return notificationServiceImpl.getAllUserNotifications(userDetails, channel, pageable);
     }
 }

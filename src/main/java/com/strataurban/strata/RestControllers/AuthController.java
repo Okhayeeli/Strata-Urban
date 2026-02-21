@@ -4,6 +4,7 @@ import com.strataurban.strata.DTOs.v2.*;
 import com.strataurban.strata.Entities.Generics.Notification;
 import com.strataurban.strata.Entities.User;
 import com.strataurban.strata.Exceptions.InvalidTokenException;
+import com.strataurban.strata.Notifications.NotificationChannel;
 import com.strataurban.strata.Repositories.v2.BlacklistedTokenRepository;
 import com.strataurban.strata.Repositories.v2.UserRepository;
 import com.strataurban.strata.Security.LoggedUser;
@@ -169,8 +170,9 @@ public class AuthController {
 
     @GetMapping("/get-all")
     @Operation(summary = "Get all notifications", description = "Fetches all notifications")
-    public Page<Notification> getAllNotifications(@LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
-        return notificationService.getAllUserNotifications(userDetails, pageable);
+    public Page<Notification> getAllNotifications(@RequestParam NotificationChannel channel,
+                                                  @LoggedUser SecurityUserDetails userDetails, Pageable pageable) {
+        return notificationService.getAllUserNotifications(userDetails, channel, pageable);
     }
 
     @PutMapping("/validate-user")
